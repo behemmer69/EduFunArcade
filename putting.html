@@ -1,0 +1,2318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>3D Friction Putting Lab - Golf Physics Game</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js r128 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+        }
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            touch-action: none;
+        }
+        .font-mono-tech {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        #canvas-container {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.80);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+        }
+        .glass-panel-light {
+            background: rgba(30, 41, 59, 0.88);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.5);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(148, 163, 184, 0.4);
+            border-radius: 9999px;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="text-white antialiased">
+
+    <!-- 3D WebGL Canvas Container -->
+    <div id="canvas-container"></div>
+
+    <div id="drag-overlay" class="fixed inset-0 pointer-events-none z-10 hidden">
+        <svg id="drag-svg" class="w-full h-full">
+            <defs>
+                <linearGradient id="dragGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#34d399" stop-opacity="0.9"/>
+                    <stop offset="50%" stop-color="#fbbf24" stop-opacity="0.9"/>
+                    <stop offset="100%" stop-color="#ef4444" stop-opacity="0.95"/>
+                </linearGradient>
+            </defs>
+            <line id="drag-line" x1="0" y1="0" x2="0" y2="0" stroke="url(#dragGrad)" stroke-width="4" stroke-dasharray="8 4" stroke-linecap="round"/>
+            <circle id="drag-start-circle" cx="0" cy="0" r="18" fill="rgba(52, 211, 153, 0.2)" stroke="#34d399" stroke-width="2"/>
+            <circle id="drag-current-circle" cx="0" cy="0" r="12" fill="rgba(251, 191, 36, 0.35)" stroke="#fbbf24" stroke-width="2.5"/>
+        </svg>
+        <div id="drag-floating-badge" class="absolute px-3 py-1.5 rounded-xl glass-panel text-xs font-mono-tech font-bold text-emerald-300 shadow-lg transform -translate-x-1/2 -translate-y-full -mt-3 whitespace-nowrap">
+            v₀ = 0.00 m/s (0%)
+        </div>
+    </div>
+
+    <div id="hud-container" class="fixed inset-0 pointer-events-none z-20 flex flex-col justify-between p-1.5 sm:p-3 hidden">
+        
+        <!-- Top Bar: Single-Line Game Status & Physics Telemetry -->
+        <div class="glass-panel rounded-xl px-2.5 py-1.5 pointer-events-auto w-full max-w-6xl mx-auto flex items-center justify-between gap-2 text-[11px] sm:text-xs leading-none overflow-x-auto no-scrollbar whitespace-nowrap shadow-lg">
+            <!-- Left: Surface Condition, Round, Drop & Chance -->
+            <div class="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+                <span class="inline-flex items-center gap-1 font-bold text-emerald-300">
+                    <i id="condition-icon" class="fa-solid fa-sun text-amber-300"></i>
+                    <span id="hud-round-pill">R1/3</span>
+                    <span id="hud-condition-name" class="text-white">Freshly Cut</span>
+                </span>
+                <span id="hud-condition-desc" class="font-mono-tech text-emerald-300">μ=0.065</span>
+                <span id="hud-stimp-pill" class="hidden lg:inline text-slate-400 font-mono-tech">12.5ft</span>
+                <span class="text-slate-600">|</span>
+                <span class="text-slate-300">Drop <strong id="hud-drop-counter" class="text-amber-300 font-mono-tech">1/3</strong></span>
+                <span class="text-slate-300">Try <strong id="hud-chance-counter" class="text-cyan-300 font-mono-tech">1/2</strong></span>
+                <span class="text-slate-300">Pts <strong id="hud-score" class="text-emerald-400 font-mono-tech">0</strong></span>
+            </div>
+
+            <span class="text-slate-600">|</span>
+
+            <!-- Right: Compact Live Physics Telemetry -->
+            <div class="flex items-center gap-1.5 sm:gap-2.5 font-mono-tech shrink-0">
+                <span id="hud-slope-readout" class="hidden text-amber-300 font-semibold">Flat</span>
+                <span class="text-slate-300">Pin:<strong id="tel-dist" class="text-emerald-300 ml-0.5">0.0m</strong></span>
+                <span class="text-slate-300">v:<strong id="tel-speed" class="text-white ml-0.5">0.00m/s</strong></span>
+                <span class="text-slate-300">
+                    <span id="prev-attempt-text" class="font-sans text-slate-400">Ideal:</span>
+                    <strong id="ideal-v0-readout" class="text-emerald-300 ml-0.5">--</strong>
+                </span>
+                <span id="roll-dist-readout" class="hidden md:inline text-slate-400">Roll:0.0m</span>
+                <span class="hidden sm:inline text-slate-400">a:<strong id="tel-decel" class="text-rose-400 ml-0.5">-0.64m/s²</strong></span>
+                <span id="tel-force" class="hidden xl:inline text-amber-300">0.029N</span>
+                <span id="telemetry-status" class="hidden">READY</span>
+            </div>
+        </div>
+
+        <!-- Center Status / Banner Message -->
+        <div id="shot-banner" class="self-center pointer-events-none transition-all duration-300 opacity-0 transform -translate-y-3 my-auto">
+            <div class="glass-panel px-4 py-2.5 sm:px-6 sm:py-4 rounded-2xl border border-emerald-400/60 shadow-2xl text-center max-w-xs sm:max-w-md">
+                <div id="shot-banner-icon" class="text-xl sm:text-3xl mb-0.5">⛳</div>
+                <h3 id="shot-banner-title" class="text-base sm:text-2xl font-extrabold text-white">SUNK IT!</h3>
+                <p id="shot-banner-subtitle" class="text-[11px] sm:text-sm text-slate-200 mt-0.5">Great speed control on this surface!</p>
+            </div>
+        </div>
+
+        <!-- Bottom Bar: Compact Single-Row Power Meter & Controls -->
+        <div class="w-full max-w-6xl mx-auto glass-panel rounded-xl px-2.5 py-1.5 pointer-events-auto flex items-center justify-between gap-2 shadow-lg">
+            
+            <!-- Slim Power & Launch Meter -->
+            <div class="flex-1 flex flex-col justify-center min-w-0">
+                <div class="flex justify-between items-center text-[10px] sm:text-xs mb-1 leading-none">
+                    <span id="power-readout" class="font-mono-tech font-bold text-emerald-300 truncate">
+                        v₀ = 0.00 m/s (0%)
+                    </span>
+                    <span id="predicted-stop-readout" class="font-mono-tech text-cyan-300 ml-2 shrink-0">
+                        Est. Roll: 0.0m
+                    </span>
+                </div>
+                <div class="w-full h-2 sm:h-2.5 bg-slate-900 rounded-full overflow-hidden border border-slate-700 p-0.5 relative">
+                    <!-- Ideal Power Tick Mark -->
+                    <div id="ideal-power-tick" class="absolute top-0 bottom-0 w-1 bg-white z-10 rounded shadow" style="left: 50%;" title="Ideal speed to reach hole"></div>
+                    <div id="power-bar-fill" class="h-full w-0 rounded-full transition-all duration-75 bg-gradient-to-r from-emerald-400 via-amber-400 to-rose-500"></div>
+                </div>
+            </div>
+
+            <!-- Compact Action & Camera Buttons -->
+            <div class="flex items-center gap-1 sm:gap-1.5 shrink-0">
+                <button id="btn-break-grid" type="button" class="hidden px-2 py-1.5 sm:px-2.5 sm:py-1.5 rounded-lg bg-emerald-950/90 hover:bg-emerald-900 text-[11px] font-semibold text-emerald-300 border border-emerald-500/60 transition flex items-center gap-1" title="Toggle 3D Slope & Break Grid">
+                    <i id="break-grid-icon" class="fa-solid fa-border-all text-emerald-400"></i>
+                    <span id="break-grid-text" class="inline">Grid On</span>
+                </button>
+
+                <button id="btn-drag-mode" type="button" class="px-2 py-1.5 sm:px-2.5 sm:py-1.5 rounded-lg bg-amber-950/80 hover:bg-amber-900/80 text-[11px] font-semibold text-amber-200 border border-amber-500/60 transition flex items-center gap-1" title="Switch hit style between Pull-Back (Slingshot) and Forward Drag">
+                    <i id="drag-mode-icon" class="fa-solid fa-arrows-up-down text-amber-400"></i>
+                    <span id="drag-mode-text" class="inline">Pull-Back</span>
+                </button>
+
+                <button id="btn-camera-view" type="button" class="px-2 py-1.5 sm:px-2.5 sm:py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] font-semibold text-slate-200 border border-slate-600/80 transition flex items-center gap-1" title="Cycle Camera Angle">
+                    <i class="fa-solid fa-video text-cyan-400"></i>
+                    <span id="camera-mode-text" class="hidden sm:inline">Behind Ball</span>
+                </button>
+
+                <button id="btn-guidance" type="button" class="px-2 py-1.5 sm:px-2.5 sm:py-1.5 rounded-lg bg-emerald-950/90 hover:bg-emerald-900 text-[11px] font-semibold text-emerald-300 border border-emerald-500/60 transition flex items-center gap-1" title="Toggle Targeting Assist / Guidance">
+                    <i id="guidance-icon" class="fa-solid fa-bullseye text-emerald-400"></i>
+                    <span id="guidance-mode-text" class="inline">Guided</span>
+                </button>
+
+                <button id="btn-sound" type="button" class="px-2 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] font-semibold text-slate-200 border border-slate-600/80 transition" title="Toggle Sound Effects">
+                    <i id="sound-icon" class="fa-solid fa-volume-high text-emerald-400"></i>
+                </button>
+
+                <button id="btn-restart-menu" type="button" class="px-2 py-1.5 rounded-lg bg-slate-800 hover:bg-rose-900/60 text-[11px] font-semibold text-slate-200 border border-slate-600/80 transition" title="Return to Start Menu">
+                    <i class="fa-solid fa-rotate-left text-rose-400"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="start-modal" class="fixed inset-0 z-30 flex items-center justify-center p-3 sm:p-4 bg-slate-950/75 backdrop-blur-md overflow-y-auto">
+        <div class="glass-panel-light rounded-3xl max-w-2xl w-full p-5 sm:p-8 shadow-2xl border border-emerald-500/30 my-auto">
+            <div class="flex items-center gap-3 mb-3">
+                <div class="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-xl sm:text-2xl text-emerald-300 shadow-inner">
+                    <i class="fa-solid fa-golf-ball-tee"></i>
+                </div>
+                <div>
+                    <span class="text-[11px] font-bold uppercase tracking-widest text-emerald-400">Interactive 3D Physics Lab</span>
+                    <h1 class="text-xl sm:text-3xl font-extrabold text-white">Surface Friction Putting</h1>
+                </div>
+            </div>
+
+            <p class="text-xs sm:text-sm text-slate-300 leading-relaxed mb-4">
+                Explore how <strong>kinetic friction (μk)</strong> governs deceleration on a golf green. Your ball is placed randomly on the green with <strong>2 chances per drop</strong>. You will replay those <strong>exact same drop locations</strong> across three changing surface conditions:
+            </p>
+
+            <!-- 3 Rounds Preview Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3 mb-5">
+                <div class="bg-slate-900/85 border border-emerald-500/40 rounded-2xl p-3">
+                    <div class="flex items-center justify-between mb-0.5">
+                        <span class="text-[11px] font-bold text-emerald-400 uppercase">Round 1</span>
+                        <i class="fa-solid fa-sun text-amber-300 text-xs"></i>
+                    </div>
+                    <div class="font-bold text-white text-xs sm:text-sm">Freshly Cut</div>
+                    <div class="text-[11px] font-mono-tech text-emerald-300 mt-0.5">μk = 0.065 • Fast</div>
+                    <p class="text-[11px] text-slate-400 mt-0.5">Low friction blades. Minimal force needed for long rolls.</p>
+                </div>
+
+                <div class="bg-slate-900/85 border border-cyan-500/40 rounded-2xl p-3">
+                    <div class="flex items-center justify-between mb-0.5">
+                        <span class="text-[11px] font-bold text-cyan-400 uppercase">Round 2</span>
+                        <i class="fa-solid fa-cloud-showers-heavy text-cyan-300 text-xs"></i>
+                    </div>
+                    <div class="font-bold text-white text-xs sm:text-sm">Wet Surface</div>
+                    <div class="text-[11px] font-mono-tech text-cyan-300 mt-0.5">μk = 0.115 • Medium</div>
+                    <p class="text-[11px] text-slate-400 mt-0.5">Surface moisture adds drag. Requires ~33% more launch speed.</p>
+                </div>
+
+                <div class="bg-slate-900/85 border border-amber-500/40 rounded-2xl p-3">
+                    <div class="flex items-center justify-between mb-0.5">
+                        <span class="text-[11px] font-bold text-amber-400 uppercase">Round 3</span>
+                        <i class="fa-solid fa-mountain-sun text-amber-400 text-xs"></i>
+                    </div>
+                    <div class="font-bold text-white text-xs sm:text-sm">Rougher (End of Day)</div>
+                    <div class="text-[11px] font-mono-tech text-amber-300 mt-0.5">μk = 0.165 • Slow</div>
+                    <p class="text-[11px] text-slate-400 mt-0.5">Grown-out afternoon turf. High resistance stops the ball fast.</p>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">
+                    Select Green Topography Mode:
+                </label>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
+                    <button data-mode="flat" class="mode-option-btn group relative rounded-2xl p-3 border-2 border-slate-700 bg-slate-900/70 text-left transition hover:border-slate-500 flex items-start gap-3">
+                        <div class="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-400/30 flex items-center justify-center text-emerald-300 shrink-0 mt-0.5">
+                            <i class="fa-solid fa-ruler-horizontal"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs sm:text-sm font-extrabold text-white">Standard: Flat Green</div>
+                            <div class="text-[11px] text-slate-300 mt-0.5 leading-snug">Level surface isolating pure kinetic friction (<span class="font-mono-tech text-emerald-300">a = -μk·g</span>).</div>
+                        </div>
+                    </button>
+                    <button data-mode="sloped" class="mode-option-btn group relative rounded-2xl p-3 border-2 border-emerald-400 bg-emerald-500/20 text-left transition hover:bg-emerald-500/30 flex items-start gap-3">
+                        <div class="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-300 shrink-0 mt-0.5">
+                            <i class="fa-solid fa-mountain"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-xs sm:text-sm font-extrabold text-white">Advanced: Slopes & Breaks</span>
+                                <span class="px-1.5 py-0.5 text-[9px] font-extrabold uppercase rounded bg-amber-400/20 text-amber-300 border border-amber-400/40">New</span>
+                            </div>
+                            <div class="text-[11px] text-emerald-100 mt-0.5 leading-snug">3D contours, side-hill breaks, uphill/downhill grade & animated caddie grid.</div>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Select Number of Drops -->
+            <div class="mb-5">
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">
+                    Choose Ball Drops Per Round (2 Chances Per Drop):
+                </label>
+                <div class="grid grid-cols-3 gap-2.5 sm:gap-3">
+                    <button data-drops="3" class="drop-option-btn group relative rounded-2xl p-3 sm:p-4 border-2 border-emerald-400 bg-emerald-500/20 text-center transition hover:bg-emerald-500/30">
+                        <div class="text-lg sm:text-2xl font-extrabold text-white font-mono-tech">3 Drops</div>
+                        <div class="text-[10px] sm:text-xs text-emerald-200 mt-0.5">Quick (18 Putts max)</div>
+                    </button>
+                    <button data-drops="6" class="drop-option-btn group relative rounded-2xl p-3 sm:p-4 border-2 border-slate-700 bg-slate-900/70 text-center transition hover:border-slate-500">
+                        <div class="text-lg sm:text-2xl font-extrabold text-white font-mono-tech">6 Drops</div>
+                        <div class="text-[10px] sm:text-xs text-slate-300 mt-0.5">Standard (36 max)</div>
+                    </button>
+                    <button data-drops="9" class="drop-option-btn group relative rounded-2xl p-3 sm:p-4 border-2 border-slate-700 bg-slate-900/70 text-center transition hover:border-slate-500">
+                        <div class="text-lg sm:text-2xl font-extrabold text-white font-mono-tech">9 Drops</div>
+                        <div class="text-[10px] sm:text-xs text-slate-300 mt-0.5">Full 9-Hole (54 max)</div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Controls Tip & Start Button -->
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-700/80">
+                <div class="text-xs text-slate-300 flex items-center gap-2">
+                    <i class="fa-solid fa-hand-pointer text-emerald-400 text-base"></i>
+                    <span>Drag anywhere with <strong>finger</strong> or <strong>mouse</strong> to aim & set speed.</span>
+                </div>
+                <button id="btn-start-game" class="w-full sm:w-auto px-7 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-extrabold text-sm sm:text-base shadow-lg shadow-emerald-500/25 transition transform active:scale-95 flex items-center justify-center gap-2">
+                    <span>Start Putting Experiment</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ROUND TRANSITION MODAL -->
+    <div id="round-modal" class="fixed inset-0 z-30 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md hidden">
+        <div class="glass-panel-light rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-cyan-500/40 text-center">
+            <div id="round-modal-badge" class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 mb-3">
+                Surface Condition Changing
+            </div>
+            <h2 id="round-modal-title" class="text-2xl sm:text-3xl font-extrabold text-white mb-2">
+                Round 2: Wet Green
+            </h2>
+            <p id="round-modal-desc" class="text-sm text-slate-300 leading-relaxed mb-5">
+                Rain has dampened the putting green! You will now replay the <strong>exact same drop locations</strong>, but surface friction has increased.
+            </p>
+
+            <!-- Physics Comparison Box -->
+            <div class="grid grid-cols-2 gap-3 mb-6 text-left bg-slate-900/90 p-4 rounded-2xl border border-slate-700">
+                <div>
+                    <div class="text-[11px] uppercase text-slate-400 font-semibold">Previous Condition</div>
+                    <div id="round-prev-name" class="text-sm font-bold text-slate-200 mt-0.5">Freshly Cut</div>
+                    <div id="round-prev-mu" class="text-xs font-mono-tech text-emerald-400">μk = 0.065 (-0.64 m/s²)</div>
+                </div>
+                <div class="border-l border-slate-700 pl-3">
+                    <div class="text-[11px] uppercase text-amber-400 font-semibold">New Condition</div>
+                    <div id="round-next-name" class="text-sm font-bold text-white mt-0.5">Wet Green</div>
+                    <div id="round-next-mu" class="text-xs font-mono-tech text-cyan-300">μk = 0.115 (-1.13 m/s²)</div>
+                </div>
+            </div>
+
+            <button id="btn-next-round" class="w-full py-3.5 rounded-2xl bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 font-extrabold text-base shadow-lg transition">
+                Begin Next Round (Same Drops)
+            </button>
+        </div>
+    </div>
+
+    <!-- GAME OVER / PHYSICS SUMMARY MODAL -->
+    <div id="summary-modal" class="fixed inset-0 z-30 flex items-center justify-center p-3 sm:p-6 bg-slate-950/85 backdrop-blur-md overflow-y-auto hidden">
+        <div class="glass-panel-light rounded-3xl max-w-4xl w-full p-5 sm:p-8 shadow-2xl border border-emerald-500/40 my-auto max-h-[92vh] flex flex-col">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-700">
+                <div>
+                    <span class="text-xs font-bold uppercase tracking-widest text-emerald-400">Experiment Complete</span>
+                    <h2 class="text-xl sm:text-3xl font-extrabold text-white">Friction vs. Putting Power Report</h2>
+                </div>
+                <div class="bg-emerald-500/20 border border-emerald-400/40 rounded-2xl px-4 py-2 text-right">
+                    <div class="text-[11px] uppercase text-emerald-200 font-semibold">Total Score</div>
+                    <div id="summary-total-score" class="text-xl sm:text-2xl font-extrabold text-emerald-300 font-mono-tech">0 pts</div>
+                </div>
+            </div>
+
+            <!-- 3 Condition Comparison Cards -->
+            <div id="summary-condition-cards" class="grid grid-cols-1 sm:grid-cols-3 gap-3 my-4">
+                <!-- Populated dynamically -->
+            </div>
+
+            <!-- Drop-by-Drop Comparison Table -->
+            <div class="flex-1 overflow-y-auto rounded-2xl border border-slate-700/80 bg-slate-900/70 mb-4">
+                <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                    <thead>
+                        <tr class="border-b border-slate-700 bg-slate-900 text-slate-300 uppercase text-[11px]">
+                            <th class="py-2.5 px-3">Drop #</th>
+                            <th class="py-2.5 px-3">Pin Dist</th>
+                            <th class="py-2.5 px-3 text-emerald-300">R1: Fresh (μ=0.065)</th>
+                            <th class="py-2.5 px-3 text-cyan-300">R2: Wet (μ=0.115)</th>
+                            <th class="py-2.5 px-3 text-amber-300">R3: Rough (μ=0.165)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="summary-table-body" class="divide-y divide-slate-800 font-mono-tech text-xs">
+                        <!-- Populated dynamically -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Physics Takeaway Box -->
+            <div class="bg-slate-900/90 border border-slate-700 rounded-2xl p-3.5 mb-4 text-xs text-slate-300 leading-relaxed">
+                <strong class="text-white"><i class="fa-solid fa-flask text-emerald-400 mr-1"></i> Key Physics Insight:</strong>
+                Stopping distance under kinetic friction follows <span class="font-mono-tech text-emerald-300">d = v₀² / (2·μk·g)</span>. Because friction increased by <strong>2.54×</strong> from Freshly Cut (<span class="font-mono-tech">μk=0.065</span>) to Rougher End-of-Day (<span class="font-mono-tech">μk=0.165</span>), reaching the exact same cup required <span class="font-mono-tech text-amber-300">√2.54 ≈ 1.59× (59% higher)</span> initial ball speed!
+            </div>
+
+            <div class="flex justify-end gap-3">
+                <button id="btn-play-again" class="px-6 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-extrabold text-sm shadow-lg transition flex items-center gap-2">
+                    <i class="fa-solid fa-rotate-right"></i>
+                    <span>New Experiment</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /******************************************************************
+         * 1. PHYSICS & GAME CONFIGURATION
+         ******************************************************************/
+        const GRAVITY = 9.81;           // m/s^2
+        const BALL_MASS = 0.04593;      // Standard golf ball mass in kg (45.93g)
+        const BALL_RADIUS = 0.14;       // Visual scaled radius in scene units (meters)
+        const HOLE_RADIUS = 0.34;       // Visual scaled cup radius for enjoyable 3D putting
+        const MAX_LAUNCH_SPEED = 7.5;   // Maximum launch velocity v0 (m/s)
+        const HOLE_POS = new THREE.Vector3(0, 0, -7.5); // Fixed cup position on the green
+
+        // The 3 Green Conditions explored across Rounds 1, 2, and 3
+        const GREEN_CONDITIONS = [
+            {
+                id: 'fresh',
+                roundNumber: 1,
+                name: 'Freshly Cut Green',
+                shortName: 'Freshly Cut',
+                mu: 0.065,              // Kinetic friction coefficient
+                stimp: '12.5 ft',
+                desc: 'Low friction, fast roll',
+                icon: 'fa-sun',
+                badgeColor: 'emerald',
+                skyColor: 0x7dd3fc,
+                fogColor: 0xbae6fd,
+                ambientColor: 0xffffff,
+                ambientIntensity: 0.68,
+                sunColor: 0xfffbeb,
+                sunIntensity: 0.95,
+                sunPos: [14, 24, 12],
+                grassBaseHex: '#15803d',
+                grassStripeHex: '#16a34a',
+                grassNoiseHex: '#22c55e',
+                roughness: 0.55,
+                rainActive: false
+            },
+            {
+                id: 'wet',
+                roundNumber: 2,
+                name: 'Wet Green (Moisture Drag)',
+                shortName: 'Wet Surface',
+                mu: 0.115,              // Higher friction due to surface water film
+                stimp: '8.5 ft',
+                desc: 'Moisture resistance, medium-slow roll',
+                icon: 'fa-cloud-showers-heavy',
+                badgeColor: 'cyan',
+                skyColor: 0x334155,
+                fogColor: 0x475569,
+                ambientColor: 0x94a3b8,
+                ambientIntensity: 0.62,
+                sunColor: 0xcbd5e1,
+                sunIntensity: 0.55,
+                sunPos: [8, 20, 6],
+                grassBaseHex: '#0f5132',
+                grassStripeHex: '#115e38',
+                grassNoiseHex: '#0d9488',
+                roughness: 0.22,        // Shiny wet sheen
+                rainActive: true
+            },
+            {
+                id: 'rougher',
+                roundNumber: 3,
+                name: 'Rougher (End of Day)',
+                shortName: 'Rougher (EOD)',
+                mu: 0.165,              // Highest friction from afternoon growth & traffic
+                stimp: '6.0 ft',
+                desc: 'High turf resistance, slowest roll',
+                icon: 'fa-mountain-sun',
+                badgeColor: 'amber',
+                skyColor: 0xfb923c,
+                fogColor: 0xfdba74,
+                ambientColor: 0xfed7aa,
+                ambientIntensity: 0.55,
+                sunColor: 0xf97316,
+                sunIntensity: 0.95,
+                sunPos: [-18, 9, -8],   // Low golden hour sunset angle
+                grassBaseHex: '#2d5a27',
+                grassStripeHex: '#36692f',
+                grassNoiseHex: '#65a30d',
+                roughness: 0.92,
+                rainActive: false
+            }
+        ];
+
+        /******************************************************************
+         * 2. SYNTHESIZED WEB AUDIO SOUND ENGINE
+         ******************************************************************/
+        class SoundEngine {
+            constructor() {
+                this.ctx = null;
+                this.enabled = true;
+            }
+            init() {
+                if (!this.ctx) {
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    if (AudioCtx) this.ctx = new AudioCtx();
+                }
+                if (this.ctx && this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+            playPuttHit(powerRatio) {
+                if (!this.enabled) return;
+                this.init();
+                if (!this.ctx) return;
+
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                const baseFreq = 150 + powerRatio * 90;
+                osc.frequency.setValueAtTime(baseFreq, now);
+                osc.frequency.exponentialRampToValueAtTime(45, now + 0.09);
+
+                gain.gain.setValueAtTime(Math.min(0.6, 0.2 + powerRatio * 0.4), now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.095);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.1);
+            }
+            playCupDrop() {
+                if (!this.enabled) return;
+                this.init();
+                if (!this.ctx) return;
+
+                const now = this.ctx.currentTime;
+                const freqs = [320, 440, 587.33, 880];
+                freqs.forEach((f, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = idx < 2 ? 'sine' : 'triangle';
+                    osc.frequency.setValueAtTime(f, now + idx * 0.065);
+                    gain.gain.setValueAtTime(0.22, now + idx * 0.065);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.065 + 0.25);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now + idx * 0.065);
+                    osc.stop(now + idx * 0.065 + 0.26);
+                });
+            }
+            playRoundComplete() {
+                if (!this.enabled) return;
+                this.init();
+                if (!this.ctx) return;
+
+                const now = this.ctx.currentTime;
+                const notes = [261.63, 329.63, 392.00, 523.25];
+                notes.forEach((f, i) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(f, now + i * 0.09);
+                    gain.gain.setValueAtTime(0.2, now + i * 0.09);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.09 + 0.35);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now + i * 0.09);
+                    osc.stop(now + i * 0.09 + 0.36);
+                });
+            }
+        }
+        const sound = new SoundEngine();
+
+        /******************************************************************
+         * 3. GAME STATE
+         ******************************************************************/
+        const state = {
+            numDrops: 3,
+            greenMode: 'sloped',    // 'flat' or 'sloped' (Advanced Mode with Slopes & Breaks)
+            showBreakGrid: true,    // Toggleable 3D caddie break grid overlay
+            contours: [],           // Saved 3D hills/valleys for consistent breaks across all 3 rounds
+            drops: [],              // Pre-generated array of { index, x, z, distToHole }
+            currentRoundIdx: 0,     // 0 = Freshly Cut, 1 = Wet, 2 = Rougher
+            currentDropIdx: 0,      // 0 .. numDrops - 1
+            currentChance: 1,       // 1 or 2
+            score: 0,
+            phase: 'MENU',          // MENU, AIMING, ROLLING, SHOT_END, MODAL
+
+            // Ball kinematics
+            ballPos: new THREE.Vector3(0, BALL_RADIUS, 4),
+            ballVel: new THREE.Vector3(0, 0, 0),
+            launchSpeed: 0,
+            rollDistance: 0,
+            currentPathPoints: [],
+
+            // Drag controls
+            isDragging: false,
+            dragStartScreen: { x: 0, y: 0 },
+            dragCurrentScreen: { x: 0, y: 0 },
+            pullBackMode: true,     // true = pull back like slingshot, false = drag forward toward target
+            aimAngle: 0,            // radians in XZ plane
+            aimSpeed: 0,            // m/s
+
+            // Camera mode: 0 = Behind Ball, 1 = High Overhead, 2 = Broadcast Side Angle
+            cameraMode: 0,
+
+            // Recorded telemetry history for every round & drop
+            history: [[], [], []]
+        };
+
+        /******************************************************************
+         * 4. THREE.JS SCENE SETUP & PROCEDURAL ASSETS
+         ******************************************************************/
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x7dd3fc);
+        scene.fog = new THREE.FogExp2(0xbae6fd, 0.015);
+
+        const camera = new THREE.PerspectiveCamera(48, window.innerWidth / window.innerHeight, 0.1, 200);
+        const cameraTarget = new THREE.Vector3(0, 0, -2);
+        const desiredCameraPos = new THREE.Vector3(0, 6, 10);
+        const desiredCameraLook = new THREE.Vector3(0, 0, -4);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        container.appendChild(renderer.domElement);
+
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.68);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xfffbeb, 0.95);
+        dirLight.position.set(14, 24, 12);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 2048;
+        dirLight.shadow.mapSize.height = 2048;
+        dirLight.shadow.camera.near = 1;
+        dirLight.shadow.camera.far = 65;
+        const d = 16;
+        dirLight.shadow.camera.left = -d;
+        dirLight.shadow.camera.right = d;
+        dirLight.shadow.camera.top = d;
+        dirLight.shadow.camera.bottom = -d;
+        scene.add(dirLight);
+
+        function createGreenTexture(cond) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = cond.grassBaseHex;
+            ctx.fillRect(0, 0, 512, 512);
+
+            const numStripes = 16;
+            const stripeH = 512 / numStripes;
+            ctx.fillStyle = cond.grassStripeHex;
+            for (let i = 0; i < numStripes; i += 2) {
+                ctx.fillRect(0, i * stripeH, 512, stripeH);
+            }
+
+            const speckleCount = cond.id === 'rougher' ? 28000 : 14000;
+            for (let i = 0; i < speckleCount; i++) {
+                const x = Math.random() * 512;
+                const y = Math.random() * 512;
+                ctx.fillStyle = Math.random() > 0.5 ? cond.grassNoiseHex : 'rgba(0,0,0,0.14)';
+                const size = cond.id === 'rougher' ? 2.5 : 1.5;
+                ctx.fillRect(x, y, size, size);
+            }
+
+            if (cond.id === 'rougher') {
+                ctx.fillStyle = 'rgba(120, 85, 40, 0.12)';
+                for (let i = 0; i < 65; i++) {
+                    ctx.beginPath();
+                    ctx.arc(Math.random() * 512, Math.random() * 512, 4 + Math.random() * 10, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.RepeatWrapping;
+            texture.repeat.set(3, 4);
+            return texture;
+        }
+
+        function generateGreenContours() {
+            // Create 4 smooth Gaussian mounds/depressions + a subtle macro tilt
+            // Capped so max slope gradient |∇h| <= 0.045 (~2.6° PGA tour break) so balls can stop anywhere
+            const features = [
+                {
+                    x: -3.2 + (Math.random() - 0.5) * 2.0,
+                    z: -3.0 + (Math.random() - 0.5) * 2.0,
+                    amp: (Math.random() > 0.5 ? 1 : -1) * (0.22 + Math.random() * 0.10),
+                    sigma: 4.2
+                },
+                {
+                    x: 3.4 + (Math.random() - 0.5) * 2.0,
+                    z: -1.8 + (Math.random() - 0.5) * 2.0,
+                    amp: (Math.random() > 0.5 ? 1 : -1) * (0.20 + Math.random() * 0.10),
+                    sigma: 4.0
+                },
+                {
+                    x: (Math.random() - 0.5) * 3.0,
+                    z: 2.5 + (Math.random() - 0.5) * 2.0,
+                    amp: (Math.random() > 0.5 ? 1 : -1) * (0.24 + Math.random() * 0.08),
+                    sigma: 4.6
+                },
+                {
+                    // Subtle ridge/swale near the approach to the cup
+                    x: (Math.random() - 0.5) * 2.8,
+                    z: -5.4 + (Math.random() - 0.5) * 1.2,
+                    amp: (Math.random() > 0.5 ? 1 : -1) * (0.15 + Math.random() * 0.07),
+                    sigma: 3.5
+                }
+            ];
+            const macroSlopeX = (Math.random() - 0.5) * 0.016;
+            const macroSlopeZ = (Math.random() - 0.5) * 0.016;
+            return { features, macroSlopeX, macroSlopeZ };
+        }
+
+        function evaluateRawHeight(x, z) {
+            if (state.greenMode !== 'sloped' || !state.contours || !state.contours.features) return 0;
+            const { features, macroSlopeX, macroSlopeZ } = state.contours;
+            let h = x * macroSlopeX + z * macroSlopeZ;
+            for (let i = 0; i < features.length; i++) {
+                const f = features[i];
+                const dx = x - f.x;
+                const dz = z - f.z;
+                const r2 = dx * dx + dz * dz;
+                h += f.amp * Math.exp(-r2 / (2 * f.sigma * f.sigma));
+            }
+            // Smoothly taper height near outer boundary (radius > 10.5) so green meets collar seamlessly
+            const ellipR = Math.hypot(x / 11.5, z / (11.5 * 1.25));
+            const edgeTaper = ellipR > 0.85 ? Math.max(0, 1 - Math.pow((ellipR - 0.85) / 0.28, 2)) : 1.0;
+            return h * edgeTaper;
+        }
+
+        function getGreenHeight(x, z) {
+            if (state.greenMode !== 'sloped') return 0;
+            // Flatten slightly within 0.45m of the cup center so the hole rim sits level
+            const distCup = Math.hypot(x - HOLE_POS.x, z - HOLE_POS.z);
+            const cupHeight = evaluateRawHeight(HOLE_POS.x, HOLE_POS.z);
+            const rawH = evaluateRawHeight(x, z);
+            const flattenBlend = THREE.MathUtils.smoothstep(distCup, 0.36, 1.35);
+            return cupHeight + (rawH - cupHeight) * flattenBlend;
+        }
+
+        function getGreenGradient(x, z) {
+            if (state.greenMode !== 'sloped') return { gx: 0, gz: 0 };
+            const eps = 0.05;
+            const gx = (getGreenHeight(x + eps, z) - getGreenHeight(x - eps, z)) / (2 * eps);
+            const gz = (getGreenHeight(x, z + eps) - getGreenHeight(x, z - eps)) / (2 * eps);
+            // Clamp maximum slope gradient to 0.046 (~2.65 degrees) so ball never rolls away on μ=0.065
+            const mag = Math.hypot(gx, gz);
+            const maxGrad = 0.046;
+            if (mag > maxGrad) {
+                const scale = maxGrad / mag;
+                return { gx: gx * scale, gz: gz * scale };
+            }
+            return { gx, gz };
+        }
+
+        function createTessellatedDiskGeometry(radiusX, radiusZ, radialSegments, angularSegments) {
+            const geometry = new THREE.BufferGeometry();
+            const positions = [];
+            const uvs = [];
+            const indices = [];
+
+            for (let r = 0; r <= radialSegments; r++) {
+                const t = r / radialSegments;
+                for (let a = 0; a <= angularSegments; a++) {
+                    const theta = (a / angularSegments) * Math.PI * 2;
+                    const x = Math.cos(theta) * radiusX * t;
+                    const z = Math.sin(theta) * radiusZ * t;
+                    positions.push(x, 0, z);
+                    uvs.push((x / (radiusX * 2)) + 0.5, (z / (radiusZ * 2)) + 0.5);
+                }
+            }
+
+            const stride = angularSegments + 1;
+            for (let r = 0; r < radialSegments; r++) {
+                for (let a = 0; a < angularSegments; a++) {
+                    const i0 = r * stride + a;
+                    const i1 = i0 + 1;
+                    const i2 = (r + 1) * stride + a;
+                    const i3 = i2 + 1;
+                    indices.push(i0, i1, i2);
+                    indices.push(i1, i3, i2);
+                }
+            }
+
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+            geometry.setIndex(indices);
+            geometry.computeVertexNormals();
+            return geometry;
+        }
+
+        function createTessellatedRingGeometry(innerRadiusX, innerRadiusZ, outerRadiusX, outerRadiusZ, radialSegments, angularSegments) {
+            const geometry = new THREE.BufferGeometry();
+            const positions = [];
+            const uvs = [];
+            const indices = [];
+
+            for (let r = 0; r <= radialSegments; r++) {
+                const t = r / radialSegments;
+                const rx = innerRadiusX + (outerRadiusX - innerRadiusX) * t;
+                const rz = innerRadiusZ + (outerRadiusZ - innerRadiusZ) * t;
+                for (let a = 0; a <= angularSegments; a++) {
+                    const theta = (a / angularSegments) * Math.PI * 2;
+                    const x = Math.cos(theta) * rx;
+                    const z = Math.sin(theta) * rz;
+                    positions.push(x, 0, z);
+                    uvs.push((x / (outerRadiusX * 2)) + 0.5, (z / (outerRadiusZ * 2)) + 0.5);
+                }
+            }
+
+            const stride = angularSegments + 1;
+            for (let r = 0; r < radialSegments; r++) {
+                for (let a = 0; a < angularSegments; a++) {
+                    const i0 = r * stride + a;
+                    const i1 = i0 + 1;
+                    const i2 = (r + 1) * stride + a;
+                    const i3 = i2 + 1;
+                    indices.push(i0, i1, i2);
+                    indices.push(i1, i3, i2);
+                }
+            }
+
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+            geometry.setIndex(indices);
+            geometry.computeVertexNormals();
+            return geometry;
+        }
+
+        const environmentGroup = new THREE.Group();
+        scene.add(environmentGroup);
+
+        // Outer rough terrain (hollow ring outside the fringe so it never cuts across concave dips under the green)
+        const outerGroundGeo = createTessellatedRingGeometry(12.55, 12.55 * 1.25, 95, 95 * 1.25, 24, 96);
+        const outerGroundMat = new THREE.MeshStandardMaterial({ color: 0x14532d, roughness: 0.95 });
+        const outerGround = new THREE.Mesh(outerGroundGeo, outerGroundMat);
+        outerGround.position.y = -0.02;
+        outerGround.receiveShadow = true;
+        environmentGroup.add(outerGround);
+
+        // Collar / Fringe around the Putting Green (annular ring around the green perimeter)
+        const fringeGeo = createTessellatedRingGeometry(11.45, 11.45 * 1.25, 12.6, 12.6 * 1.25, 12, 120);
+        const fringeMat = new THREE.MeshStandardMaterial({ color: 0x166534, roughness: 0.85 });
+        const fringeMesh = new THREE.Mesh(fringeGeo, fringeMat);
+        fringeMesh.position.y = -0.005;
+        fringeMesh.receiveShadow = true;
+        environmentGroup.add(fringeMesh);
+
+        // Main Putting Green Surface (high-resolution tessellated mesh for 3D slopes & breaks)
+        const greenGeo = createTessellatedDiskGeometry(11.5, 11.5 * 1.25, 76, 128);
+        const greenMat = new THREE.MeshStandardMaterial({
+            map: createGreenTexture(GREEN_CONDITIONS[0]),
+            roughness: GREEN_CONDITIONS[0].roughness,
+            metalness: 0.05
+        });
+        const greenMesh = new THREE.Mesh(greenGeo, greenMat);
+        greenMesh.receiveShadow = true;
+        environmentGroup.add(greenMesh);
+
+        // Distance Calibration Rings around the Hole (1m, 3m, 6m, 9m, 12m)
+        const ringsGroup = new THREE.Group();
+        const ringRadii = [1, 3, 6, 9, 12];
+        ringRadii.forEach(radius => {
+            const pts = [];
+            const segs = 72;
+            for (let i = 0; i <= segs; i++) {
+                const ang = (i / segs) * Math.PI * 2;
+                const rx = HOLE_POS.x + Math.cos(ang) * radius;
+                const rz = HOLE_POS.z + Math.sin(ang) * radius;
+                pts.push(new THREE.Vector3(rx, 0.008, rz));
+            }
+            const ringGeo = new THREE.BufferGeometry().setFromPoints(pts);
+            const ringMat = new THREE.LineBasicMaterial({
+                color: 0xffffff,
+                transparent: true,
+                opacity: radius === 1 ? 0.32 : 0.14
+            });
+            const ringLine = new THREE.Line(ringGeo, ringMat);
+            ringLine.userData = { radius };
+            ringsGroup.add(ringLine);
+        });
+        scene.add(ringsGroup);
+
+        const breakGridGroup = new THREE.Group();
+        scene.add(breakGridGroup);
+        let breakFlowBeads = [];
+
+        function updateGreenTopographyMeshes() {
+            // 1. Deform main green surface vertices
+            const posAttr = greenGeo.getAttribute('position');
+            for (let i = 0; i < posAttr.count; i++) {
+                const vx = posAttr.getX(i);
+                const vz = posAttr.getZ(i);
+                posAttr.setY(i, getGreenHeight(vx, vz));
+            }
+            posAttr.needsUpdate = true;
+            greenGeo.computeVertexNormals();
+
+            // 2. Deform fringe ring vertices
+            const fPosAttr = fringeGeo.getAttribute('position');
+            for (let i = 0; i < fPosAttr.count; i++) {
+                const vx = fPosAttr.getX(i);
+                const vz = fPosAttr.getZ(i);
+                fPosAttr.setY(i, getGreenHeight(vx, vz));
+            }
+            fPosAttr.needsUpdate = true;
+            fringeGeo.computeVertexNormals();
+
+            // 3. Deform inner boundary of outer rough terrain to match collar seamlessly
+            const oPosAttr = outerGroundGeo.getAttribute('position');
+            for (let i = 0; i < oPosAttr.count; i++) {
+                const vx = oPosAttr.getX(i);
+                const vz = oPosAttr.getZ(i);
+                oPosAttr.setY(i, getGreenHeight(vx, vz));
+            }
+            oPosAttr.needsUpdate = true;
+            outerGroundGeo.computeVertexNormals();
+
+            // 4. Elevate hole group and calibration rings
+            const cupY = getGreenHeight(HOLE_POS.x, HOLE_POS.z);
+            holeGroup.position.set(HOLE_POS.x, cupY, HOLE_POS.z);
+
+            ringsGroup.children.forEach(ringLine => {
+                const r = ringLine.userData.radius;
+                const rPos = ringLine.geometry.getAttribute('position');
+                for (let i = 0; i < rPos.count; i++) {
+                    const rx = rPos.getX(i);
+                    const rz = rPos.getZ(i);
+                    rPos.setY(i, getGreenHeight(rx, rz) + 0.012);
+                }
+                rPos.needsUpdate = true;
+            });
+        }
+
+        function rebuildBreakGridForDrop() {
+            while (breakGridGroup.children.length > 0) {
+                breakGridGroup.remove(breakGridGroup.children[0]);
+            }
+            breakFlowBeads = [];
+
+            if (state.greenMode !== 'sloped' || !state.showBreakGrid) {
+                breakGridGroup.visible = false;
+                return;
+            }
+            breakGridGroup.visible = true;
+
+            const drop = state.drops[state.currentDropIdx] || { x: 0, z: 4 };
+            const minX = Math.min(drop.x, HOLE_POS.x) - 3.2;
+            const maxX = Math.max(drop.x, HOLE_POS.x) + 3.2;
+            const minZ = Math.min(drop.z, HOLE_POS.z) - 2.2;
+            const maxZ = Math.max(drop.z, HOLE_POS.z) + 2.2;
+            const step = 1.0;
+
+            const cupH = getGreenHeight(HOLE_POS.x, HOLE_POS.z);
+
+            // Helper to color-code vertices by slope steepness
+            const makeColoredGridLine = (pts, colors) => {
+                const geo = new THREE.BufferGeometry().setFromPoints(pts);
+                geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+                const mat = new THREE.LineBasicMaterial({
+                    vertexColors: true,
+                    transparent: true,
+                    opacity: 0.45
+                });
+                return new THREE.Line(geo, mat);
+            };
+
+            const slopeColor = (x, z) => {
+                const { gx, gz } = getGreenGradient(x, z);
+                const steepness = Math.min(1, Math.hypot(gx, gz) / 0.042);
+                const relH = getGreenHeight(x, z) - cupH;
+                const c = new THREE.Color();
+                // Higher than cup = warm amber/emerald, lower than cup = cool cyan
+                if (relH >= 0) {
+                    c.setHSL(0.38 - steepness * 0.28, 0.85, 0.58);
+                } else {
+                    c.setHSL(0.50 + steepness * 0.08, 0.85, 0.58);
+                }
+                return c;
+            };
+
+            // Longitudinal grid lines (along Z)
+            for (let x = Math.floor(minX); x <= Math.ceil(maxX); x += step) {
+                const pts = [];
+                const colors = [];
+                for (let z = minZ; z <= maxZ; z += 0.25) {
+                    const y = getGreenHeight(x, z) + 0.014;
+                    pts.push(new THREE.Vector3(x, y, z));
+                    const col = slopeColor(x, z);
+                    colors.push(col.r, col.g, col.b);
+                }
+                breakGridGroup.add(makeColoredGridLine(pts, colors));
+            }
+
+            // Lateral grid lines (along X)
+            for (let z = Math.floor(minZ); z <= Math.ceil(maxZ); z += step) {
+                const pts = [];
+                const colors = [];
+                for (let x = minX; x <= maxX; x += 0.25) {
+                    const y = getGreenHeight(x, z) + 0.014;
+                    pts.push(new THREE.Vector3(x, y, z));
+                    const col = slopeColor(x, z);
+                    colors.push(col.r, col.g, col.b);
+                }
+                breakGridGroup.add(makeColoredGridLine(pts, colors));
+            }
+
+            // Create animated slope-flow beads that drift downhill along the local gradient
+            const beadGeo = new THREE.SphereGeometry(0.042, 8, 8);
+            for (let x = Math.floor(minX) + 0.5; x <= Math.ceil(maxX) - 0.5; x += step) {
+                for (let z = Math.floor(minZ) + 0.5; z <= Math.ceil(maxZ) - 0.5; z += step) {
+                    const { gx, gz } = getGreenGradient(x, z);
+                    const mag = Math.hypot(gx, gz);
+                    if (mag < 0.002) continue;
+
+                    const col = slopeColor(x, z);
+                    const beadMat = new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.85 });
+                    const bead = new THREE.Mesh(beadGeo, beadMat);
+                    const y = getGreenHeight(x, z) + 0.022;
+                    bead.position.set(x, y, z);
+                    breakGridGroup.add(bead);
+
+                    breakFlowBeads.push({
+                        mesh: bead,
+                        originX: x,
+                        originZ: z,
+                        gx,
+                        gz,
+                        phase: Math.random()
+                    });
+                }
+            }
+        }
+
+        // Cup / Hole & Flagstick
+        const holeGroup = new THREE.Group();
+        holeGroup.position.copy(HOLE_POS);
+        scene.add(holeGroup);
+
+        const cupCircleGeo = new THREE.CircleGeometry(HOLE_RADIUS, 32);
+        const cupCircleMat = new THREE.MeshBasicMaterial({ color: 0x090d16 });
+        const cupCircle = new THREE.Mesh(cupCircleGeo, cupCircleMat);
+        cupCircle.rotation.x = -Math.PI / 2;
+        cupCircle.position.y = 0.006;
+        holeGroup.add(cupCircle);
+
+        const cupRimGeo = new THREE.RingGeometry(HOLE_RADIUS, HOLE_RADIUS + 0.035, 32);
+        const cupRimMat = new THREE.MeshBasicMaterial({ color: 0xf8fafc, side: THREE.DoubleSide });
+        const cupRim = new THREE.Mesh(cupRimGeo, cupRimMat);
+        cupRim.rotation.x = -Math.PI / 2;
+        cupRim.position.y = 0.007;
+        holeGroup.add(cupRim);
+
+        const poleGeo = new THREE.CylinderGeometry(0.025, 0.025, 2.6, 12);
+        const poleMat = new THREE.MeshStandardMaterial({ color: 0xfef08a, metalness: 0.4, roughness: 0.3 });
+        const poleMesh = new THREE.Mesh(poleGeo, poleMat);
+        poleMesh.position.y = 1.3;
+        poleMesh.castShadow = true;
+        holeGroup.add(poleMesh);
+
+        const flagGeo = new THREE.PlaneGeometry(0.85, 0.52, 10, 4);
+        const flagMat = new THREE.MeshStandardMaterial({
+            color: 0xef4444,
+            side: THREE.DoubleSide,
+            roughness: 0.6
+        });
+        const flagMesh = new THREE.Mesh(flagGeo, flagMat);
+        flagMesh.position.set(0.425, 2.32, 0);
+        flagMesh.castShadow = true;
+        holeGroup.add(flagMesh);
+
+        function createSurroundingScenery() {
+            const sandMat = new THREE.MeshStandardMaterial({ color: 0xfde68a, roughness: 0.9 });
+            const bunker1 = new THREE.Mesh(new THREE.CircleGeometry(3.5, 32), sandMat);
+            bunker1.rotation.x = -Math.PI / 2;
+            bunker1.scale.set(1.4, 0.8, 1);
+            bunker1.position.set(-13.5, -0.04, -6);
+            environmentGroup.add(bunker1);
+
+            const bunker2 = new THREE.Mesh(new THREE.CircleGeometry(3.2, 32), sandMat);
+            bunker2.rotation.x = -Math.PI / 2;
+            bunker2.scale.set(1.1, 1.5, 1);
+            bunker2.position.set(13.8, -0.04, -3);
+            environmentGroup.add(bunker2);
+
+            const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5c4033, roughness: 0.9 });
+            const foliageMat = new THREE.MeshStandardMaterial({ color: 0x064e3b, roughness: 0.8 });
+
+            const treeCoords = [
+                [-18, -16], [-12, -20], [0, -22], [13, -19], [19, -14],
+                [-21, -2], [21, 2], [-19, 12], [19, 13]
+            ];
+            treeCoords.forEach(([tx, tz]) => {
+                const tree = new THREE.Group();
+                const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.4, 1.8, 8), trunkMat);
+                trunk.position.y = 0.9;
+                trunk.castShadow = true;
+                tree.add(trunk);
+
+                for (let layer = 0; layer < 3; layer++) {
+                    const cone = new THREE.Mesh(
+                        new THREE.ConeGeometry(1.7 - layer * 0.35, 2.4, 9),
+                        foliageMat
+                    );
+                    cone.position.y = 2.2 + layer * 1.25;
+                    cone.castShadow = true;
+                    tree.add(cone);
+                }
+                const s = 0.85 + Math.random() * 0.45;
+                tree.scale.set(s, s, s);
+                tree.position.set(tx, -0.05, tz);
+                environmentGroup.add(tree);
+            });
+        }
+        createSurroundingScenery();
+
+        function createGolfBallMaterial() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 256;
+            canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, 256, 128);
+            ctx.fillStyle = '#cbd5e1';
+            for (let y = 8; y < 128; y += 16) {
+                for (let x = 8; x < 256; x += 16) {
+                    ctx.beginPath();
+                    ctx.arc(x, y, 4, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+            const bumpTex = new THREE.CanvasTexture(canvas);
+            return new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                bumpMap: bumpTex,
+                bumpScale: 0.015,
+                roughness: 0.25,
+                metalness: 0.08
+            });
+        }
+
+        const ballGeo = new THREE.SphereGeometry(BALL_RADIUS, 32, 32);
+        const ballMesh = new THREE.Mesh(ballGeo, createGolfBallMaterial());
+        ballMesh.castShadow = true;
+        ballMesh.position.set(0, BALL_RADIUS, 4);
+        scene.add(ballMesh);
+
+        // Soft contact shadow ring directly beneath the ball so depth in dips is always unmistakable
+        const ballShadowGeo = new THREE.CircleGeometry(BALL_RADIUS * 0.95, 24);
+        const ballShadowMat = new THREE.MeshBasicMaterial({
+            color: 0x05100a,
+            transparent: true,
+            opacity: 0.42,
+            depthWrite: false
+        });
+        const ballShadowMesh = new THREE.Mesh(ballShadowGeo, ballShadowMat);
+        ballShadowMesh.rotation.x = -Math.PI / 2;
+        scene.add(ballShadowMesh);
+
+        // Drop Spot Ring Marker under the ball's origin
+        const dropRingGeo = new THREE.RingGeometry(0.22, 0.29, 32);
+        const dropRingMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide });
+        const dropRingMesh = new THREE.Mesh(dropRingGeo, dropRingMat);
+        dropRingMesh.rotation.x = -Math.PI / 2;
+        dropRingMesh.position.y = 0.008;
+        scene.add(dropRingMesh);
+
+        // 3D Aiming Arrow & Predicted Stopping Ring on the Green
+        const aimGroup = new THREE.Group();
+        scene.add(aimGroup);
+
+        const aimLineGeo = new THREE.BufferGeometry();
+        const aimLineMat = new THREE.LineDashedMaterial({
+            color: 0xfbbf24,
+            dashSize: 0.25,
+            gapSize: 0.14,
+            linewidth: 2
+        });
+        const aimLine = new THREE.Line(aimLineGeo, aimLineMat);
+        aimGroup.add(aimLine);
+
+        const stopMarkerGroup = new THREE.Group();
+        const stopRingGeo = new THREE.RingGeometry(0.18, 0.26, 32);
+        const stopRingMat = new THREE.MeshBasicMaterial({
+            color: 0x34d399,
+            side: THREE.DoubleSide,
+            transparent: true,
+            opacity: 0.85
+        });
+        const stopRingMesh = new THREE.Mesh(stopRingGeo, stopRingMat);
+        stopRingMesh.rotation.x = -Math.PI / 2;
+        stopMarkerGroup.add(stopRingMesh);
+
+        const arrowConeGeo = new THREE.ConeGeometry(0.16, 0.38, 16);
+        const arrowConeMat = new THREE.MeshBasicMaterial({ color: 0xfbbf24 });
+        const arrowConeMesh = new THREE.Mesh(arrowConeGeo, arrowConeMat);
+        arrowConeMesh.rotation.x = Math.PI / 2;
+        arrowConeMesh.position.y = 0.06;
+        stopMarkerGroup.add(arrowConeMesh);
+        aimGroup.add(stopMarkerGroup);
+
+        let targetingGuidanceEnabled = true; // Toggle for Pro Mode vs Guided Mode
+
+        // Ghost Trail Group (stores Chance 1 trail & markers from previous rounds at this drop)
+        const ghostGroup = new THREE.Group();
+        scene.add(ghostGroup);
+
+        // Active Rolling Trail Line
+        const activeTrailGeo = new THREE.BufferGeometry();
+        const activeTrailMat = new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.85 });
+        const activeTrailLine = new THREE.Line(activeTrailGeo, activeTrailMat);
+        scene.add(activeTrailLine);
+
+        // Rain Particle System for Round 2 (Wet Green)
+        const RAIN_COUNT = 900;
+        const rainGeo = new THREE.BufferGeometry();
+        const rainPositions = new Float32Array(RAIN_COUNT * 3);
+        for (let i = 0; i < RAIN_COUNT; i++) {
+            rainPositions[i * 3] = (Math.random() - 0.5) * 32;
+            rainPositions[i * 3 + 1] = Math.random() * 18;
+            rainPositions[i * 3 + 2] = (Math.random() - 0.5) * 36;
+        }
+        rainGeo.setAttribute('position', new THREE.BufferAttribute(rainPositions, 3));
+        const rainMat = new THREE.PointsMaterial({
+            color: 0xbae6fd,
+            size: 0.11,
+            transparent: true,
+            opacity: 0.65
+        });
+        const rainParticles = new THREE.Points(rainGeo, rainMat);
+        rainParticles.visible = false;
+        scene.add(rainParticles);
+
+        /******************************************************************
+         * 5. DROP GENERATION & ROUND MANAGEMENT
+         ******************************************************************/
+        function setText(id, text) {
+            const el = document.getElementById(id);
+            if (el) el.textContent = text;
+        }
+
+        function setHTML(id, html) {
+            const el = document.getElementById(id);
+            if (el) el.innerHTML = html;
+        }
+
+        function generateRandomDrops(count) {
+            const drops = [];
+            const minDistance = 3.2;
+            const maxDistance = 12.8;
+
+            for (let i = 0; i < count; i++) {
+                const t = count === 1 ? 0.5 : i / (count - 1);
+                const baseDist = minDistance + t * (maxDistance - minDistance);
+                const jitterDist = (Math.random() - 0.5) * 1.1;
+                const dist = THREE.MathUtils.clamp(baseDist + jitterDist, minDistance, maxDistance);
+
+                const angleSpread = (Math.random() - 0.5) * (Math.PI * 0.72);
+                const x = HOLE_POS.x + Math.sin(angleSpread) * dist;
+                const z = HOLE_POS.z + Math.cos(angleSpread) * dist;
+
+                drops.push({
+                    index: i + 1,
+                    x: x,
+                    z: z,
+                    distToHole: Math.hypot(x - HOLE_POS.x, z - HOLE_POS.z)
+                });
+            }
+            return drops;
+        }
+
+        function initExperiment(numDrops) {
+            state.numDrops = numDrops;
+            state.contours = state.greenMode === 'sloped' ? generateGreenContours() : null;
+            state.drops = generateRandomDrops(numDrops);
+            state.currentRoundIdx = 0;
+            state.currentDropIdx = 0;
+            state.currentChance = 1;
+            state.score = 0;
+
+            state.history = [0, 1, 2].map(() =>
+                state.drops.map(d => ({
+                    dropIndex: d.index,
+                    pinDist: d.distToHole,
+                    madeOnChance: null,
+                    bestDistRemaining: d.distToHole,
+                    attempts: []
+                }))
+            );
+
+            // Show or hide Slope HUD items based on mode
+            const breakBtn = document.getElementById('btn-break-grid');
+            const slopeReadout = document.getElementById('hud-slope-readout');
+            if (state.greenMode === 'sloped') {
+                breakBtn.classList.remove('hidden');
+                slopeReadout.classList.remove('hidden');
+            } else {
+                breakBtn.classList.add('hidden');
+                slopeReadout.classList.add('hidden');
+            }
+
+            updateGreenTopographyMeshes();
+            applyGreenCondition(0);
+            updateBreakGridButtonUI();
+            updateDragModeButtonUI();
+            updateGuidanceButtonUI();
+            setupDropAttempt(true);
+            document.getElementById('start-modal').classList.add('hidden');
+            document.getElementById('summary-modal').classList.add('hidden');
+            document.getElementById('round-modal').classList.add('hidden');
+            document.getElementById('hud-container').classList.remove('hidden');
+        }
+
+        function applyGreenCondition(roundIdx) {
+            const cond = GREEN_CONDITIONS[roundIdx];
+            state.currentRoundIdx = roundIdx;
+
+            scene.background.setHex(cond.skyColor);
+            scene.fog.color.setHex(cond.fogColor);
+            ambientLight.color.setHex(cond.ambientColor);
+            ambientLight.intensity = cond.ambientIntensity;
+            dirLight.color.setHex(cond.sunColor);
+            dirLight.intensity = cond.sunIntensity;
+            dirLight.position.set(...cond.sunPos);
+
+            greenMat.map = createGreenTexture(cond);
+            greenMat.roughness = cond.roughness;
+            greenMat.needsUpdate = true;
+
+            rainParticles.visible = cond.rainActive;
+
+            setText('hud-round-pill', `R${cond.roundNumber}/3`);
+            setText('hud-stimp-pill', `${cond.stimp}`);
+            setText('hud-condition-name', cond.shortName);
+            setText('hud-condition-desc', `μ=${cond.mu.toFixed(3)}`);
+
+            const iconEl = document.getElementById('condition-icon');
+            if (iconEl) iconEl.className = `fa-solid ${cond.icon} text-amber-300`;
+
+            const decel = -(cond.mu * GRAVITY);
+            const force = cond.mu * BALL_MASS * GRAVITY;
+            setText('tel-decel', `${decel.toFixed(2)}m/s²`);
+            setText('tel-force', `${force.toFixed(3)}N`);
+        }
+
+        function clearGhostVisuals() {
+            while (ghostGroup.children.length > 0) {
+                const obj = ghostGroup.children[0];
+                ghostGroup.remove(obj);
+            }
+        }
+
+        function buildGhostVisualsForCurrentDrop() {
+            clearGhostVisuals();
+
+            // 1. If on Chance 2 of the current round, render Chance 1's path and stopping point
+            const currentRec = state.history[state.currentRoundIdx][state.currentDropIdx];
+            if (state.currentChance === 2 && currentRec && currentRec.attempts.length > 0) {
+                const att1 = currentRec.attempts[0];
+                if (att1.path && att1.path.length > 1) {
+                    const geo = new THREE.BufferGeometry().setFromPoints(att1.path);
+                    const mat = new THREE.LineBasicMaterial({ color: 0xf43f5e, transparent: true, opacity: 0.7 });
+                    ghostGroup.add(new THREE.Line(geo, mat));
+
+                    const lastPt = att1.path[att1.path.length - 1];
+                    const marker = new THREE.Mesh(
+                        new THREE.SphereGeometry(BALL_RADIUS * 0.65, 16, 16),
+                        new THREE.MeshBasicMaterial({ color: 0xf43f5e, transparent: true, opacity: 0.6 })
+                    );
+                    marker.position.set(lastPt.x, BALL_RADIUS * 0.65, lastPt.z);
+                    ghostGroup.add(marker);
+                }
+            }
+
+            // 2. If in Round 2 or Round 3, also show subtle ghost markers from previous round(s) at this same drop
+            for (let r = 0; r < state.currentRoundIdx; r++) {
+                const prevRec = state.history[r][state.currentDropIdx];
+                if (prevRec && prevRec.attempts.length > 0) {
+                    const lastAtt = prevRec.attempts[prevRec.attempts.length - 1];
+                    if (lastAtt.path && lastAtt.path.length > 1) {
+                        const colorHex = r === 0 ? 0x34d399 : 0x38bdf8;
+                        const geo = new THREE.BufferGeometry().setFromPoints(lastAtt.path);
+                        const mat = new THREE.LineBasicMaterial({ color: colorHex, transparent: true, opacity: 0.35 });
+                        ghostGroup.add(new THREE.Line(geo, mat));
+                    }
+                }
+            }
+        }
+
+        function setupDropAttempt(resetGhost) {
+            const drop = state.drops[state.currentDropIdx];
+            const cond = GREEN_CONDITIONS[state.currentRoundIdx];
+
+            const dropSurfaceY = getGreenHeight(drop.x, drop.z);
+            const surfaceClearance = 0.012;
+            state.ballPos.set(drop.x, dropSurfaceY + BALL_RADIUS + surfaceClearance, drop.z);
+            state.ballVel.set(0, 0, 0);
+            state.launchSpeed = 0;
+            state.rollDistance = 0;
+            state.currentPathPoints = [new THREE.Vector3(drop.x, dropSurfaceY + 0.024, drop.z)];
+
+            ballMesh.position.copy(state.ballPos);
+            ballMesh.visible = true;
+            ballShadowMesh.position.set(drop.x, dropSurfaceY + 0.01, drop.z);
+            ballShadowMesh.visible = true;
+            dropRingMesh.position.set(drop.x, dropSurfaceY + 0.012, drop.z);
+
+            activeTrailGeo.setFromPoints(state.currentPathPoints);
+
+            // Default aim directly toward the hole
+            state.aimAngle = Math.atan2(HOLE_POS.x - drop.x, HOLE_POS.z - drop.z);
+            state.aimSpeed = 0;
+
+            if (resetGhost) {
+                clearGhostVisuals();
+            }
+            buildGhostVisualsForCurrentDrop();
+            rebuildBreakGridForDrop();
+
+            // Compute elevation difference & lateral break summary between ball and cup
+            const cupY = getGreenHeight(HOLE_POS.x, HOLE_POS.z);
+            const deltaH = cupY - dropSurfaceY; // positive = uphill, negative = downhill
+
+            // Sample average lateral slope perpendicular to the ball-to-hole line
+            const dirX = (HOLE_POS.x - drop.x) / drop.distToHole;
+            const dirZ = (HOLE_POS.z - drop.z) / drop.distToHole;
+            // Right-hand perpendicular vector in camera view (looking from ball to hole)
+            const rightX = -dirZ;
+            const rightZ = dirX;
+            let avgLatGrad = 0;
+            const samples = 8;
+            for (let s = 1; s <= samples; s++) {
+                const frac = s / (samples + 1);
+                const sx = drop.x + (HOLE_POS.x - drop.x) * frac;
+                const sz = drop.z + (HOLE_POS.z - drop.z) * frac;
+                const g = getGreenGradient(sx, sz);
+                avgLatGrad += (g.gx * rightX + g.gz * rightZ);
+            }
+            avgLatGrad /= samples;
+
+            if (state.greenMode === 'sloped') {
+                const elevCm = Math.round(Math.abs(deltaH) * 100);
+                const upDownStr = elevCm < 2 ? 'Level' : deltaH > 0 ? `↑${elevCm}cm Up` : `↓${elevCm}cm Down`;
+                const breakDeg = (Math.atan(Math.abs(avgLatGrad)) * 180 / Math.PI).toFixed(1);
+                // If gradient slopes upward to the right (avgLatGrad > 0), ball breaks Right-to-Left (R→L)
+                const breakDir = Math.abs(avgLatGrad) < 0.003 ? 'Straight' : avgLatGrad > 0 ? `${breakDeg}° R→L` : `${breakDeg}° L→R`;
+                setText('hud-slope-readout', `${upDownStr} • ${breakDir}`);
+            }
+
+            // Compute ideal initial velocity v0 accounting for both kinetic friction and elevation change Δh:
+            // 1/2 v0^2 = g * (mu * d + deltaH)
+            const effectiveHead = Math.max(0.08, cond.mu * drop.distToHole + deltaH);
+            const idealV0 = Math.sqrt(2 * GRAVITY * effectiveHead);
+            const idealPct = Math.min(100, (idealV0 / MAX_LAUNCH_SPEED) * 100);
+            const idealTickEl = document.getElementById('ideal-power-tick');
+            if (idealTickEl) idealTickEl.style.left = `${idealPct}%`;
+
+            setText('ideal-v0-readout', `${idealV0.toFixed(2)}m/s`);
+
+            const currentRec = state.history[state.currentRoundIdx][state.currentDropIdx];
+            if (state.currentChance === 2 && currentRec && currentRec.attempts.length > 0) {
+                const a1 = currentRec.attempts[0];
+                setHTML('prev-attempt-text', `<span class="text-rose-300 font-mono-tech">C1:${a1.v0.toFixed(1)}m/s</span> Ideal:`);
+            } else if (state.currentRoundIdx > 0) {
+                const prevRoundRec = state.history[state.currentRoundIdx - 1][state.currentDropIdx];
+                const prevBest = prevRoundRec && prevRoundRec.attempts.length > 0
+                    ? prevRoundRec.attempts[prevRoundRec.attempts.length - 1]
+                    : null;
+                setHTML('prev-attempt-text', `<span class="text-cyan-300 font-mono-tech">Prev:${prevBest ? prevBest.v0.toFixed(1) : '--'}</span> Ideal:`);
+            } else {
+                setText('prev-attempt-text', 'Ideal:');
+            }
+
+            setText('hud-drop-counter', `${state.currentDropIdx + 1}/${state.numDrops}`);
+            setText('hud-chance-counter', `${state.currentChance}/2`);
+            setText('hud-score', String(state.score));
+            setText('telemetry-status', 'READY');
+            setText('tel-speed', '0.00m/s');
+            setText('tel-dist', `${drop.distToHole.toFixed(1)}m`);
+            setText('roll-dist-readout', 'Roll:0.0m');
+
+            updateAimVisuals(0);
+            updateCameraDesiredTransform();
+            state.phase = 'AIMING';
+        }
+
+        /******************************************************************
+         * 6. AIMING & DRAG CONTROLS (TOUCH + MOUSE)
+         ******************************************************************/
+        /**
+         * Converts a 2D unit direction on the screen (uScreenX, uScreenY) into the
+         * corresponding 3D horizontal world launch angle so that the ball's initial
+         * motion on screen is strictly collinear/parallel with the player's drag line,
+         * regardless of where on the screen the initial touch began.
+         */
+        function screenDirToWorldAngle(uScreenX, uScreenY) {
+            camera.updateMatrixWorld();
+
+            const ballWorld = state.ballPos.clone();
+            const ballNDC = ballWorld.clone().project(camera);
+
+            const halfW = window.innerWidth * 0.5;
+            const halfH = window.innerHeight * 0.5;
+            const ballScreenX = ballNDC.x * halfW + halfW;
+            const ballScreenY = -ballNDC.y * halfH + halfH;
+
+            // Step along the exact 2D screen launch direction from the ball's screen projection
+            const stepPx = 10;
+            const targetScreenX = ballScreenX + uScreenX * stepPx;
+            const targetScreenY = ballScreenY + uScreenY * stepPx;
+
+            const targetNDC = new THREE.Vector3(
+                (targetScreenX / window.innerWidth) * 2 - 1,
+                -(targetScreenY / window.innerHeight) * 2 + 1,
+                0.5
+            );
+
+            targetNDC.unproject(camera);
+            const rayDir = targetNDC.sub(camera.position).normalize();
+
+            if (Math.abs(rayDir.y) > 0.0001) {
+                const t = (ballWorld.y - camera.position.y) / rayDir.y;
+                if (t > 0) {
+                    const hitX = camera.position.x + rayDir.x * t;
+                    const hitZ = camera.position.z + rayDir.z * t;
+                    const dxWorld = hitX - ballWorld.x;
+                    const dzWorld = hitZ - ballWorld.z;
+                    if (Math.hypot(dxWorld, dzWorld) > 1e-5) {
+                        return Math.atan2(dxWorld, dzWorld);
+                    }
+                }
+            }
+
+            // Fallback using camera horizontal basis vectors
+            const camForward = new THREE.Vector3();
+            camera.getWorldDirection(camForward);
+            camForward.y = 0;
+            camForward.normalize();
+            const camRight = new THREE.Vector3(-camForward.z, 0, camForward.x);
+            const worldDirX = camRight.x * uScreenX + camForward.x * (-uScreenY);
+            const worldDirZ = camRight.z * uScreenX + camForward.z * (-uScreenY);
+            return Math.atan2(worldDirX, worldDirZ);
+        }
+
+        function simulatePredictedTrajectory(startAngle, startSpeed) {
+            const cond = GREEN_CONDITIONS[state.currentRoundIdx];
+            const pts = [];
+            let px = state.ballPos.x;
+            let pz = state.ballPos.z;
+            let py = getGreenHeight(px, pz) + 0.025;
+            pts.push(new THREE.Vector3(px, py, pz));
+
+            if (startSpeed < 0.15) {
+                const tx = px + Math.sin(startAngle) * 0.65;
+                const tz = pz + Math.cos(startAngle) * 0.65;
+                pts.push(new THREE.Vector3(tx, getGreenHeight(tx, tz) + 0.025, tz));
+                return { points: pts, totalDist: 0, endAngle: startAngle };
+            }
+
+            let vx = Math.sin(startAngle) * startSpeed;
+            let vz = Math.cos(startAngle) * startSpeed;
+            let totalDist = 0;
+            const simDt = 0.025;
+            const maxSteps = 320;
+
+            for (let step = 0; step < maxSteps; step++) {
+                const speed = Math.hypot(vx, vz);
+                if (speed <= 0.02) break;
+
+                const { gx, gz } = getGreenGradient(px, pz);
+                const fricDecel = cond.mu * GRAVITY;
+                const ax = -(vx / speed) * fricDecel - GRAVITY * gx;
+                const az = -(vz / speed) * fricDecel - GRAVITY * gz;
+
+                const nextVx = vx + ax * simDt;
+                const nextVz = vz + az * simDt;
+
+                // Stop when velocity reverses against friction
+                if (nextVx * vx + nextVz * vz <= 0) break;
+
+                px += 0.5 * (vx + nextVx) * simDt;
+                pz += 0.5 * (vz + nextVz) * simDt;
+                totalDist += Math.hypot(0.5 * (vx + nextVx) * simDt, 0.5 * (vz + nextVz) * simDt);
+
+                vx = nextVx;
+                vz = nextVz;
+
+                if (step < 6 || step % 2 === 0) {
+                    pts.push(new THREE.Vector3(px, getGreenHeight(px, pz) + 0.025, pz));
+                }
+            }
+
+            const endPy = getGreenHeight(px, pz) + 0.025;
+            pts.push(new THREE.Vector3(px, endPy, pz));
+            const endAngle = Math.atan2(vx, vz);
+            return { points: pts, totalDist, endAngle };
+        }
+
+        function updateAimVisuals(speed) {
+            const pct = Math.min(100, Math.round((speed / MAX_LAUNCH_SPEED) * 100));
+            const sim = simulatePredictedTrajectory(state.aimAngle, speed);
+
+            setText('power-readout', `v₀ = ${speed.toFixed(2)} m/s (${pct}%)`);
+            const barFill = document.getElementById('power-bar-fill');
+            if (barFill) barFill.style.width = `${pct}%`;
+            setText('predicted-stop-readout', `Est. Roll: ${sim.totalDist.toFixed(1)}m`);
+
+            aimLineGeo.setFromPoints(sim.points);
+            aimLine.computeLineDistances();
+
+            const lastPt = sim.points[sim.points.length - 1];
+            stopMarkerGroup.position.set(lastPt.x, lastPt.y - 0.01, lastPt.z);
+            stopMarkerGroup.rotation.y = sim.endAngle;
+
+            // Respect targeting guidance toggle (if Pro mode is on, hide trajectory line and target marker)
+            aimGroup.visible = (state.phase === 'AIMING' && targetingGuidanceEnabled);
+            aimLine.visible = targetingGuidanceEnabled;
+            stopMarkerGroup.visible = targetingGuidanceEnabled;
+        }
+
+        function getPointerCoords(e) {
+            if (e.touches && e.touches.length > 0) {
+                return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            }
+            if (e.changedTouches && e.changedTouches.length > 0) {
+                return { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY };
+            }
+            return { x: e.clientX, y: e.clientY };
+        }
+
+        function onPointerDown(e) {
+            if (state.phase !== 'AIMING') return;
+            if (e.target.closest('button') || e.target.closest('.pointer-events-auto')) return;
+
+            const pt = getPointerCoords(e);
+            state.isDragging = true;
+            state.dragStartScreen = { x: pt.x, y: pt.y };
+            state.dragCurrentScreen = { x: pt.x, y: pt.y };
+            state.aimSpeed = 0;
+
+            const overlay = document.getElementById('drag-overlay');
+            overlay.classList.remove('hidden');
+
+            const startCircle = document.getElementById('drag-start-circle');
+            const curCircle = document.getElementById('drag-current-circle');
+            const line = document.getElementById('drag-line');
+            startCircle.setAttribute('cx', pt.x);
+            startCircle.setAttribute('cy', pt.y);
+            curCircle.setAttribute('cx', pt.x);
+            curCircle.setAttribute('cy', pt.y);
+            line.setAttribute('x1', pt.x);
+            line.setAttribute('y1', pt.y);
+            line.setAttribute('x2', pt.x);
+            line.setAttribute('y2', pt.y);
+
+            const badge = document.getElementById('drag-floating-badge');
+            badge.style.left = `${pt.x}px`;
+            badge.style.top = `${pt.y}px`;
+            badge.textContent = `v₀ = 0.00 m/s (0%)`;
+        }
+
+        function onPointerMove(e) {
+            if (!state.isDragging || state.phase !== 'AIMING') return;
+            const pt = getPointerCoords(e);
+            state.dragCurrentScreen = { x: pt.x, y: pt.y };
+
+            const dxScreen = pt.x - state.dragStartScreen.x;
+            const dyScreen = pt.y - state.dragStartScreen.y;
+            const dragPixels = Math.hypot(dxScreen, dyScreen);
+
+            // Responsive drag distance for mobile touch screens
+            const maxPixels = THREE.MathUtils.clamp(Math.min(window.innerWidth, window.innerHeight) * 0.3, 110, 210);
+            const normalizedPower = THREE.MathUtils.clamp(dragPixels / maxPixels, 0, 1);
+            state.aimSpeed = normalizedPower * MAX_LAUNCH_SPEED;
+
+            if (dragPixels > 4) {
+                // In Pull-Back mode, launch is strictly opposite the drag vector (from current touch back through initial touch).
+                // In Forward mode, launch is strictly along the drag vector (from initial touch through current touch).
+                const dirSign = state.pullBackMode ? -1 : 1;
+                const uScreenX = (dxScreen * dirSign) / dragPixels;
+                const uScreenY = (dyScreen * dirSign) / dragPixels;
+                state.aimAngle = screenDirToWorldAngle(uScreenX, uScreenY);
+            }
+
+            // Update 2D SVG drag reticle
+            const curCircle = document.getElementById('drag-current-circle');
+            const line = document.getElementById('drag-line');
+            curCircle.setAttribute('cx', pt.x);
+            curCircle.setAttribute('cy', pt.y);
+            line.setAttribute('x2', pt.x);
+            line.setAttribute('y2', pt.y);
+
+            const pct = Math.round(normalizedPower * 100);
+            const badge = document.getElementById('drag-floating-badge');
+            badge.style.left = `${pt.x}px`;
+            badge.style.top = `${pt.y}px`;
+            badge.textContent = `v₀ = ${state.aimSpeed.toFixed(2)} m/s (${pct}%)`;
+
+            updateAimVisuals(state.aimSpeed);
+        }
+
+        function onPointerUp() {
+            if (!state.isDragging) return;
+            state.isDragging = false;
+            document.getElementById('drag-overlay').classList.add('hidden');
+
+            if (state.phase === 'AIMING' && state.aimSpeed >= 0.25) {
+                launchPutt(state.aimAngle, state.aimSpeed);
+            } else {
+                state.aimSpeed = 0;
+                updateAimVisuals(0);
+            }
+        }
+
+        /******************************************************************
+         * 7. PUTT LAUNCH & KINETIC FRICTION SIMULATION
+         ******************************************************************/
+        function launchPutt(angle, speed) {
+            state.phase = 'ROLLING';
+            state.launchSpeed = speed;
+            state.rollDistance = 0;
+            state.ballVel.set(
+                Math.sin(angle) * speed,
+                0,
+                Math.cos(angle) * speed
+            );
+
+            aimGroup.visible = false;
+            setText('telemetry-status', 'ROLLING');
+            sound.playPuttHit(speed / MAX_LAUNCH_SPEED);
+        }
+
+        function stepPhysics(dt) {
+            if (state.phase !== 'ROLLING') return;
+
+            const cond = GREEN_CONDITIONS[state.currentRoundIdx];
+            const currentSpeed = Math.hypot(state.ballVel.x, state.ballVel.z);
+
+            if (currentSpeed <= 0.005) {
+                state.ballVel.set(0, 0, 0);
+                handleBallStopped();
+                return;
+            }
+
+            // Coupled Kinetic Friction + 3D Surface Slope Gravity:
+            // a_x = -mu_k * g * (vx / v) - g * (dh / dx)
+            // a_z = -mu_k * g * (vz / v) - g * (dh / dz)
+            const { gx, gz } = getGreenGradient(state.ballPos.x, state.ballPos.z);
+            const fricDecel = cond.mu * GRAVITY;
+
+            const dirX = state.ballVel.x / currentSpeed;
+            const dirZ = state.ballVel.z / currentSpeed;
+
+            const ax = -dirX * fricDecel - GRAVITY * gx;
+            const az = -dirZ * fricDecel - GRAVITY * gz;
+
+            let nextVx = state.ballVel.x + ax * dt;
+            let nextVz = state.ballVel.z + az * dt;
+
+            // If friction decelerates the ball through zero velocity, bring it cleanly to rest
+            if (nextVx * state.ballVel.x + nextVz * state.ballVel.z <= 0 && Math.hypot(gx, gz) < cond.mu) {
+                nextVx = 0;
+                nextVz = 0;
+            }
+
+            const avgVx = 0.5 * (state.ballVel.x + nextVx);
+            const avgVz = 0.5 * (state.ballVel.z + nextVz);
+
+            const stepX = avgVx * dt;
+            const stepZ = avgVz * dt;
+            const stepDist = Math.hypot(stepX, stepZ);
+
+            state.ballPos.x += stepX;
+            state.ballPos.z += stepZ;
+            const surfaceY = getGreenHeight(state.ballPos.x, state.ballPos.z);
+            const surfaceClearance = 0.012;
+            state.ballPos.y = surfaceY + BALL_RADIUS + surfaceClearance;
+            state.rollDistance += stepDist;
+
+            state.ballVel.set(nextVx, 0, nextVz);
+            const nextSpeed = Math.hypot(nextVx, nextVz);
+
+            // Update ball mesh position, contact shadow, & forward rolling rotation
+            ballMesh.position.copy(state.ballPos);
+            ballShadowMesh.position.set(state.ballPos.x, surfaceY + 0.01, state.ballPos.z);
+            if (stepDist > 0.0001) {
+                const moveDirX = stepX / stepDist;
+                const moveDirZ = stepZ / stepDist;
+                const rollAxis = new THREE.Vector3(moveDirZ, 0, -moveDirX).normalize();
+                ballMesh.rotateOnWorldAxis(rollAxis, stepDist / BALL_RADIUS);
+            }
+
+            // Append point to rolling path trail conforming to 3D green surface
+            state.currentPathPoints.push(new THREE.Vector3(state.ballPos.x, surfaceY + 0.024, state.ballPos.z));
+            activeTrailGeo.setFromPoints(state.currentPathPoints);
+
+            // Check Cup Capture (distance to hole center + safe capture velocity)
+            const distToHole = Math.hypot(state.ballPos.x - HOLE_POS.x, state.ballPos.z - HOLE_POS.z);
+            if (distToHole < HOLE_RADIUS) {
+                // If moving reasonably slow (< 2.35 m/s) or dead-center (< 0.16m & < 3.1 m/s), ball drops into the cup!
+                if (nextSpeed < 2.35 || (distToHole < HOLE_RADIUS * 0.5 && nextSpeed < 3.1)) {
+                    handleBallHoled();
+                    return;
+                } else {
+                    // Lip-out deflection if hit way too hard across the cup
+                    state.ballVel.multiplyScalar(0.55);
+                    const lipDeflect = (Math.random() - 0.5) * 0.45;
+                    const vx = state.ballVel.x;
+                    const vz = state.ballVel.z;
+                    state.ballVel.x = vx * Math.cos(lipDeflect) - vz * Math.sin(lipDeflect);
+                    state.ballVel.z = vx * Math.sin(lipDeflect) + vz * Math.cos(lipDeflect);
+                }
+            }
+
+            // Keep ball within outer green collar boundary
+            const radialDist = Math.hypot(state.ballPos.x, state.ballPos.z / 1.25);
+            if (radialDist > 13.5) {
+                state.ballVel.multiplyScalar(0.82);
+            }
+
+            // Update Live Telemetry Readouts
+            const updatedDist = Math.hypot(state.ballPos.x - HOLE_POS.x, state.ballPos.z - HOLE_POS.z);
+            setText('tel-speed', `${nextSpeed.toFixed(2)}m/s`);
+            setText('tel-dist', `${updatedDist.toFixed(1)}m`);
+            setText('roll-dist-readout', `Roll:${state.rollDistance.toFixed(1)}m`);
+
+            if (nextSpeed <= 0.005) {
+                handleBallStopped();
+            }
+        }
+
+        /******************************************************************
+         * 8. SHOT OUTCOMES, ROUND TRANSITIONS & SUMMARY REPORT
+         ******************************************************************/
+        function showBanner(icon, title, subtitle, duration = 1700) {
+            const banner = document.getElementById('shot-banner');
+            setText('shot-banner-icon', icon);
+            setText('shot-banner-title', title);
+            setText('shot-banner-subtitle', subtitle);
+
+            banner.classList.remove('opacity-0', '-translate-y-3');
+            banner.classList.add('opacity-100', 'translate-y-0');
+
+            setTimeout(() => {
+                banner.classList.remove('opacity-100', 'translate-y-0');
+                banner.classList.add('opacity-0', '-translate-y-3');
+            }, duration);
+        }
+
+        function handleBallHoled() {
+            state.phase = 'SHOT_END';
+            state.ballVel.set(0, 0, 0);
+            const cupY = getGreenHeight(HOLE_POS.x, HOLE_POS.z);
+            ballMesh.position.set(HOLE_POS.x, cupY - BALL_RADIUS * 0.6, HOLE_POS.z);
+            ballShadowMesh.visible = false;
+            sound.playCupDrop();
+
+            // Record in history
+            const rec = state.history[state.currentRoundIdx][state.currentDropIdx];
+            rec.madeOnChance = state.currentChance;
+            rec.bestDistRemaining = 0;
+            rec.attempts.push({
+                chance: state.currentChance,
+                v0: state.launchSpeed,
+                rollDist: state.rollDistance,
+                distLeft: 0,
+                holed: true,
+                path: [...state.currentPathPoints]
+            });
+
+            const pointsEarned = state.currentChance === 1 ? 100 : 75;
+            state.score += pointsEarned;
+            setText('hud-score', String(state.score));
+            setText('tel-speed', '0.00m/s');
+            setText('tel-dist', '0.0m');
+            setText('telemetry-status', 'HOLED');
+
+            showBanner(
+                '🏆',
+                state.currentChance === 1 ? `FIRST PUTT SUNK! (+${pointsEarned})` : `SECOND CHANCE SUNK! (+${pointsEarned})`,
+                `v₀ = ${state.launchSpeed.toFixed(2)} m/s • Next drop...`,
+                1650
+            );
+
+            setTimeout(() => {
+                advanceAfterDropCompleted();
+            }, 1750);
+        }
+
+        function handleBallStopped() {
+            state.phase = 'SHOT_END';
+            const distRemaining = Math.hypot(state.ballPos.x - HOLE_POS.x, state.ballPos.z - HOLE_POS.z);
+
+            const rec = state.history[state.currentRoundIdx][state.currentDropIdx];
+            rec.bestDistRemaining = Math.min(rec.bestDistRemaining, distRemaining);
+            rec.attempts.push({
+                chance: state.currentChance,
+                v0: state.launchSpeed,
+                rollDist: state.rollDistance,
+                distLeft: distRemaining,
+                holed: false,
+                path: [...state.currentPathPoints]
+            });
+
+            setText('tel-speed', '0.00m/s');
+            setText('tel-dist', `${distRemaining.toFixed(1)}m`);
+            setText('telemetry-status', 'STOPPED');
+
+            const drop = state.drops[state.currentDropIdx];
+            const diff = state.rollDistance - drop.distToHole;
+            const feedback = diff < -0.25
+                ? `${Math.abs(diff).toFixed(1)}m short`
+                : diff > 0.25
+                ? `${diff.toFixed(1)}m past`
+                : `Edge miss!`;
+
+            if (state.currentChance === 1) {
+                showBanner(
+                    '📏',
+                    `Stopped ${distRemaining.toFixed(1)}m Away`,
+                    `${feedback} — Ghost trail saved for Try 2`,
+                    1650
+                );
+                setTimeout(() => {
+                    state.currentChance = 2;
+                    setupDropAttempt(false);
+                }, 1750);
+            } else {
+                const proxPoints = distRemaining < 1.0 ? 40 : distRemaining < 2.5 ? 20 : 5;
+                state.score += proxPoints;
+                setText('hud-score', String(state.score));
+
+                showBanner(
+                    '📍',
+                    `Drop Done (+${proxPoints} Pts)`,
+                    `Stopped ${distRemaining.toFixed(1)}m from cup (${feedback})`,
+                    1650
+                );
+                setTimeout(() => {
+                    advanceAfterDropCompleted();
+                }, 1750);
+            }
+        }
+
+        function advanceAfterDropCompleted() {
+            if (state.currentDropIdx + 1 < state.numDrops) {
+                state.currentDropIdx += 1;
+                state.currentChance = 1;
+                setupDropAttempt(true);
+            } else {
+                // Completed all drops for this surface condition!
+                sound.playRoundComplete();
+                if (state.currentRoundIdx + 1 < GREEN_CONDITIONS.length) {
+                    showRoundTransitionModal(state.currentRoundIdx, state.currentRoundIdx + 1);
+                } else {
+                    showFinalSummaryModal();
+                }
+            }
+        }
+
+        function showRoundTransitionModal(prevIdx, nextIdx) {
+            state.phase = 'MODAL';
+            const prevCond = GREEN_CONDITIONS[prevIdx];
+            const nextCond = GREEN_CONDITIONS[nextIdx];
+
+            setText('round-modal-title', `Round ${nextCond.roundNumber}: ${nextCond.name}`);
+            setHTML(
+                'round-modal-desc',
+                nextIdx === 1
+                    ? `Rain has dampened the putting green! You will now replay the <strong>exact same ${state.numDrops} ball drop locations</strong>, but moisture has increased kinetic friction.`
+                    : `It is now the end of the day and the grass has grown rougher! Replay the <strong>exact same ${state.numDrops} ball drop locations</strong> under maximum turf resistance.`
+            );
+
+            setText('round-prev-name', prevCond.shortName);
+            setText('round-prev-mu', `μk = ${prevCond.mu.toFixed(3)} (-${(prevCond.mu * GRAVITY).toFixed(2)} m/s²)`);
+            setText('round-next-name', nextCond.shortName);
+            setText('round-next-mu', `μk = ${nextCond.mu.toFixed(3)} (-${(nextCond.mu * GRAVITY).toFixed(2)} m/s²)`);
+
+            document.getElementById('round-modal').classList.remove('hidden');
+        }
+
+        function showFinalSummaryModal() {
+            state.phase = 'MODAL';
+            setText('summary-total-score', `${state.score} pts`);
+
+            // Populate 3 condition summary cards
+            const cardsContainer = document.getElementById('summary-condition-cards');
+            cardsContainer.innerHTML = '';
+
+            GREEN_CONDITIONS.forEach((cond, rIdx) => {
+                const roundRecs = state.history[rIdx];
+                const holedCount = roundRecs.filter(r => r.madeOnChance !== null).length;
+                const allV0 = [];
+                roundRecs.forEach(r => r.attempts.forEach(a => allV0.push(a.v0)));
+                const avgV0 = allV0.length > 0 ? allV0.reduce((a, b) => a + b, 0) / allV0.length : 0;
+
+                const borderCol = rIdx === 0 ? 'border-emerald-500/40' : rIdx === 1 ? 'border-cyan-500/40' : 'border-amber-500/40';
+                const textCol = rIdx === 0 ? 'text-emerald-300' : rIdx === 1 ? 'text-cyan-300' : 'text-amber-300';
+
+                const card = document.createElement('div');
+                card.className = `bg-slate-900/90 border ${borderCol} rounded-2xl p-3.5`;
+                card.innerHTML = `
+                    <div class="flex items-center justify-between text-xs font-bold uppercase ${textCol} mb-1">
+                        <span>Round ${cond.roundNumber}: ${cond.shortName}</span>
+                        <span>μk = ${cond.mu.toFixed(3)}</span>
+                    </div>
+                    <div class="flex items-baseline justify-between mt-2">
+                        <div>
+                            <div class="text-[11px] text-slate-400">Putts Holed</div>
+                            <div class="text-lg font-extrabold text-white font-mono-tech">${holedCount} / ${state.numDrops}</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-[11px] text-slate-400">Avg Launch Speed</div>
+                            <div class="text-lg font-extrabold ${textCol} font-mono-tech">${avgV0.toFixed(2)} m/s</div>
+                        </div>
+                    </div>
+                `;
+                cardsContainer.appendChild(card);
+            });
+
+            // Populate Drop-by-Drop comparison table
+            const tbody = document.getElementById('summary-table-body');
+            tbody.innerHTML = '';
+
+            state.drops.forEach((drop, dIdx) => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-800/50';
+
+                const formatRoundCell = (rIdx) => {
+                    const rec = state.history[rIdx][dIdx];
+                    if (!rec || rec.attempts.length === 0) return '--';
+                    const bestAtt = rec.attempts[rec.attempts.length - 1];
+                    const statusBadge = rec.madeOnChance
+                        ? `<span class="text-emerald-400 font-bold">★ C${rec.madeOnChance}</span>`
+                        : `<span class="text-slate-400">${rec.bestDistRemaining.toFixed(1)}m left</span>`;
+                    return `<div>v₀=${bestAtt.v0.toFixed(2)}m/s • ${statusBadge}</div>`;
+                };
+
+                tr.innerHTML = `
+                    <td class="py-2.5 px-3 font-bold text-white">#${drop.index}</td>
+                    <td class="py-2.5 px-3 text-slate-300">${drop.distToHole.toFixed(1)}m</td>
+                    <td class="py-2.5 px-3">${formatRoundCell(0)}</td>
+                    <td class="py-2.5 px-3">${formatRoundCell(1)}</td>
+                    <td class="py-2.5 px-3">${formatRoundCell(2)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('summary-modal').classList.remove('hidden');
+        }
+
+        /******************************************************************
+         * 9. CAMERA SYSTEM & ANIMATION LOOP
+         ******************************************************************/
+        function updateCameraDesiredTransform() {
+            const drop = state.drops[state.currentDropIdx] || { x: 0, z: 5, distToHole: 10 };
+            const focusBall = state.phase === 'ROLLING' ? state.ballPos : new THREE.Vector3(drop.x, BALL_RADIUS, drop.z);
+            const isPortrait = window.innerWidth < window.innerHeight;
+
+            if (state.cameraMode === 0) {
+                const dirToHoleX = HOLE_POS.x - drop.x;
+                const dirToHoleZ = HOLE_POS.z - drop.z;
+                const len = Math.hypot(dirToHoleX, dirToHoleZ) || 1;
+                const nx = dirToHoleX / len;
+                const nz = dirToHoleZ / len;
+
+                const backDist = isPortrait ? 6.2 : 4.8;
+                const camHeight = isPortrait ? 4.4 : 3.25;
+
+                desiredCameraPos.set(
+                    focusBall.x - nx * backDist,
+                    camHeight,
+                    focusBall.z - nz * backDist
+                );
+                desiredCameraLook.set(
+                    (focusBall.x + HOLE_POS.x) * 0.5,
+                    0.15,
+                    (focusBall.z + HOLE_POS.z) * 0.5
+                );
+            } else if (state.cameraMode === 1) {
+                desiredCameraPos.set(0, isPortrait ? 24.0 : 19.5, 2.5);
+                desiredCameraLook.set(0, 0, -2.5);
+            } else {
+                desiredCameraPos.set(isPortrait ? 14.5 : 11.5, 6.8, -1.5);
+                desiredCameraLook.set(0, 0.2, -2.5);
+            }
+        }
+
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const dt = Math.min(clock.getDelta(), 0.05);
+            const elapsed = clock.getElapsedTime();
+
+            // Subtle flag cloth wave animation
+            flagMesh.rotation.y = Math.sin(elapsed * 3.5) * 0.14;
+
+            // Animate rain particles during Round 2 (Wet Green)
+            if (rainParticles.visible) {
+                const posAttr = rainGeo.getAttribute('position');
+                for (let i = 0; i < RAIN_COUNT; i++) {
+                    let y = posAttr.getY(i) - 14.5 * dt;
+                    if (y < 0) y = 18;
+                    posAttr.setY(i, y);
+                }
+                posAttr.needsUpdate = true;
+            }
+
+            // Animate 3D Caddie Break Grid slope-flow beads
+            if (breakGridGroup.visible && breakFlowBeads.length > 0) {
+                for (let i = 0; i < breakFlowBeads.length; i++) {
+                    const b = breakFlowBeads[i];
+                    const slopeMag = Math.hypot(b.gx, b.gz);
+                    // Flow speed scales with local steepness
+                    b.phase = (b.phase + dt * (0.45 + slopeMag * 28.0)) % 1.0;
+                    const travel = (b.phase - 0.5) * 0.85;
+                    const dirX = -b.gx / (slopeMag || 1);
+                    const dirZ = -b.gz / (slopeMag || 1);
+                    const bx = b.originX + dirX * travel;
+                    const bz = b.originZ + dirZ * travel;
+                    b.mesh.position.set(bx, getGreenHeight(bx, bz) + 0.024, bz);
+                }
+            }
+
+            // Step ball rolling physics
+            if (state.phase === 'ROLLING') {
+                stepPhysics(dt);
+                updateCameraDesiredTransform();
+            }
+
+            // Smoothly interpolate camera position and lookAt target
+            camera.position.lerp(desiredCameraPos, 0.08);
+            cameraTarget.lerp(desiredCameraLook, 0.08);
+            camera.lookAt(cameraTarget);
+
+            renderer.render(scene, camera);
+        }
+
+        /******************************************************************
+         * 10. UI EVENT LISTENERS & INITIALIZATION
+         ******************************************************************/
+        function updateBreakGridButtonUI() {
+            const btn = document.getElementById('btn-break-grid');
+            const icon = document.getElementById('break-grid-icon');
+            const isHiddenMode = state.greenMode !== 'sloped';
+            setText('break-grid-text', state.showBreakGrid ? 'Grid On' : 'Grid Off');
+
+            if (state.showBreakGrid) {
+                btn.className = `${isHiddenMode ? 'hidden ' : ''}px-2 py-1.5 sm:px-2.5 sm:py-1.5 rounded-lg bg-emerald-950/90 hover:bg-emerald-900 text-[11px] font-semibold text-emerald-300 border border-emerald-500/60 transition flex items-center gap-1`;
+                if (icon) icon.className = 'fa-solid fa-border-all text-emerald-400';
+            } else {
+                btn.className = `${isHiddenMode ? 'hidden ' : ''}px-2 py-1.5 sm:px-2.5 sm:py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] font-semibold text-slate-300 border border-slate-600/80 transition flex items-center gap-1`;
+                if (icon) icon.className = 'fa-solid fa-border-all text-slate-400';
+            }
+        }
+
+        function updateDragModeButtonUI() {
+            const btn = document.getElementById('btn-drag-mode');
+            const icon = document.getElementById('drag-mode-icon');
+            setText('drag-mode-text', state.pullBackMode ? 'Pull-Back' : 'Forward');
+
+            if (state.pullBackMode) {
+                btn.className = 'px-2 py-1.5 sm:px-2.5 sm:py-1.5 rounded-lg bg-amber-950/80 hover:bg-amber-900/80 text-[11px] font-semibold text-amber-200 border border-amber-500/60 transition flex items-center gap-1';
+                if (icon) icon.className = 'fa-solid fa-arrows-up-down text-amber-400';
+            } else {
+                btn.className = 'px-2 py-1.5 sm:px-2.5 sm:py-1.5 rounded-lg bg-cyan-950/80 hover:bg-cyan-900/80 text-[11px] font-semibold text-cyan-200 border border-cyan-500/60 transition flex items-center gap-1';
+                if (icon) icon.className = 'fa-solid fa-arrow-up text-cyan-400';
+            }
+        }
+
+        function updateGuidanceButtonUI() {
+            const btn = document.getElementById('btn-guidance');
+            const icon = document.getElementById('guidance-icon');
+            setText('guidance-mode-text', targetingGuidanceEnabled ? 'Guided' : 'Pro Mode');
+
+            if (targetingGuidanceEnabled) {
+                btn.className = 'px-2 py-1.5 sm:px-2.5 sm:py-1.5 rounded-lg bg-emerald-950/90 hover:bg-emerald-900 text-[11px] font-semibold text-emerald-300 border border-emerald-500/60 transition flex items-center gap-1';
+                if (icon) icon.className = 'fa-solid fa-bullseye text-emerald-400';
+            } else {
+                btn.className = 'px-2 py-1.5 sm:px-2.5 sm:py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] font-semibold text-slate-300 border border-slate-600/80 transition flex items-center gap-1';
+                if (icon) icon.className = 'fa-solid fa-eye-slash text-slate-400';
+            }
+        }
+
+        // Green Topography Mode buttons on Start Screen (Flat vs. Slopes & Breaks)
+        const modeOptionBtns = document.querySelectorAll('.mode-option-btn');
+        modeOptionBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                state.greenMode = btn.getAttribute('data-mode');
+                modeOptionBtns.forEach(b => {
+                    b.className = 'mode-option-btn group relative rounded-2xl p-3 border-2 border-slate-700 bg-slate-900/70 text-left transition hover:border-slate-500 flex items-start gap-3';
+                });
+                btn.className = 'mode-option-btn group relative rounded-2xl p-3 border-2 border-emerald-400 bg-emerald-500/20 text-left transition hover:bg-emerald-500/30 flex items-start gap-3';
+            });
+        });
+
+        // Toggle 3D Break Grid on HUD (independent state)
+        document.getElementById('btn-break-grid').addEventListener('click', (e) => {
+            e.stopPropagation();
+            state.showBreakGrid = !state.showBreakGrid;
+            updateBreakGridButtonUI();
+            rebuildBreakGridForDrop();
+        });
+
+        // Toggle Targeting Guidance (Guided vs Pro Mode, independent state)
+        document.getElementById('btn-guidance').addEventListener('click', (e) => {
+            e.stopPropagation();
+            targetingGuidanceEnabled = !targetingGuidanceEnabled;
+            updateGuidanceButtonUI();
+            updateAimVisuals(state.aimSpeed);
+        });
+
+        // Drop count option buttons on Start Screen
+        const dropOptionBtns = document.querySelectorAll('.drop-option-btn');
+        dropOptionBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                state.numDrops = parseInt(btn.getAttribute('data-drops'), 10);
+                dropOptionBtns.forEach(b => {
+                    b.className = 'drop-option-btn group relative rounded-2xl p-3 sm:p-4 border-2 border-slate-700 bg-slate-900/70 text-center transition hover:border-slate-500';
+                });
+                btn.className = 'drop-option-btn group relative rounded-2xl p-3 sm:p-4 border-2 border-emerald-400 bg-emerald-500/20 text-center transition hover:bg-emerald-500/30';
+            });
+        });
+
+        // Start Game button
+        document.getElementById('btn-start-game').addEventListener('click', () => {
+            sound.init();
+            initExperiment(state.numDrops);
+        });
+
+        // Next Round modal button
+        document.getElementById('btn-next-round').addEventListener('click', () => {
+            document.getElementById('round-modal').classList.add('hidden');
+            const nextRoundIdx = state.currentRoundIdx + 1;
+            applyGreenCondition(nextRoundIdx);
+            state.currentDropIdx = 0;
+            state.currentChance = 1;
+            setupDropAttempt(true);
+        });
+
+        // Play Again button on Summary Modal
+        document.getElementById('btn-play-again').addEventListener('click', () => {
+            document.getElementById('summary-modal').classList.add('hidden');
+            document.getElementById('hud-container').classList.add('hidden');
+            document.getElementById('start-modal').classList.remove('hidden');
+            state.phase = 'MENU';
+        });
+
+        // Restart / Return to Start Menu button on HUD
+        document.getElementById('btn-restart-menu').addEventListener('click', (e) => {
+            e.stopPropagation();
+            document.getElementById('hud-container').classList.add('hidden');
+            document.getElementById('round-modal').classList.add('hidden');
+            document.getElementById('summary-modal').classList.add('hidden');
+            document.getElementById('start-modal').classList.remove('hidden');
+            state.phase = 'MENU';
+        });
+
+        // Toggle Drag Mode / Hit Style (Pull-Back vs Forward drag, independent state)
+        document.getElementById('btn-drag-mode').addEventListener('click', (e) => {
+            e.stopPropagation();
+            state.pullBackMode = !state.pullBackMode;
+            updateDragModeButtonUI();
+        });
+
+        // Cycle Camera View
+        document.getElementById('btn-camera-view').addEventListener('click', (e) => {
+            e.stopPropagation();
+            state.cameraMode = (state.cameraMode + 1) % 3;
+            const labels = ['Behind Ball', 'Overhead', 'Side View'];
+            setText('camera-mode-text', labels[state.cameraMode]);
+            updateCameraDesiredTransform();
+        });
+
+        // Toggle Sound
+        document.getElementById('btn-sound').addEventListener('click', (e) => {
+            e.stopPropagation();
+            sound.enabled = !sound.enabled;
+            const icon = document.getElementById('sound-icon');
+            if (icon) {
+                icon.className = sound.enabled
+                    ? 'fa-solid fa-volume-high text-emerald-400'
+                    : 'fa-solid fa-volume-xmark text-slate-400';
+            }
+        });
+
+        // Pointer / Touch Drag Event Listeners
+        window.addEventListener('mousedown', onPointerDown);
+        window.addEventListener('mousemove', onPointerMove);
+        window.addEventListener('mouseup', onPointerUp);
+
+        window.addEventListener('touchstart', onPointerDown, { passive: false });
+        window.addEventListener('touchmove', (e) => {
+            if (state.isDragging) e.preventDefault();
+            onPointerMove(e);
+        }, { passive: false });
+        window.addEventListener('touchend', onPointerUp);
+        window.addEventListener('touchcancel', onPointerUp);
+
+        // Responsive Window Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            updateCameraDesiredTransform();
+        });
+
+        window.onload = function () {
+            updateCameraDesiredTransform();
+            animate();
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,1405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Galactic Pop-A-Shot</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+        }
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #060814;
+            font-family: 'Inter', sans-serif;
+            touch-action: none;
+        }
+        .font-arcade {
+            font-family: 'Orbitron', sans-serif;
+        }
+        #game-canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+        }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.78);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+        .neon-border-orange {
+            box-shadow: 0 0 15px rgba(249, 115, 22, 0.5), inset 0 0 10px rgba(249, 115, 22, 0.2);
+            border-color: #f97316;
+        }
+        .neon-border-cyan {
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.5), inset 0 0 10px rgba(6, 182, 212, 0.2);
+            border-color: #06b6d4;
+        }
+        @keyframes pulse-shift {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.06); box-shadow: 0 0 25px rgba(250, 204, 21, 0.75); }
+        }
+        .shift-anim {
+            animation: pulse-shift 0.55s ease-in-out 2;
+        }
+        @keyframes float-planet {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-4px) rotate(3deg); }
+        }
+        .planet-icon-wrap svg {
+            animation: float-planet 4s ease-in-out infinite;
+            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.25));
+        }
+        /* Portrait warning overlay for small mobile screens in portrait */
+        #portrait-hint {
+            display: none;
+        }
+        @media screen and (max-width: 640px) and (orientation: portrait) {
+            #portrait-hint {
+                display: flex;
+            }
+        }
+    </style>
+</head>
+<body class="relative text-white select-none overflow-hidden">
+
+    <canvas id="game-canvas"></canvas>
+
+    <!-- Portrait Orientation Suggestion Banner (Non-blocking) -->
+    <div id="portrait-hint" class="fixed bottom-2 left-1/2 -translate-x-1/2 z-30 bg-amber-500/90 text-slate-950 font-bold text-xs px-3 py-1 rounded-full items-center gap-1.5 shadow-lg pointer-events-none">
+        <span>🔄 Rotate device to Landscape for best court view</span>
+    </div>
+
+    <!-- Top HUD Overlay -->
+    <div id="hud" class="fixed top-0 left-0 right-0 p-2 sm:p-4 flex items-start justify-between pointer-events-none z-20 gap-2">
+        
+        <!-- Left: Score & Streak -->
+        <div class="glass-panel rounded-2xl px-3.5 py-2 sm:px-5 sm:py-3 flex items-center gap-3 sm:gap-5 pointer-events-auto border border-orange-500/40">
+            <div>
+                <div class="text-[10px] sm:text-xs uppercase tracking-widest text-orange-400 font-bold">Score</div>
+                <div id="score-display" class="font-arcade text-2xl sm:text-4xl font-black text-white tracking-wider">00</div>
+            </div>
+            <div class="h-8 w-[1px] bg-slate-700"></div>
+            <div>
+                <div class="text-[10px] sm:text-xs uppercase tracking-widest text-cyan-400 font-bold">Streak</div>
+                <div id="streak-display" class="font-arcade text-lg sm:text-2xl font-bold text-cyan-300">0🔥</div>
+            </div>
+        </div>
+
+        <!-- Center: Planetary Gravity Shift Monitor -->
+        <div id="planet-card" class="glass-panel rounded-2xl px-3 py-2 sm:px-5 sm:py-2.5 flex flex-col items-center pointer-events-auto border border-cyan-500/40 transition-all duration-300 min-w-[210px] sm:min-w-[290px]">
+            <div class="flex items-center gap-3 w-full justify-between">
+                <!-- Dynamic SVG Planet Picture -->
+                <div id="planet-svg-container" class="planet-icon-wrap w-11 h-11 sm:w-14 sm:h-14 flex-shrink-0 flex items-center justify-center rounded-full bg-slate-900/70 border border-white/10 p-1">
+                </div>
+                
+                <div class="flex-1 text-left">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] uppercase tracking-widest text-slate-400 font-semibold">Current Gravity</span>
+                        <span id="gravity-badge" class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">1.00G</span>
+                    </div>
+                    <div id="planet-name" class="font-arcade text-base sm:text-xl font-black tracking-wide text-white leading-tight">EARTH</div>
+                    <div id="planet-desc" class="text-[11px] sm:text-xs text-cyan-300 font-medium">9.8 m/s² • Standard Arc</div>
+                </div>
+            </div>
+
+            <!-- 6-Second Gravity Shift Countdown Bar -->
+            <div class="w-full mt-2">
+                <div class="flex justify-between text-[10px] text-slate-300 font-semibold mb-0.5">
+                    <span>NEXT GRAVITY SHIFT</span>
+                    <span id="shift-timer-text" class="font-arcade text-amber-300">6.0s</span>
+                </div>
+                <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden p-[1px]">
+                    <div id="shift-progress-bar" class="h-full bg-gradient-to-r from-cyan-400 via-amber-400 to-rose-500 rounded-full transition-none" style="width: 100%;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Game Countdown Timer & Controls -->
+        <div class="flex items-center gap-2 pointer-events-auto">
+            <div class="glass-panel rounded-2xl px-3.5 py-2 sm:px-5 sm:py-3 text-center border border-rose-500/40">
+                <div class="text-[10px] sm:text-xs uppercase tracking-widest text-rose-400 font-bold">Time Left</div>
+                <div id="timer-display" class="font-arcade text-2xl sm:text-4xl font-black text-white tracking-wider">30.0</div>
+            </div>
+            <div class="flex flex-col gap-1.5">
+                <button id="sound-btn" title="Toggle Audio" class="glass-panel hover:bg-slate-800 active:scale-95 transition p-2 sm:p-2.5 rounded-xl border border-white/15 text-sm sm:text-base">
+                    🔊
+                </button>
+                <button id="restart-hud-btn" title="Main Menu" class="glass-panel hover:bg-slate-800 active:scale-95 transition p-2 sm:p-2.5 rounded-xl border border-white/15 text-sm sm:text-base">
+                    🏠
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Start / Game Over Overlay Modal -->
+    <div id="menu-overlay" class="fixed inset-0 z-30 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+        <div class="glass-panel max-w-xl w-full rounded-3xl p-5 sm:p-7 border border-cyan-500/40 shadow-2xl text-center relative overflow-hidden">
+            <!-- Decorative Glow -->
+            <div class="absolute -top-24 -left-24 w-48 h-48 bg-orange-500/20 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="absolute -bottom-24 -right-24 w-48 h-48 bg-cyan-500/20 rounded-full blur-3xl pointer-events-none"></div>
+
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-500/20 border border-orange-500/40 text-orange-300 text-xs font-bold uppercase tracking-widest mb-2">
+                🏀 Planetary Pop-A-Shot Arcade
+            </div>
+            <h1 id="modal-title" class="font-arcade text-2xl sm:text-4xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-amber-200 to-cyan-400">
+                GALACTIC HOOPS
+            </h1>
+            <p id="modal-subtitle" class="text-xs sm:text-sm text-slate-300 mt-1.5 max-w-md mx-auto">
+                Swipe from the left shooting zone toward the hoop! Direction sets your angle, and <span class="text-amber-300 font-semibold">faster swipes launch stronger shots</span>.
+            </p>
+
+            <!-- Final Stats Box (Hidden on initial load) -->
+            <div id="stats-box" class="hidden my-4 grid grid-cols-3 gap-2 sm:gap-3 bg-slate-900/90 p-3.5 rounded-2xl border border-white/10">
+                <div>
+                    <div class="text-[10px] uppercase text-slate-400 font-bold">Final Score</div>
+                    <div id="final-score" class="font-arcade text-2xl sm:text-3xl font-black text-orange-400">0</div>
+                </div>
+                <div>
+                    <div class="text-[10px] uppercase text-slate-400 font-bold">Shots Made</div>
+                    <div id="final-accuracy" class="font-arcade text-xl sm:text-2xl font-bold text-cyan-300">0 / 0</div>
+                </div>
+                <div>
+                    <div class="text-[10px] uppercase text-slate-400 font-bold">Best Streak</div>
+                    <div id="final-streak" class="font-arcade text-xl sm:text-2xl font-bold text-amber-300">0🔥</div>
+                </div>
+            </div>
+
+            <!-- Planetary Twist Info Card -->
+            <div class="my-4 bg-slate-900/75 rounded-2xl p-3 sm:p-4 border border-white/10 text-left flex items-center gap-3.5">
+                <div class="w-12 h-12 rounded-2xl bg-indigo-950/90 border border-indigo-400/30 flex items-center justify-center text-2xl flex-shrink-0">
+                    🪐
+                </div>
+                <div class="text-xs text-slate-300 leading-relaxed">
+                    <span class="text-white font-bold">THE 6-SECOND GRAVITY TWIST:</span> Every game starts on <span class="text-emerald-300 font-semibold">Earth (9.8 m/s²)</span>. Every 6 seconds, gravity warps to one of the <span class="text-amber-300 font-semibold">9 Planets</span>—from feather-light <span class="text-cyan-300">Pluto</span> to crushing <span class="text-rose-400">Jupiter</span>!
+                </div>
+            </div>
+
+            <!-- Mode Selection Buttons -->
+            <div class="text-xs uppercase tracking-widest text-slate-400 font-bold mb-2.5">Select Countdown Mode to Launch</div>
+            <div class="grid grid-cols-2 gap-3 sm:gap-4">
+                <button onclick="startGame(30)" class="group relative overflow-hidden rounded-2xl p-3.5 sm:p-4 bg-gradient-to-br from-orange-500 to-amber-600 hover:from-orange-400 hover:to-amber-500 active:scale-95 transition shadow-lg shadow-orange-600/30 border border-orange-300/40">
+                    <div class="font-arcade text-xl sm:text-2xl font-black text-white">30 SECONDS</div>
+                    <div class="text-[11px] text-orange-100 font-semibold mt-0.5">⚡ Blitz Shootout (5 Shifts)</div>
+                </button>
+                <button onclick="startGame(60)" class="group relative overflow-hidden rounded-2xl p-3.5 sm:p-4 bg-gradient-to-br from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 active:scale-95 transition shadow-lg shadow-cyan-600/30 border border-cyan-300/40">
+                    <div class="font-arcade text-xl sm:text-2xl font-black text-white">60 SECONDS</div>
+                    <div class="text-[11px] text-cyan-100 font-semibold mt-0.5">🌌 Cosmic Marathon (10 Shifts)</div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const PLANETS = [
+            {
+                id: 'mercury',
+                name: 'MERCURY',
+                realG: 3.7,
+                mult: 0.48, // Tuned gameplay gravity multiplier so shots stay fun and distinct
+                label: 'Low Gravity • Floaty Arc',
+                badgeClass: 'bg-stone-500/30 text-stone-200 border-stone-400/40',
+                skyTint: 'rgba(168, 162, 158, 0.12)',
+                accent: '#d6d3d1',
+                svg: `<svg viewBox="0 0 100 100" class="w-full h-full">
+                    <defs>
+                        <radialGradient id="mercGrad" cx="35%" cy="30%" r="70%">
+                            <stop offset="0%" stop-color="#e7e5e4"/>
+                            <stop offset="55%" stop-color="#78716c"/>
+                            <stop offset="100%" stop-color="#292524"/>
+                        </radialGradient>
+                    </defs>
+                    <circle cx="50" cy="50" r="42" fill="url(#mercGrad)"/>
+                    <circle cx="34" cy="36" r="8" fill="#57534e" opacity="0.6"/>
+                    <circle cx="65" cy="42" r="11" fill="#44403c" opacity="0.5"/>
+                    <circle cx="45" cy="68" r="9" fill="#44403c" opacity="0.6"/>
+                    <circle cx="28" cy="60" r="5" fill="#57534e" opacity="0.7"/>
+                </svg>`
+            },
+            {
+                id: 'venus',
+                name: 'VENUS',
+                realG: 8.87,
+                mult: 0.91,
+                label: 'Near-Earth • Warm Dense Air',
+                badgeClass: 'bg-amber-500/30 text-amber-200 border-amber-400/40',
+                skyTint: 'rgba(245, 158, 11, 0.14)',
+                accent: '#fbbf24',
+                svg: `<svg viewBox="0 0 100 100" class="w-full h-full">
+                    <defs>
+                        <radialGradient id="venusGrad" cx="35%" cy="30%" r="70%">
+                            <stop offset="0%" stop-color="#fef08a"/>
+                            <stop offset="50%" stop-color="#f59e0b"/>
+                            <stop offset="100%" stop-color="#78350f"/>
+                        </radialGradient>
+                        <clipPath id="venusClip"><circle cx="50" cy="50" r="42"/></clipPath>
+                    </defs>
+                    <circle cx="50" cy="50" r="42" fill="url(#venusGrad)"/>
+                    <g clip-path="url(#venusClip)" opacity="0.45">
+                        <path d="M5,32 Q50,22 95,35" stroke="#fef3c7" stroke-width="7" fill="none"/>
+                        <path d="M5,52 Q50,64 95,48" stroke="#d97706" stroke-width="9" fill="none"/>
+                        <path d="M5,72 Q50,62 95,75" stroke="#fde68a" stroke-width="6" fill="none"/>
+                    </g>
+                </svg>`
+            },
+            {
+                id: 'earth',
+                name: 'EARTH',
+                realG: 9.8,
+                mult: 1.00,
+                label: 'Standard Gravity • Home Court',
+                badgeClass: 'bg-emerald-500/30 text-emerald-200 border-emerald-400/40',
+                skyTint: 'rgba(14, 165, 233, 0.13)',
+                accent: '#38bdf8',
+                svg: `<svg viewBox="0 0 100 100" class="w-full h-full">
+                    <defs>
+                        <radialGradient id="earthGrad" cx="35%" cy="30%" r="70%">
+                            <stop offset="0%" stop-color="#38bdf8"/>
+                            <stop offset="60%" stop-color="#0284c7"/>
+                            <stop offset="100%" stop-color="#0f172a"/>
+                        </radialGradient>
+                        <clipPath id="earthClip"><circle cx="50" cy="50" r="42"/></clipPath>
+                    </defs>
+                    <circle cx="50" cy="50" r="42" fill="url(#earthGrad)"/>
+                    <g clip-path="url(#earthClip)">
+                        <path d="M22,20 Q40,18 45,35 Q50,52 32,65 Q18,55 22,20 Z" fill="#22c55e" opacity="0.85"/>
+                        <path d="M58,28 Q78,30 82,52 Q75,78 58,72 Q52,50 58,28 Z" fill="#16a34a" opacity="0.85"/>
+                        <path d="M30,12 Q50,18 70,11" stroke="#ffffff" stroke-width="6" fill="none" opacity="0.7"/>
+                    </g>
+                </svg>`
+            },
+            {
+                id: 'mars',
+                name: 'MARS',
+                realG: 3.71,
+                mult: 0.48,
+                label: 'Low Gravity • Red Planet Loft',
+                badgeClass: 'bg-orange-500/30 text-orange-200 border-orange-400/40',
+                skyTint: 'rgba(239, 68, 68, 0.14)',
+                accent: '#f97316',
+                svg: `<svg viewBox="0 0 100 100" class="w-full h-full">
+                    <defs>
+                        <radialGradient id="marsGrad" cx="35%" cy="30%" r="70%">
+                            <stop offset="0%" stop-color="#fdba74"/>
+                            <stop offset="50%" stop-color="#ea580c"/>
+                            <stop offset="100%" stop-color="#7c2d12"/>
+                        </radialGradient>
+                        <clipPath id="marsClip"><circle cx="50" cy="50" r="42"/></clipPath>
+                    </defs>
+                    <circle cx="50" cy="50" r="42" fill="url(#marsGrad)"/>
+                    <g clip-path="url(#marsClip)">
+                        <ellipse cx="50" cy="12" rx="22" ry="7" fill="#fff7ed" opacity="0.8"/>
+                        <circle cx="38" cy="52" r="10" fill="#9a3412" opacity="0.55"/>
+                        <circle cx="65" cy="62" r="14" fill="#7c2d12" opacity="0.5"/>
+                    </g>
+                </svg>`
+            },
+            {
+                id: 'jupiter',
+                name: 'JUPITER',
+                realG: 24.79,
+                mult: 2.15,
+                label: 'Extreme Heavy • Swipe Fast!',
+                badgeClass: 'bg-rose-500/30 text-rose-200 border-rose-400/50',
+                skyTint: 'rgba(244, 63, 94, 0.16)',
+                accent: '#fb7185',
+                svg: `<svg viewBox="0 0 100 100" class="w-full h-full">
+                    <defs>
+                        <clipPath id="jupClip"><circle cx="50" cy="50" r="42"/></clipPath>
+                    </defs>
+                    <circle cx="50" cy="50" r="42" fill="#d97706"/>
+                    <g clip-path="url(#jupClip)">
+                        <rect x="0" y="16" width="100" height="10" fill="#fde68a"/>
+                        <rect x="0" y="26" width="100" height="12" fill="#b45309"/>
+                        <rect x="0" y="38" width="100" height="10" fill="#ffedd5"/>
+                        <rect x="0" y="48" width="100" height="14" fill="#c2410c"/>
+                        <rect x="0" y="62" width="100" height="10" fill="#fed7aa"/>
+                        <rect x="0" y="72" width="100" height="14" fill="#78350f"/>
+                        <ellipse cx="64" cy="58" rx="12" ry="7" fill="#ef4444" stroke="#fca5a5" stroke-width="2"/>
+                    </g>
+                </svg>`
+            },
+            {
+                id: 'saturn',
+                name: 'SATURN',
+                realG: 10.44,
+                mult: 1.07,
+                label: 'Ringed Giant • Slightly Heavy',
+                badgeClass: 'bg-yellow-500/30 text-yellow-200 border-yellow-400/40',
+                skyTint: 'rgba(234, 179, 8, 0.13)',
+                accent: '#facc15',
+                svg: `<svg viewBox="0 0 100 100" class="w-full h-full">
+                    <defs>
+                        <radialGradient id="satGrad" cx="35%" cy="35%" r="65%">
+                            <stop offset="0%" stop-color="#fef08a"/>
+                            <stop offset="60%" stop-color="#ca8a04"/>
+                            <stop offset="100%" stop-color="#713f12"/>
+                        </radialGradient>
+                    </defs>
+                    <ellipse cx="50" cy="50" rx="46" ry="15" fill="none" stroke="#fde047" stroke-width="6" opacity="0.55" transform="rotate(-22 50 50)"/>
+                    <circle cx="50" cy="50" r="29" fill="url(#satGrad)"/>
+                    <path d="M10,66 A46,15 0 0,0 90,34" fill="none" stroke="#fef08a" stroke-width="5" opacity="0.9" transform="rotate(-22 50 50)"/>
+                </svg>`
+            },
+            {
+                id: 'uranus',
+                name: 'URANUS',
+                realG: 8.69,
+                mult: 0.89,
+                label: 'Ice Giant • Smooth Breezy Arc',
+                badgeClass: 'bg-cyan-500/30 text-cyan-200 border-cyan-400/40',
+                skyTint: 'rgba(34, 211, 238, 0.13)',
+                accent: '#22d3ee',
+                svg: `<svg viewBox="0 0 100 100" class="w-full h-full">
+                    <defs>
+                        <radialGradient id="uraGrad" cx="35%" cy="30%" r="70%">
+                            <stop offset="0%" stop-color="#cffafe"/>
+                            <stop offset="55%" stop-color="#06b6d4"/>
+                            <stop offset="100%" stop-color="#164e63"/>
+                        </radialGradient>
+                    </defs>
+                    <circle cx="50" cy="50" r="36" fill="url(#uraGrad)"/>
+                    <ellipse cx="50" cy="50" rx="12" ry="45" fill="none" stroke="#a5f3fc" stroke-width="3" opacity="0.65" transform="rotate(15 50 50)"/>
+                </svg>`
+            },
+            {
+                id: 'neptune',
+                name: 'NEPTUNE',
+                realG: 11.15,
+                mult: 1.15,
+                label: 'Deep Blue Pull • Strong Gravity',
+                badgeClass: 'bg-blue-500/30 text-blue-200 border-blue-400/40',
+                skyTint: 'rgba(59, 130, 246, 0.15)',
+                accent: '#60a5fa',
+                svg: `<svg viewBox="0 0 100 100" class="w-full h-full">
+                    <defs>
+                        <radialGradient id="nepGrad" cx="35%" cy="30%" r="70%">
+                            <stop offset="0%" stop-color="#93c5fd"/>
+                            <stop offset="50%" stop-color="#2563eb"/>
+                            <stop offset="100%" stop-color="#1e1b4b"/>
+                        </radialGradient>
+                        <clipPath id="nepClip"><circle cx="50" cy="50" r="42"/></clipPath>
+                    </defs>
+                    <circle cx="50" cy="50" r="42" fill="url(#nepGrad)"/>
+                    <g clip-path="url(#nepClip)">
+                        <path d="M10,38 Q50,30 90,40" stroke="#60a5fa" stroke-width="5" fill="none" opacity="0.5"/>
+                        <path d="M10,64 Q50,72 90,62" stroke="#1d4ed8" stroke-width="7" fill="none" opacity="0.6"/>
+                        <ellipse cx="38" cy="52" rx="10" ry="6" fill="#1e3a8a" opacity="0.7"/>
+                    </g>
+                </svg>`
+            },
+            {
+                id: 'pluto',
+                name: 'PLUTO',
+                realG: 0.62,
+                mult: 0.22, // Super floaty dwarf planet feel while keeping shots inside court bounds
+                label: 'Feather Micro-G • Gentle Touch!',
+                badgeClass: 'bg-purple-500/30 text-purple-200 border-purple-400/40',
+                skyTint: 'rgba(168, 85, 247, 0.15)',
+                accent: '#c084fc',
+                svg: `<svg viewBox="0 0 100 100" class="w-full h-full">
+                    <defs>
+                        <radialGradient id="pluGrad" cx="35%" cy="30%" r="70%">
+                            <stop offset="0%" stop-color="#f5d0fe"/>
+                            <stop offset="55%" stop-color="#a855f7"/>
+                            <stop offset="100%" stop-color="#3b0764"/>
+                        </radialGradient>
+                    </defs>
+                    <circle cx="50" cy="50" r="38" fill="url(#pluGrad)"/>
+                    <!-- Pluto's signature Tombaugh Regio heart -->
+                    <path d="M52,48 C52,41 64,41 64,50 C64,58 52,65 52,68 C52,65 40,58 40,50 C40,41 52,41 52,48 Z" fill="#fae8ff" opacity="0.75"/>
+                </svg>`
+            }
+        ];
+
+        class SoundFX {
+            constructor() {
+                this.ctx = null;
+                this.enabled = true;
+            }
+            init() {
+                if (!this.ctx) {
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    if (AudioCtx) this.ctx = new AudioCtx();
+                }
+                if (this.ctx && this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+            playShoot(powerRatio) {
+                if (!this.enabled || !this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                const startFreq = 160 + powerRatio * 120;
+                osc.frequency.setValueAtTime(startFreq, now);
+                osc.frequency.exponentialRampToValueAtTime(60, now + 0.14);
+                gain.gain.setValueAtTime(0.22, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.14);
+            }
+            playRim(intensity = 1) {
+                if (!this.enabled || !this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(420 + Math.random() * 80, now);
+                osc.frequency.exponentialRampToValueAtTime(140, now + 0.09);
+                gain.gain.setValueAtTime(Math.min(0.3, 0.15 * intensity), now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.09);
+            }
+            playSwish(isClean) {
+                if (!this.enabled || !this.ctx) return;
+                const now = this.ctx.currentTime;
+                // Celebratory chime
+                const notes = isClean ? [523.25, 659.25, 783.99, 1046.5] : [440, 554.37, 659.25];
+                notes.forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.055);
+                    gain.gain.setValueAtTime(0.2, now + idx * 0.055);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.055 + 0.25);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now + idx * 0.055);
+                    osc.stop(now + idx * 0.055 + 0.25);
+                });
+            }
+            playGravityShift() {
+                if (!this.enabled || !this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(220, now);
+                osc.frequency.linearRampToValueAtTime(520, now + 0.18);
+                osc.frequency.linearRampToValueAtTime(330, now + 0.35);
+                gain.gain.setValueAtTime(0.12, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.36);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.36);
+            }
+            playBuzzer() {
+                if (!this.enabled || !this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(110, now);
+                osc.frequency.setValueAtTime(98, now + 0.2);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.65);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.65);
+            }
+        }
+
+        const sfx = new SoundFX();
+
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Earth base gravity in pixels/sec^2 (scaled dynamically with screen size)
+        let BASE_EARTH_GRAVITY = 980;
+        const GRAVITY_SHIFT_INTERVAL = 6.0; // Every 6 seconds
+
+        const state = {
+            running: false,
+            modeDuration: 30,
+            timeLeft: 30,
+            shiftTimeLeft: GRAVITY_SHIFT_INTERVAL,
+            score: 0,
+            streak: 0,
+            bestStreak: 0,
+            shotsAttempted: 0,
+            shotsMade: 0,
+            currentPlanet: PLANETS[2], // Earth (index 2)
+            balls: [],
+            particles: [],
+            floatingTexts: [],
+            stars: [],
+            netWave: 0,
+            netVelocity: 0,
+            shiftBannerAlpha: 0,
+            shiftBannerText: '',
+            // Pointer / Swipe tracking
+            pointer: {
+                active: false,
+                startX: 0,
+                startY: 0,
+                currX: 0,
+                currY: 0,
+                startTime: 0,
+                history: [] // Recent points for accurate flick velocity calculation
+            }
+        };
+
+        // Court geometry objects (recalculated on resize)
+        const court = {
+            width: 1280,
+            height: 720,
+            floorY: 640,
+            spawnX: 190,
+            spawnY: 470,
+            ballRadius: 22,
+            hoop: {
+                rimLeftX: 980,
+                rimRightX: 1056,
+                rimY: 300,
+                rimRadius: 6,
+                boardX: 1072,
+                boardTopY: 170,
+                boardBottomY: 345,
+                poleX: 1110
+            }
+        };
+
+        function resizeCourt() {
+            court.width = window.innerWidth;
+            court.height = window.innerHeight;
+            canvas.width = court.width;
+            canvas.height = court.height;
+
+            const scale = Math.min(court.width / 1100, court.height / 650);
+            BASE_EARTH_GRAVITY = 960 * Math.max(0.68, Math.min(1.25, scale));
+
+            court.floorY = court.height * 0.88;
+            court.ballRadius = Math.max(15, Math.min(25, court.width * 0.02));
+
+            // Left shooting station
+            court.spawnX = court.width * 0.16;
+            court.spawnY = court.floorY - court.height * 0.22;
+
+            // Right basketball hoop & backboard
+            const rimDiameter = court.ballRadius * 3.45;
+            court.hoop.rimRightX = court.width * 0.86;
+            court.hoop.rimLeftX = court.hoop.rimRightX - rimDiameter;
+            court.hoop.rimY = court.height * 0.44;
+            court.hoop.rimRadius = Math.max(4, court.ballRadius * 0.24);
+
+            court.hoop.boardX = court.hoop.rimRightX + court.ballRadius * 0.55;
+            court.hoop.boardTopY = court.hoop.rimY - court.ballRadius * 5.2;
+            court.hoop.boardBottomY = court.hoop.rimY + court.ballRadius * 1.6;
+            court.hoop.poleX = court.hoop.boardX + court.ballRadius * 1.3;
+
+            // Generate starfield
+            state.stars = Array.from({ length: 85 }, () => ({
+                x: Math.random() * court.width,
+                y: Math.random() * (court.floorY - 30),
+                r: Math.random() * 1.8 + 0.5,
+                alpha: Math.random() * 0.7 + 0.3,
+                twinkleSpeed: Math.random() * 2 + 1
+            }));
+        }
+
+        window.addEventListener('resize', resizeCourt);
+        resizeCourt();
+
+        function setPlanet(planet, announce = false) {
+            state.currentPlanet = planet;
+            document.getElementById('planet-svg-container').innerHTML = planet.svg;
+            document.getElementById('planet-name').textContent = planet.name;
+            document.getElementById('planet-desc').textContent = `${planet.realG} m/s² • ${planet.label}`;
+
+            const gRatio = (planet.realG / 9.8).toFixed(2);
+            const badge = document.getElementById('gravity-badge');
+            badge.textContent = `${gRatio}G`;
+            badge.className = `text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${planet.badgeClass}`;
+
+            if (announce) {
+                const card = document.getElementById('planet-card');
+                card.classList.remove('shift-anim');
+                void card.offsetWidth;
+                card.classList.add('shift-anim');
+
+                state.shiftBannerText = `GRAVITY SHIFT: ${planet.name} (${planet.realG} m/s²)`;
+                state.shiftBannerAlpha = 1.0;
+                sfx.playGravityShift();
+            }
+        }
+
+        function triggerRandomGravityShift() {
+            // Pick one of the 9 planets at random (different from current so every 6s shift is noticeable)
+            const candidates = PLANETS.filter(p => p.id !== state.currentPlanet.id);
+            const nextPlanet = candidates[Math.floor(Math.random() * candidates.length)];
+            setPlanet(nextPlanet, true);
+        }
+
+        function updateHUD() {
+            document.getElementById('score-display').textContent = String(state.score).padStart(2, '0');
+            document.getElementById('streak-display').textContent = `${state.streak}🔥`;
+            document.getElementById('timer-display').textContent = Math.max(0, state.timeLeft).toFixed(1);
+            document.getElementById('shift-timer-text').textContent = `${Math.max(0, state.shiftTimeLeft).toFixed(1)}s`;
+            const pct = Math.max(0, Math.min(100, (state.shiftTimeLeft / GRAVITY_SHIFT_INTERVAL) * 100));
+            document.getElementById('shift-progress-bar').style.width = `${pct}%`;
+        }
+
+        function getPointerPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            if (e.touches && e.touches.length > 0) {
+                return {
+                    x: e.touches[0].clientX - rect.left,
+                    y: e.touches[0].clientY - rect.top
+                };
+            } else if (e.changedTouches && e.changedTouches.length > 0) {
+                return {
+                    x: e.changedTouches[0].clientX - rect.left,
+                    y: e.changedTouches[0].clientY - rect.top
+                };
+            }
+            return {
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top
+            };
+        }
+
+        function onPointerDown(e) {
+            if (!state.running) return;
+            sfx.init();
+            const pos = getPointerPos(e);
+            const now = performance.now();
+
+            state.pointer.active = true;
+            state.pointer.startX = pos.x;
+            state.pointer.startY = pos.y;
+            state.pointer.currX = pos.x;
+            state.pointer.currY = pos.y;
+            state.pointer.startTime = now;
+            state.pointer.history = [{ x: pos.x, y: pos.y, t: now }];
+        }
+
+        function onPointerMove(e) {
+            if (!state.pointer.active || !state.running) return;
+            const pos = getPointerPos(e);
+            const now = performance.now();
+            state.pointer.currX = pos.x;
+            state.pointer.currY = pos.y;
+            state.pointer.history.push({ x: pos.x, y: pos.y, t: now });
+            // Keep last 120ms of swipe samples so flick speed is responsive
+            while (state.pointer.history.length > 2 && now - state.pointer.history[0].t > 120) {
+                state.pointer.history.shift();
+            }
+        }
+
+        function calculateSwipeShot() {
+            const p = state.pointer;
+            const totalDx = p.currX - p.startX;
+            const totalDy = p.currY - p.startY;
+            const totalDist = Math.hypot(totalDx, totalDy);
+
+            if (totalDist < 18) return null; // Ignore accidental tiny taps
+
+            // Direction angle comes from overall swipe vector (start -> release)
+            let angle = Math.atan2(totalDy, totalDx);
+
+            // Clamp angle so shots go generally forward/upward toward the right hoop
+            if (angle > 0.35) angle = 0.35;
+            if (angle < -1.48) angle = -1.48;
+
+            // Calculate swipe speed (pixels per millisecond) using recent flick history + overall swipe
+            const now = performance.now();
+            const totalElapsed = Math.max(16, now - p.startTime);
+            const overallSpeed = totalDist / totalElapsed; // px/ms
+
+            const oldest = p.history[0] || { x: p.startX, y: p.startY, t: p.startTime };
+            const recentDist = Math.hypot(p.currX - oldest.x, p.currY - oldest.y);
+            const recentElapsed = Math.max(14, now - oldest.t);
+            const flickSpeed = recentDist / recentElapsed; // px/ms
+
+            // Blend flick speed and overall swipe speed so both fast flicks and long fast swipes feel natural
+            const rawSpeed = Math.max(overallSpeed, flickSpeed * 0.85);
+
+            // Normalize swipe speed (typical swipe speeds are ~0.35 px/ms slow to ~2.6 px/ms fast)
+            const speedNorm = Math.max(0, Math.min(1, (rawSpeed - 0.22) / 2.25));
+            const distBonus = Math.max(0, Math.min(0.22, totalDist / (court.width * 0.45) * 0.22));
+            const powerRatio = Math.max(0.18, Math.min(1.0, speedNorm * 0.85 + distBonus));
+
+            // Convert powerRatio to launch velocity scaled to screen width
+            const baseVel = Math.hypot(court.width, court.height) * 0.88;
+            const launchSpeed = baseVel * (0.46 + powerRatio * 0.78);
+
+            return {
+                vx: Math.cos(angle) * launchSpeed,
+                vy: Math.sin(angle) * launchSpeed,
+                powerRatio,
+                angle
+            };
+        }
+
+        function onPointerUp() {
+            if (!state.pointer.active || !state.running) return;
+            const shot = calculateSwipeShot();
+            state.pointer.active = false;
+
+            if (shot) {
+                launchBasketball(shot.vx, shot.vy, shot.powerRatio);
+            }
+        }
+
+        canvas.addEventListener('mousedown', onPointerDown);
+        window.addEventListener('mousemove', onPointerMove);
+        window.addEventListener('mouseup', onPointerUp);
+
+        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); onPointerDown(e); }, { passive: false });
+        window.addEventListener('touchmove', (e) => { if (state.pointer.active) e.preventDefault(); onPointerMove(e); }, { passive: false });
+        window.addEventListener('touchend', (e) => { onPointerUp(e); }, { passive: false });
+
+        function launchBasketball(vx, vy, powerRatio) {
+            state.shotsAttempted++;
+            sfx.playShoot(powerRatio);
+
+            state.balls.push({
+                x: court.spawnX,
+                y: court.spawnY,
+                 prevX: court.spawnX,
+                prevY: court.spawnY,
+                vx: vx,
+                vy: vy,
+                radius: court.ballRadius,
+                rotation: 0,
+                spin: (vx > 0 ? 1 : -1) * (4 + powerRatio * 6),
+                touchedRim: false,
+                touchedBoard: false,
+                passedTopPlane: false,
+                scored: false,
+                dead: false,
+                alpha: 1,
+                trail: []
+            });
+        }
+
+        function spawnParticles(x, y, color, count = 24) {
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 60 + Math.random() * 260;
+                state.particles.push({
+                    x,
+                    y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed - 60,
+                    radius: 2 + Math.random() * 4,
+                    color,
+                    alpha: 1,
+                    life: 0.5 + Math.random() * 0.45
+                });
+            }
+        }
+
+        function addFloatingText(text, subtext, x, y, color = '#fbbf24') {
+            state.floatingTexts.push({
+                text,
+                subtext,
+                x,
+                y,
+                vy: -75,
+                alpha: 1,
+                color
+            });
+        }
+
+        function resolveCircleCollision(ball, cx, cy, cr, restitution = 0.68) {
+            const dx = ball.x - cx;
+            const dy = ball.y - cy;
+            const dist = Math.hypot(dx, dy);
+            const minDist = ball.radius + cr;
+
+            if (dist < minDist && dist > 0.0001) {
+                const nx = dx / dist;
+                const ny = dy / dist;
+                const overlap = minDist - dist;
+
+                ball.x += nx * overlap;
+                ball.y += ny * overlap;
+
+                const relVel = ball.vx * nx + ball.vy * ny;
+                if (relVel < 0) {
+                    ball.vx -= (1 + restitution) * relVel * nx;
+                    ball.vy -= (1 + restitution) * relVel * ny;
+                    // Add slight spin deflection
+                    ball.spin = (Math.random() - 0.5) * 10;
+                    sfx.playRim(Math.min(1.5, Math.abs(relVel) / 300));
+                }
+                ball.touchedRim = true;
+            }
+        }
+
+        function updatePhysics(dt) {
+            const activeGravity = BASE_EARTH_GRAVITY * state.currentPlanet.mult;
+            const h = court.hoop;
+
+            // Update net swish spring
+            state.netVelocity += (-state.netWave * 35 - state.netVelocity * 6) * dt;
+            state.netWave += state.netVelocity * dt;
+
+            for (let i = state.balls.length - 1; i >= 0; i--) {
+                const b = state.balls[i];
+                b.prevX = b.x;
+                b.prevY = b.y;
+
+                // Apply current planet's gravity
+                b.vy += activeGravity * dt;
+                b.x += b.vx * dt;
+                b.y += b.vy * dt;
+                b.rotation += b.spin * dt;
+
+                // Record comet trail
+                b.trail.push({ x: b.x, y: b.y });
+                if (b.trail.length > 14) b.trail.shift();
+
+                // Floor bounce
+                if (b.y + b.radius > court.floorY) {
+                    b.y = court.floorY - b.radius;
+                    b.vy = -b.vy * 0.62;
+                    b.vx *= 0.88;
+                    if (Math.abs(b.vy) > 90) sfx.playRim(0.5);
+                    b.dead = true; // Fade out shortly after hitting floor
+                }
+
+                // Backboard collision (line segment with thickness)
+                const boardHalfThick = 6;
+                if (
+                    b.x + b.radius > h.boardX - boardHalfThick &&
+                    b.x - b.radius < h.boardX + boardHalfThick &&
+                    b.y + b.radius > h.boardTopY &&
+                    b.y - b.radius < h.boardBottomY
+                ) {
+                    if (b.vx > 0 && b.prevX < h.boardX) {
+                        b.x = h.boardX - boardHalfThick - b.radius;
+                        b.vx = -b.vx * 0.68;
+                        b.touchedBoard = true;
+                        sfx.playRim(0.8);
+                    } else if (b.vx < 0 && b.prevX > h.boardX) {
+                        b.x = h.boardX + boardHalfThick + b.radius;
+                        b.vx = -b.vx * 0.68;
+                    }
+                }
+
+                // Front & Back Rim Collisions
+                resolveCircleCollision(b, h.rimLeftX, h.rimY, h.rimRadius, 0.66);
+                resolveCircleCollision(b, h.rimRightX, h.rimY, h.rimRadius, 0.66);
+
+                // Check hoop scoring (passing downward through rim cylinder)
+                const rimInnerLeft = h.rimLeftX + h.rimRadius * 0.5;
+                const rimInnerRight = h.rimRightX - h.rimRadius * 0.5;
+
+                if (!b.scored && b.vy > 0) {
+                    if (b.prevY <= h.rimY && b.y >= h.rimY) {
+                        if (b.x > rimInnerLeft && b.x < rimInnerRight) {
+                            scoreBasket(b);
+                        }
+                    }
+                }
+
+                // Fade out balls that hit the floor or go offscreen
+                if (b.dead) {
+                    b.alpha -= dt * 1.1;
+                }
+                if (b.alpha <= 0 || b.x > court.width + 150 || b.x < -150 || b.y > court.height + 150) {
+                    state.balls.splice(i, 1);
+                }
+            }
+
+            // Update particles
+            for (let i = state.particles.length - 1; i >= 0; i--) {
+                const p = state.particles[i];
+                p.vy += 420 * dt;
+                p.x += p.vx * dt;
+                p.y += p.vy * dt;
+                p.life -= dt;
+                p.alpha = Math.max(0, p.life * 1.6);
+                if (p.life <= 0) state.particles.splice(i, 1);
+            }
+
+            // Update score popups
+            for (let i = state.floatingTexts.length - 1; i >= 0; i--) {
+                const ft = state.floatingTexts[i];
+                ft.y += ft.vy * dt;
+                ft.alpha -= dt * 0.85;
+                if (ft.alpha <= 0) state.floatingTexts.splice(i, 1);
+            }
+
+            if (state.shiftBannerAlpha > 0) {
+                state.shiftBannerAlpha = Math.max(0, state.shiftBannerAlpha - dt * 0.55);
+            }
+        }
+
+        function scoreBasket(ball) {
+            ball.scored = true;
+            // Slow ball horizontally inside net for authentic net drop
+            ball.vx *= 0.35;
+            state.netVelocity = 14;
+
+            state.shotsMade++;
+            state.streak++;
+            if (state.streak > state.bestStreak) state.bestStreak = state.streak;
+
+            const isCleanSwish = !ball.touchedRim;
+            const basePoints = isCleanSwish ? 3 : 2;
+            const streakBonus = state.streak >= 3 ? 1 : 0;
+            const totalPoints = basePoints + streakBonus;
+
+            state.score += totalPoints;
+            sfx.playSwish(isCleanSwish);
+
+            const hoopCenterX = (court.hoop.rimLeftX + court.hoop.rimRightX) / 2;
+            const label = isCleanSwish ? `+${totalPoints} SWISH!` : `+${totalPoints} BUCKET!`;
+            const sub = state.streak >= 3 ? `🔥 ${state.streak}x STREAK BONUS` : state.currentPlanet.name;
+            const color = isCleanSwish ? '#38bdf8' : '#fb923c';
+
+            addFloatingText(label, sub, hoopCenterX, court.hoop.rimY - 35, color);
+            spawnParticles(hoopCenterX, court.hoop.rimY + 15, color, isCleanSwish ? 32 : 18);
+            updateHUD();
+        }
+
+        function drawArenaBackground(time) {
+            // Deep space gradient
+            const grad = ctx.createLinearGradient(0, 0, 0, court.height);
+            grad.addColorStop(0, '#040711');
+            grad.addColorStop(0.65, '#0f172a');
+            grad.addColorStop(1, '#1e1b4b');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, court.width, court.height);
+
+            // Planetary atmospheric tint overlay
+            ctx.fillStyle = state.currentPlanet.skyTint;
+            ctx.fillRect(0, 0, court.width, court.height);
+
+            // Twinkling stars
+            for (const s of state.stars) {
+                const twinkle = 0.4 + 0.6 * Math.sin(time * 0.002 * s.twinkleSpeed + s.x);
+                ctx.fillStyle = `rgba(255, 255, 255, ${s.alpha * twinkle})`;
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Sci-fi court floor
+            const floorGrad = ctx.createLinearGradient(0, court.floorY, 0, court.height);
+            floorGrad.addColorStop(0, '#1e293b');
+            floorGrad.addColorStop(1, '#090d16');
+            ctx.fillStyle = floorGrad;
+            ctx.fillRect(0, court.floorY, court.width, court.height - court.floorY);
+
+            // Glowing horizon line
+            ctx.strokeStyle = state.currentPlanet.accent;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(0, court.floorY);
+            ctx.lineTo(court.width, court.floorY);
+            ctx.stroke();
+
+            // Perspective court grid lines
+            ctx.strokeStyle = 'rgba(148, 163, 184, 0.15)';
+            ctx.lineWidth = 1.5;
+            for (let i = 0; i <= 10; i++) {
+                const xTop = (court.width / 10) * i;
+                const xBot = (court.width / 10) * i + (i - 5) * 65;
+                ctx.beginPath();
+                ctx.moveTo(xTop, court.floorY);
+                ctx.lineTo(xBot, court.height);
+                ctx.stroke();
+            }
+        }
+
+        function drawShootingStation() {
+            // Left shooting pad platform
+            ctx.save();
+            const padWidth = court.ballRadius * 4.2;
+            ctx.fillStyle = 'rgba(56, 189, 248, 0.18)';
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.ellipse(court.spawnX, court.floorY + 12, padWidth, 12, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Vertical holo beam under ready ball
+            const beamGrad = ctx.createLinearGradient(0, court.spawnY, 0, court.floorY);
+            beamGrad.addColorStop(0, 'rgba(56, 189, 248, 0.22)');
+            beamGrad.addColorStop(1, 'rgba(56, 189, 248, 0.02)');
+            ctx.fillStyle = beamGrad;
+            ctx.fillRect(court.spawnX - court.ballRadius * 0.9, court.spawnY, court.ballRadius * 1.8, court.floorY - court.spawnY);
+
+            // Draw ready-to-shoot basketball at spawn point
+            drawSingleBasketball(court.spawnX, court.spawnY, court.ballRadius, 0, 1, true);
+
+            // Helper label beneath ready ball
+            ctx.fillStyle = 'rgba(226, 232, 240, 0.75)';
+            ctx.font = 'bold 11px Orbitron, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('SWIPE TO SHOOT', court.spawnX, court.spawnY + court.ballRadius + 22);
+            ctx.restore();
+        }
+
+        function drawSwipeGuideAndPreview() {
+            if (!state.pointer.active) return;
+
+            const p = state.pointer;
+            const shot = calculateSwipeShot();
+
+            ctx.save();
+            // Draw user's finger/mouse swipe line
+            ctx.strokeStyle = 'rgba(251, 191, 36, 0.65)';
+            ctx.lineWidth = 4;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(p.startX, p.startY);
+            ctx.lineTo(p.currX, p.currY);
+            ctx.stroke();
+
+            ctx.fillStyle = '#fbbf24';
+            ctx.beginPath();
+            ctx.arc(p.currX, p.currY, 6, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Draw initial trajectory preview dots from the ball using current planet's gravity
+            if (shot) {
+                const activeG = BASE_EARTH_GRAVITY * state.currentPlanet.mult;
+                const powerPct = Math.round(shot.powerRatio * 100);
+                const deg = Math.round(-shot.angle * (180 / Math.PI));
+
+                for (let step = 1; step <= 12; step++) {
+                    const t = step * 0.045;
+                    const px = court.spawnX + shot.vx * t;
+                    const py = court.spawnY + shot.vy * t + 0.5 * activeG * t * t;
+                    const alpha = (1 - step / 14) * 0.85;
+                    ctx.fillStyle = `rgba(56, 189, 248, ${alpha})`;
+                    ctx.beginPath();
+                    ctx.arc(px, py, Math.max(2.5, 6 - step * 0.3), 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // Angle & Power readout badge near ball
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+                ctx.strokeStyle = '#fbbf24';
+                ctx.lineWidth = 1.5;
+                const badgeX = court.spawnX - 52;
+                const badgeY = court.spawnY - court.ballRadius - 48;
+                ctx.beginPath();
+                ctx.roundRect(badgeX, badgeY, 108, 32, 8);
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.fillStyle = '#fde68a';
+                ctx.font = 'bold 11px Orbitron, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(`${deg}° • ${powerPct}% PWR`, badgeX + 54, badgeY + 20);
+            }
+            ctx.restore();
+        }
+
+        function drawSingleBasketball(x, y, r, rotation, alpha = 1, isReadyBall = false) {
+            ctx.save();
+            ctx.globalAlpha = alpha;
+            ctx.translate(x, y);
+            ctx.rotate(rotation);
+
+            if (isReadyBall) {
+                ctx.shadowColor = '#f97316';
+                ctx.shadowBlur = 16;
+            }
+
+            // Basketball spherical shading
+            const grad = ctx.createRadialGradient(-r * 0.3, -r * 0.3, r * 0.1, 0, 0, r);
+            grad.addColorStop(0, '#fb923c');
+            grad.addColorStop(0.65, '#ea580c');
+            grad.addColorStop(1, '#7c2d12');
+
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(0, 0, r, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Basketball seams
+            ctx.strokeStyle = '#292524';
+            ctx.lineWidth = Math.max(1.5, r * 0.09);
+            ctx.beginPath();
+            ctx.moveTo(-r, 0);
+            ctx.lineTo(r, 0);
+            ctx.moveTo(0, -r);
+            ctx.lineTo(0, r);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(-r * 0.55, 0, r * 0.75, -0.9, 0.9);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(r * 0.55, 0, r * 0.75, Math.PI - 0.9, Math.PI + 0.9);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        function drawBalls() {
+            for (const b of state.balls) {
+                // Draw planet-colored motion trail
+                for (let i = 0; i < b.trail.length; i++) {
+                    const pt = b.trail[i];
+                    const ratio = (i + 1) / b.trail.length;
+                    ctx.save();
+                    ctx.globalAlpha = ratio * 0.28 * b.alpha;
+                    ctx.fillStyle = state.currentPlanet.accent;
+                    ctx.beginPath();
+                    ctx.arc(pt.x, pt.y, b.radius * ratio * 0.8, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                }
+                drawSingleBasketball(b.x, b.y, b.radius, b.rotation, b.alpha, false);
+            }
+        }
+
+        function drawBasketballHoop() {
+            const h = court.hoop;
+            ctx.save();
+
+            // Support stanchion pole on right
+            ctx.strokeStyle = '#475569';
+            ctx.lineWidth = 12;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(h.poleX, court.floorY);
+            ctx.lineTo(h.poleX, h.boardTopY + 35);
+            ctx.lineTo(h.boardX, h.boardTopY + 55);
+            ctx.stroke();
+
+            // Support arm bar
+            ctx.lineWidth = 8;
+            ctx.beginPath();
+            ctx.moveTo(h.poleX, h.rimY + 10);
+            ctx.lineTo(h.boardX, h.rimY);
+            ctx.stroke();
+
+            // Backboard glass panel
+            ctx.fillStyle = 'rgba(226, 232, 240, 0.9)';
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.roundRect(h.boardX - 5, h.boardTopY, 12, h.boardBottomY - h.boardTopY, 4);
+            ctx.fill();
+            ctx.stroke();
+
+            // Shooter's square target indicator on side of backboard
+            ctx.fillStyle = '#f97316';
+            ctx.fillRect(h.boardX - 6, h.rimY - 38, 4, 34);
+
+            // Dynamic swishing net
+            const netHeight = court.ballRadius * 2.8;
+            const topW = h.rimRightX - h.rimLeftX;
+            const botLeftX = h.rimLeftX + topW * 0.2 + state.netWave * 3.5;
+            const botRightX = h.rimRightX - topW * 0.2 + state.netWave * 3.5;
+            const botY = h.rimY + netHeight - Math.abs(state.netWave) * 1.4;
+
+            ctx.strokeStyle = 'rgba(241, 245, 249, 0.82)';
+            ctx.lineWidth = 2;
+            const strands = 6;
+            for (let i = 0; i <= strands; i++) {
+                const t = i / strands;
+                const tx = h.rimLeftX + topW * t;
+                const bx = botLeftX + (botRightX - botLeftX) * t;
+                ctx.beginPath();
+                ctx.moveTo(tx, h.rimY);
+                ctx.quadraticCurveTo((tx + bx) / 2 + state.netWave * 2, h.rimY + netHeight * 0.55, bx, botY);
+                ctx.stroke();
+            }
+            // Cross-mesh net lines
+            for (let r = 1; r <= 3; r++) {
+                const ry = h.rimY + (netHeight * r) / 3.4;
+                const shrink = (r / 4) * 0.2;
+                const lx = h.rimLeftX + topW * shrink + state.netWave * (r * 0.8);
+                const rx = h.rimRightX - topW * shrink + state.netWave * (r * 0.8);
+                ctx.beginPath();
+                ctx.moveTo(lx, ry);
+                ctx.lineTo(rx, ry);
+                ctx.stroke();
+            }
+
+            // Metallic Orange Rim
+            ctx.strokeStyle = '#ea580c';
+            ctx.lineWidth = h.rimRadius * 2;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(h.rimLeftX, h.rimY);
+            ctx.lineTo(h.boardX - 5, h.rimY);
+            ctx.stroke();
+
+            // Rim Joint Highlight
+            ctx.fillStyle = '#fdba74';
+            ctx.beginPath();
+            ctx.arc(h.rimLeftX, h.rimY, h.rimRadius * 0.65, 0, Math.PI * 2);
+            ctx.arc(h.rimRightX, h.rimY, h.rimRadius * 0.65, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        function drawEffectsAndBanners() {
+            // Draw particles
+            for (const p of state.particles) {
+                ctx.save();
+                ctx.globalAlpha = p.alpha;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+
+            // Draw floating score popups
+            for (const ft of state.floatingTexts) {
+                ctx.save();
+                ctx.globalAlpha = ft.alpha;
+                ctx.font = '900 22px Orbitron, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillStyle = ft.color;
+                ctx.shadowColor = 'rgba(0,0,0,0.8)';
+                ctx.shadowBlur = 8;
+                ctx.fillText(ft.text, ft.x, ft.y);
+
+                if (ft.subtext) {
+                    ctx.font = '700 12px Inter, sans-serif';
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillText(ft.subtext, ft.x, ft.y + 18);
+                }
+                ctx.restore();
+            }
+
+            // Center-screen Gravity Shift alert banner
+            if (state.shiftBannerAlpha > 0) {
+                ctx.save();
+                ctx.globalAlpha = state.shiftBannerAlpha;
+                ctx.font = '900 20px Orbitron, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillStyle = state.currentPlanet.accent;
+                ctx.shadowColor = '#000';
+                ctx.shadowBlur = 12;
+                ctx.fillText(state.shiftBannerText, court.width * 0.5, court.height * 0.26);
+                ctx.restore();
+            }
+        }
+
+        function startGame(seconds) {
+            sfx.init();
+            state.modeDuration = seconds;
+            state.timeLeft = seconds;
+            state.shiftTimeLeft = GRAVITY_SHIFT_INTERVAL;
+            state.score = 0;
+            state.streak = 0;
+            state.bestStreak = 0;
+            state.shotsAttempted = 0;
+            state.shotsMade = 0;
+            state.balls = [];
+            state.particles = [];
+            state.floatingTexts = [];
+            state.running = true;
+
+            // Always start on Earth (9.8 m/s²)
+            const earth = PLANETS.find(p => p.id === 'earth');
+            setPlanet(earth, false);
+            updateHUD();
+
+            document.getElementById('menu-overlay').classList.add('hidden');
+        }
+
+        function endGame() {
+            state.running = false;
+            state.pointer.active = false;
+            sfx.playBuzzer();
+
+            document.getElementById('modal-title').textContent = "TIME'S UP!";
+            document.getElementById('modal-subtitle').textContent = `You conquered ${state.modeDuration} seconds of shifting planetary gravity! Ready for another round?`;
+
+            const statsBox = document.getElementById('stats-box');
+            statsBox.classList.remove('hidden');
+            document.getElementById('final-score').textContent = state.score;
+            document.getElementById('final-accuracy').textContent = `${state.shotsMade} / ${state.shotsAttempted}`;
+            document.getElementById('final-streak').textContent = `${state.bestStreak}🔥`;
+
+            document.getElementById('menu-overlay').classList.remove('hidden');
+        }
+
+        // HUD Utility Buttons
+        document.getElementById('sound-btn').addEventListener('click', () => {
+            sfx.init();
+            sfx.enabled = !sfx.enabled;
+            document.getElementById('sound-btn').textContent = sfx.enabled ? '🔊' : '🔇';
+        });
+
+        document.getElementById('restart-hud-btn').addEventListener('click', () => {
+            state.running = false;
+            state.pointer.active = false;
+            document.getElementById('menu-overlay').classList.remove('hidden');
+        });
+
+        let lastFrameTime = performance.now();
+
+        function gameLoop(now) {
+            const dt = Math.min(0.05, (now - lastFrameTime) / 1000);
+            lastFrameTime = now;
+
+            if (state.running) {
+                state.timeLeft -= dt;
+                state.shiftTimeLeft -= dt;
+
+                // Trigger planetary gravity change every 6 seconds
+                if (state.shiftTimeLeft <= 0 && state.timeLeft > 0.2) {
+                    state.shiftTimeLeft += GRAVITY_SHIFT_INTERVAL;
+                    triggerRandomGravityShift();
+                }
+
+                if (state.timeLeft <= 0) {
+                    state.timeLeft = 0;
+                    updateHUD();
+                    endGame();
+                } else {
+                    updateHUD();
+                }
+            }
+
+            updatePhysics(dt);
+
+            // Render scene
+            drawArenaBackground(now);
+            drawShootingStation();
+            drawSwipeGuideAndPreview();
+            drawBalls();
+            drawBasketballHoop();
+            drawEffectsAndBanners();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        window.onload = function () {
+            // Initialize planet display to Earth on load and start animation loop
+            setPlanet(PLANETS.find(p => p.id === 'earth'), false);
+            requestAnimationFrame(gameLoop);
+        };
+    </script>
+</body>
+</html>

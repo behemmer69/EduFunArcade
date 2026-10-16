@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pocket Sports Arcade • Game Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            background-color: #050814;
+            color: #f8fafc;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+        .font-arcade {
+            font-family: 'Orbitron', sans-serif;
+        }
+        .glass-card {
+            background: rgba(15, 23, 42, 0.78);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+        .card-hoops:hover {
+            border-color: rgba(249, 115, 22, 0.6);
+            box-shadow: 0 20px 50px -12px rgba(249, 115, 22, 0.28), 0 0 25px rgba(6, 182, 212, 0.15);
+        }
+        .card-putting:hover {
+            border-color: rgba(16, 185, 129, 0.6);
+            box-shadow: 0 20px 50px -12px rgba(16, 185, 129, 0.28), 0 0 25px rgba(52, 211, 153, 0.15);
+        }
+        @keyframes floatSlow {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-6px) rotate(1.5deg); }
+        }
+        @keyframes pulseGlow {
+            0%, 100% { opacity: 0.45; transform: scale(1); }
+            50% { opacity: 0.85; transform: scale(1.06); }
+        }
+        .float-svg {
+            animation: floatSlow 5s ease-in-out infinite;
+        }
+        .glow-orb {
+            animation: pulseGlow 6s ease-in-out infinite;
+        }
+        /* Subtle animated background grid */
+        .arcade-grid-bg {
+            background-size: 40px 40px;
+            background-image: 
+                linear-gradient(to right, rgba(148, 163, 184, 0.05) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(148, 163, 184, 0.05) 1px, transparent 1px);
+        }
+    </style>
+</head>
+<body class="min-h-screen arcade-grid-bg relative flex flex-col justify-between selection:bg-cyan-500 selection:text-slate-950">
+
+    <!-- Ambient Background Glow Orbs -->
+    <div class="fixed -top-32 -left-32 w-96 h-96 rounded-full bg-orange-600/15 blur-3xl pointer-events-none glow-orb"></div>
+    <div class="fixed top-1/3 -right-32 w-96 h-96 rounded-full bg-emerald-500/15 blur-3xl pointer-events-none glow-orb" style="animation-delay: 2s;"></div>
+    <div class="fixed -bottom-32 left-1/3 w-96 h-96 rounded-full bg-cyan-500/10 blur-3xl pointer-events-none glow-orb" style="animation-delay: 4s;"></div>
+
+    <!-- Top Navigation / Header Bar -->
+    <header class="relative z-10 max-w-6xl w-full mx-auto px-4 sm:px-6 pt-5 pb-3 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+            <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-orange-500 via-amber-500 to-emerald-500 p-[2px] shadow-lg shadow-orange-500/20">
+                <div class="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center text-xl">
+                    🕹️
+                </div>
+            </div>
+            <div>
+                <div class="flex items-center gap-2">
+                    <span class="font-arcade text-lg sm:text-xl font-black tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-100 to-cyan-300">
+                        POCKET SPORTS ARCADE
+                    </span>
+                    <span class="hidden sm:inline-block text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-400/30">
+                        2 Games Ready
+                    </span>
+                </div>
+                <p class="text-xs text-slate-400">Instant-play web games • No downloads required</p>
+            </div>
+        </div>
+
+        <!-- Utility Buttons -->
+        <div class="flex items-center gap-2">
+            <button onclick="openModal('guide-modal')" class="glass-card hover:bg-slate-800/80 active:scale-95 transition px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-200 flex items-center gap-1.5 border border-white/15">
+                <span>📁</span>
+                <span>Folder Setup Guide</span>
+            </button>
+            <button onclick="openModal('config-modal')" class="glass-card hover:bg-slate-800/80 active:scale-95 transition px-3.5 py-2 rounded-xl text-xs font-semibold text-cyan-300 flex items-center gap-1.5 border border-cyan-500/30">
+                <span>⚙️</span>
+                <span class="hidden sm:inline">Configure</span>
+                <span>Filenames</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Hero & Game Cards Section -->
+    <main class="relative z-10 max-w-6xl w-full mx-auto px-4 sm:px-6 py-4 sm:py-8 flex-1 flex flex-col justify-center">
+        
+        <!-- Hero Title -->
+        <div class="text-center max-w-2xl mx-auto mb-6 sm:mb-10">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-slate-300 text-xs font-semibold mb-3">
+                <span>⚡ Tap a game below to launch immediately</span>
+            </div>
+            <h1 class="font-arcade text-2xl sm:text-4xl md:text-5xl font-black tracking-tight text-white leading-tight">
+                CHOOSE YOUR <span class="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-amber-300 to-emerald-400">CHALLENGE</span>
+            </h1>
+        </div>
+
+        <!-- Two-Column Game Cards Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 items-stretch">
+
+            <!-- GAME CARD 1: GALACTIC POP-A-SHOT -->
+            <article class="glass-card card-hoops rounded-3xl overflow-hidden flex flex-col justify-between transition-all duration-300 group relative">
+                <div>
+                    <!-- Custom SVG Artwork Banner: Cosmic Planet + Flaming Basketball Hoop -->
+                    <div class="relative h-52 sm:h-60 w-full bg-gradient-to-b from-slate-950 via-indigo-950/80 to-slate-900 overflow-hidden border-b border-white/10 flex items-center justify-center p-4">
+                        <!-- Starfield dots -->
+                        <div class="absolute inset-0 opacity-60" style="background-image: radial-gradient(#fff 1px, transparent 1px), radial-gradient(#38bdf8 1px, transparent 1px); background-size: 36px 36px; background-position: 0 0, 18px 18px;"></div>
+                        
+                        <!-- Ambient Glow -->
+                        <div class="absolute w-52 h-52 bg-orange-500/25 rounded-full blur-2xl group-hover:bg-orange-500/40 transition-all"></div>
+
+                        <!-- Top Corner Badges -->
+                        <div class="absolute top-3.5 left-3.5 z-10 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-950/85 border border-orange-500/40 text-orange-300 text-[11px] font-bold tracking-wide">
+                            <span>🏀 ARCADE ACTION</span>
+                        </div>
+                        <div class="absolute top-3.5 right-3.5 z-10 px-2.5 py-1 rounded-full bg-slate-950/85 border border-cyan-500/40 text-cyan-300 text-[11px] font-arcade font-bold">
+                            30s / 60s
+                        </div>
+
+                        <!-- Custom SVG Illustration -->
+                        <svg viewBox="0 0 360 180" class="w-full h-full max-w-[340px] relative z-10 float-svg">
+                            <defs>
+                                <radialGradient id="saturnBody" cx="35%" cy="30%" r="70%">
+                                    <stop offset="0%" stop-color="#fef08a"/>
+                                    <stop offset="55%" stop-color="#f59e0b"/>
+                                    <stop offset="100%" stop-color="#78350f"/>
+                                </radialGradient>
+                                <radialGradient id="bballGrad" cx="35%" cy="30%" r="70%">
+                                    <stop offset="0%" stop-color="#fdba74"/>
+                                    <stop offset="55%" stop-color="#ea580c"/>
+                                    <stop offset="100%" stop-color="#7c2d12"/>
+                                </radialGradient>
+                                <linearGradient id="arcTrail" x1="0%" y1="100%" x2="100%" y2="0%">
+                                    <stop offset="0%" stop-color="#38bdf8" stop-opacity="0"/>
+                                    <stop offset="50%" stop-color="#38bdf8" stop-opacity="0.7"/>
+                                    <stop offset="100%" stop-color="#f97316" stop-opacity="0.95"/>
+                                </linearGradient>
+                            </defs>
+
+                            <!-- Background Ringed Planet (Saturn) -->
+                            <g transform="translate(80, 62)">
+                                <ellipse cx="0" cy="0" rx="52" ry="15" fill="none" stroke="#fde047" stroke-width="5" opacity="0.45" transform="rotate(-20)"/>
+                                <circle cx="0" cy="0" r="30" fill="url(#saturnBody)"/>
+                                <path d="M-48,18 A52,15 0 0,0 48,-18" fill="none" stroke="#fef08a" stroke-width="5" opacity="0.9" transform="rotate(-20)"/>
+                            </g>
+
+                            <!-- Glowing Trajectory Arc -->
+                            <path d="M 45,145 Q 160,10 268,78" fill="none" stroke="url(#arcTrail)" stroke-width="5" stroke-dasharray="8 6" stroke-linecap="round"/>
+
+                            <!-- Flying Basketball -->
+                            <g transform="translate(185, 54) rotate(-25)">
+                                <circle cx="0" cy="0" r="22" fill="url(#bballGrad)" stroke="#fb923c" stroke-width="1"/>
+                                <path d="M-22,0 L22,0 M0,-22 L0,22" stroke="#292524" stroke-width="2.2"/>
+                                <path d="M-12,-18 Q0,0 -12,18 M12,-18 Q0,0 12,18" fill="none" stroke="#292524" stroke-width="2.2"/>
+                            </g>
+
+                            <!-- Neon Backboard & Hoop on Right -->
+                            <g transform="translate(248, 36)">
+                                <!-- Backboard -->
+                                <rect x="44" y="0" width="10" height="72" rx="4" fill="#e2e8f0" stroke="#38bdf8" stroke-width="3"/>
+                                <rect x="41" y="28" width="4" height="22" fill="#f97316"/>
+                                <!-- Net -->
+                                <path d="M4,46 L12,86 L34,86 L42,46" fill="none" stroke="#cbd5e1" stroke-width="2" opacity="0.85"/>
+                                <path d="M14,46 L20,86 M23,46 L28,86 M32,46 L24,86 M14,46 L8,86" stroke="#94a3b8" stroke-width="1.5" opacity="0.7"/>
+                                <line x1="8" y1="60" x2="39" y2="60" stroke="#e2e8f0" stroke-width="1.5" opacity="0.75"/>
+                                <line x1="10" y1="73" x2="36" y2="73" stroke="#e2e8f0" stroke-width="1.5" opacity="0.75"/>
+                                <!-- Rim -->
+                                <line x1="2" y1="46" x2="44" y2="46" stroke="#ea580c" stroke-width="6" stroke-linecap="round"/>
+                            </g>
+
+                            <!-- Gravity Shift Pill -->
+                            <g transform="translate(15, 138)">
+                                <rect x="0" y="0" width="132" height="24" rx="12" fill="#0f172a" stroke="#38bdf8" stroke-width="1.5"/>
+                                <text x="66" y="16" fill="#38bdf8" font-family="Orbitron, sans-serif" font-size="10" font-weight="800" text-anchor="middle">9 PLANET GRAVITY</text>
+                            </g>
+                        </svg>
+                    </div>
+
+                    <!-- Card Body -->
+                    <div class="p-5 sm:p-7">
+                        <div class="flex items-center justify-between gap-2 mb-2">
+                            <h2 class="font-arcade text-xl sm:text-2xl font-black text-white group-hover:text-orange-400 transition">
+                                GALACTIC POP-A-SHOT
+                            </h2>
+                            <span id="hoops-file-badge" class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-white/10">
+                                basketball.html
+                            </span>
+                        </div>
+
+                        <p class="text-sm text-slate-300 leading-relaxed mb-4">
+                            Rapid-fire arcade basketball where your finger swipe sets the launch angle and shot power. Starts on Earth, then <span class="text-orange-300 font-semibold">warps gravity every 6 seconds</span> across all 9 planets!
+                        </p>
+
+                        <!-- Feature Pills -->
+                        <div class="flex flex-wrap gap-2 mb-6">
+                            <span class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-orange-500/15 text-orange-300 border border-orange-500/30">
+                                📱 Landscape View
+                            </span>
+                            <span class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
+                                🪐 6s Gravity Shifts
+                            </span>
+                            <span class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                                ⚡ Swipe Velocity Physics
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Footer -->
+                <div class="px-5 pb-5 sm:px-7 sm:pb-7 pt-0 flex items-center gap-3">
+                    <a id="hoops-play-link" href="basketball.html" class="flex-1 text-center font-arcade font-black text-sm sm:text-base tracking-wider py-3.5 px-5 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-slate-950 shadow-lg shadow-orange-500/25 active:scale-95 transition flex items-center justify-center gap-2">
+                        <span>PLAY NOW</span>
+                        <span>▶</span>
+                    </a>
+                    <button onclick="copyGameLink('hoops')" title="Copy Direct Game Link" class="glass-card hover:bg-slate-800 active:scale-95 transition py-3.5 px-4 rounded-2xl border border-white/15 text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                        <span>🔗</span>
+                        <span id="hoops-copy-label">Copy Link</span>
+                    </button>
+                </div>
+            </article>
+
+            <!-- GAME CARD 2: 3D PRO PUTTING CHALLENGE -->
+            <article class="glass-card card-putting rounded-3xl overflow-hidden flex flex-col justify-between transition-all duration-300 group relative">
+                <div>
+                    <!-- Custom SVG Artwork Banner: 3D Contoured Golf Green + Flagstick + Golf Ball -->
+                    <div class="relative h-52 sm:h-60 w-full bg-gradient-to-b from-slate-950 via-emerald-950/75 to-slate-900 overflow-hidden border-b border-white/10 flex items-center justify-center p-4">
+                        <!-- Subtle Grid -->
+                        <div class="absolute inset-0 opacity-40" style="background-image: radial-gradient(#34d399 1px, transparent 1px); background-size: 28px 28px;"></div>
+
+                        <!-- Ambient Glow -->
+                        <div class="absolute w-52 h-52 bg-emerald-500/25 rounded-full blur-2xl group-hover:bg-emerald-500/40 transition-all"></div>
+
+                        <!-- Top Corner Badges -->
+                        <div class="absolute top-3.5 left-3.5 z-10 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-950/85 border border-emerald-500/40 text-emerald-300 text-[11px] font-bold tracking-wide">
+                            <span>⛳ 3D GOLF SIM</span>
+                        </div>
+                        <div class="absolute top-3.5 right-3.5 z-10 px-2.5 py-1 rounded-full bg-slate-950/85 border border-amber-400/40 text-amber-300 text-[11px] font-arcade font-bold">
+                            3 / 6 / 9 DROPS
+                        </div>
+
+                        <!-- Custom SVG Illustration -->
+                        <svg viewBox="0 0 360 180" class="w-full h-full max-w-[340px] relative z-10 float-svg" style="animation-delay: 1.2s;">
+                            <defs>
+                                <linearGradient id="greenSurface" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#059669" stop-opacity="0.85"/>
+                                    <stop offset="60%" stop-color="#047857" stop-opacity="0.9"/>
+                                    <stop offset="100%" stop-color="#064e3b" stop-opacity="0.95"/>
+                                </linearGradient>
+                                <radialGradient id="golfBallGrad" cx="35%" cy="30%" r="70%">
+                                    <stop offset="0%" stop-color="#ffffff"/>
+                                    <stop offset="70%" stop-color="#e2e8f0"/>
+                                    <stop offset="100%" stop-color="#94a3b8"/>
+                                </radialGradient>
+                            </defs>
+
+                            <!-- 3D Undulating Putting Green Mesh -->
+                            <path d="M 25,130 Q 110,80 185,92 Q 265,104 335,75 L 305,160 Q 190,175 55,158 Z" fill="url(#greenSurface)" stroke="#34d399" stroke-width="2"/>
+
+                            <!-- Caddie Break Grid Lines -->
+                            <g stroke="#6ee7b7" stroke-width="1" opacity="0.45" fill="none">
+                                <path d="M 65,142 Q 165,105 318,95"/>
+                                <path d="M 48,135 Q 155,95 325,84"/>
+                                <path d="M 85,152 Q 185,122 310,115"/>
+                                <path d="M 95,112 L 75,155"/>
+                                <path d="M 155,96 L 145,162"/>
+                                <path d="M 215,96 L 215,164"/>
+                                <path d="M 275,88 L 280,158"/>
+                            </g>
+
+                            <!-- Curved Putt Break Preview Line -->
+                            <path d="M 95,136 Q 185,95 268,108" fill="none" stroke="#fbbf24" stroke-width="3.5" stroke-dasharray="6 5" stroke-linecap="round"/>
+
+                            <!-- Cup / Hole & Flagstick -->
+                            <g transform="translate(272, 108)">
+                                <ellipse cx="0" cy="0" rx="13" ry="6" fill="#0f172a" stroke="#cbd5e1" stroke-width="1.5"/>
+                                <!-- Flagpole -->
+                                <line x1="0" y1="2" x2="0" y2="-82" stroke="#f8fafc" stroke-width="3" stroke-linecap="round"/>
+                                <!-- Pennant Flag -->
+                                <path d="M 0,-82 L 42,-70 L 0,-56 Z" fill="#ef4444" stroke="#fca5a5" stroke-width="1"/>
+                                <text x="14" y="-66" fill="#fff" font-family="Orbitron, sans-serif" font-size="9" font-weight="900">18</text>
+                            </g>
+
+                            <!-- 3D Golf Ball in Foreground -->
+                            <g transform="translate(92, 132)">
+                                <ellipse cx="2" cy="14" rx="16" ry="5" fill="rgba(0,0,0,0.45)"/>
+                                <circle cx="0" cy="0" r="15" fill="url(#golfBallGrad)"/>
+                                <circle cx="-4" cy="-4" r="1.5" fill="#94a3b8"/>
+                                <circle cx="2" cy="-6" r="1.5" fill="#94a3b8"/>
+                                <circle cx="6" cy="-1" r="1.5" fill="#94a3b8"/>
+                                <circle cx="-2" cy="3" r="1.5" fill="#94a3b8"/>
+                                <circle cx="4" cy="5" r="1.5" fill="#94a3b8"/>
+                            </g>
+
+                            <!-- Surface Speed Badge -->
+                            <g transform="translate(15, 32)">
+                                <rect x="0" y="0" width="142" height="24" rx="12" fill="#0f172a" stroke="#34d399" stroke-width="1.5"/>
+                                <text x="71" y="16" fill="#34d399" font-family="Orbitron, sans-serif" font-size="10" font-weight="800" text-anchor="middle">FAST • WET • ROUGH</text>
+                            </g>
+                        </svg>
+                    </div>
+
+                    <!-- Card Body -->
+                    <div class="p-5 sm:p-7">
+                        <div class="flex items-center justify-between gap-2 mb-2">
+                            <h2 class="font-arcade text-xl sm:text-2xl font-black text-white group-hover:text-emerald-400 transition">
+                                3D PRO PUTTING
+                            </h2>
+                            <span id="putting-file-badge" class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-white/10">
+                                putting.html
+                            </span>
+                        </div>
+
+                        <p class="text-sm text-slate-300 leading-relaxed mb-4">
+                            Read 3D undulating green slopes and master three distinct turf conditions (<span class="text-emerald-300 font-semibold">Freshly Cut, Wet, and Rougher</span>). Complete 3, 6, or 9 drop challenges with your caddie break grid!
+                        </p>
+
+                        <!-- Feature Pills -->
+                        <div class="flex flex-wrap gap-2 mb-6">
+                            <span class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                                📐 3D Undulating Slopes
+                            </span>
+                            <span class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-teal-500/15 text-teal-300 border border-teal-500/30">
+                                🌱 3 Green Speeds
+                            </span>
+                            <span class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                                🧭 Caddie Break Grid
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Footer -->
+                <div class="px-5 pb-5 sm:px-7 sm:pb-7 pt-0 flex items-center gap-3">
+                    <a id="putting-play-link" href="putting.html" class="flex-1 text-center font-arcade font-black text-sm sm:text-base tracking-wider py-3.5 px-5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 shadow-lg shadow-emerald-500/25 active:scale-95 transition flex items-center justify-center gap-2">
+                        <span>PLAY NOW</span>
+                        <span>▶</span>
+                    </a>
+                    <button onclick="copyGameLink('putting')" title="Copy Direct Game Link" class="glass-card hover:bg-slate-800 active:scale-95 transition py-3.5 px-4 rounded-2xl border border-white/15 text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                        <span>🔗</span>
+                        <span id="putting-copy-label">Copy Link</span>
+                    </button>
+                </div>
+            </article>
+
+        </div>
+
+        <!-- Share Hub Banner -->
+        <div class="mt-6 sm:mt-8 glass-card rounded-2xl p-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 border border-white/10">
+            <div class="flex items-center gap-3.5 text-center sm:text-left">
+                <div class="w-10 h-10 rounded-xl bg-cyan-500/15 border border-cyan-400/30 flex items-center justify-center text-lg flex-shrink-0 hidden sm:flex">
+                    📲
+                </div>
+                <div>
+                    <div class="text-xs sm:text-sm font-bold text-white">Share the Entire Arcade Hub or Individual Games</div>
+                    <div class="text-xs text-slate-400">Text the main hub link so friends can choose, or use "Copy Link" on either card for a direct launch.</div>
+                </div>
+            </div>
+            <button onclick="copyHubLink()" class="w-full sm:w-auto flex-shrink-0 px-4 py-2.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-200 border border-cyan-400/40 text-xs font-bold tracking-wide transition active:scale-95">
+                <span id="hub-copy-label">📋 Copy Main Arcade Link</span>
+            </button>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="relative z-10 max-w-6xl w-full mx-auto px-4 sm:px-6 py-4 text-center text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-2 border-t border-white/5">
+        <div>Pocket Sports Arcade • Built with HTML5 Canvas & WebGL</div>
+        <div>Tip: Use <span class="text-slate-300 font-medium">Add to Home Screen</span> on mobile for full-screen arcade play</div>
+    </footer>
+
+    <!-- MODAL 1: FOLDER SETUP GUIDE -->
+    <div id="guide-modal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="glass-card max-w-lg w-full rounded-3xl p-6 sm:p-7 border border-cyan-500/40 shadow-2xl relative">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-arcade text-lg sm:text-xl font-black text-white flex items-center gap-2">
+                    <span>📁</span>
+                    <span>HOW TO NAME & UPLOAD YOUR FILES</span>
+                </h3>
+                <button onclick="closeModal('guide-modal')" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center font-bold">✕</button>
+            </div>
+
+            <p class="text-xs sm:text-sm text-slate-300 leading-relaxed mb-4">
+                Place all three HTML files inside the <span class="text-white font-semibold">same folder</span> on your computer before dragging the folder into <span class="text-cyan-300 font-semibold">Netlify Drop</span> or uploading to <span class="text-cyan-300 font-semibold">GitHub Pages</span>:
+            </p>
+
+            <div class="bg-slate-950/90 rounded-2xl p-4 border border-white/10 font-mono text-xs space-y-2.5 mb-5">
+                <div class="text-slate-400 font-sans font-bold uppercase text-[10px] tracking-wider">📂 my-arcade-folder/</div>
+                <div class="flex items-center justify-between pl-3 py-1.5 rounded-lg bg-cyan-500/10 border border-cyan-500/25">
+                    <span class="text-cyan-300 font-bold">📄 index.html</span>
+                    <span class="text-[11px] font-sans text-slate-300">← This Arcade Menu Hub</span>
+                </div>
+                <div class="flex items-center justify-between pl-3 py-1.5 rounded-lg bg-orange-500/10 border border-orange-500/25">
+                    <span id="guide-hoops-filename" class="text-orange-300 font-bold">📄 basketball.html</span>
+                    <span class="text-[11px] font-sans text-slate-300">← Galactic Pop-A-Shot</span>
+                </div>
+                <div class="flex items-center justify-between pl-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/25">
+                    <span id="guide-putting-filename" class="text-emerald-300 font-bold">📄 putting.html</span>
+                    <span class="text-[11px] font-sans text-slate-300">← 3D Pro Putting</span>
+                </div>
+            </div>
+
+            <div class="text-xs text-slate-400 space-y-1.5 mb-6">
+                <div>• <strong class="text-slate-200">Main Link (`/`):</strong> Automatically opens this `index.html` Arcade Hub.</div>
+                <div>• <strong class="text-slate-200">Direct Links:</strong> Clicking either game opens `/basketball.html` or `/putting.html` directly.</div>
+            </div>
+
+            <button onclick="closeModal('guide-modal')" class="w-full py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-arcade font-bold text-sm transition">
+                GOT IT!
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL 2: CONFIGURE FILENAMES -->
+    <div id="config-modal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="glass-card max-w-md w-full rounded-3xl p-6 sm:p-7 border border-cyan-500/40 shadow-2xl relative">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="font-arcade text-lg font-black text-white flex items-center gap-2">
+                    <span>⚙️</span>
+                    <span>CONFIGURE FILENAMES</span>
+                </h3>
+                <button onclick="closeModal('config-modal')" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center font-bold">✕</button>
+            </div>
+
+            <p class="text-xs text-slate-300 mb-4 leading-relaxed">
+                If your saved game files have different names in your folder, update them here so the <strong class="text-white">PLAY NOW</strong> and <strong class="text-white">Copy Link</strong> buttons match your exact filenames:
+            </p>
+
+            <div class="space-y-4 mb-6">
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-orange-300 mb-1.5">
+                        🏀 Galactic Pop-A-Shot Filename
+                    </label>
+                    <input id="input-hoops-file" type="text" value="basketball.html" placeholder="basketball.html" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-white/15 text-sm font-mono text-white focus:outline-none focus:border-orange-400">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-emerald-300 mb-1.5">
+                        ⛳ 3D Pro Putting Filename
+                    </label>
+                    <input id="input-putting-file" type="text" value="putting.html" placeholder="putting.html" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-white/15 text-sm font-mono text-white focus:outline-none focus:border-emerald-400">
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <button onclick="resetFilenames()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-300 transition">
+                    Reset Defaults
+                </button>
+                <button onclick="saveFilenames()" class="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-slate-950 font-arcade font-bold text-xs tracking-wider transition">
+                    SAVE CHANGES
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const DEFAULT_FILES = {
+            hoops: 'basketball.html',
+            putting: 'putting.html'
+        };
+
+        let gameFiles = {
+            hoops: localStorage.getItem('arcade_hoops_file') || DEFAULT_FILES.hoops,
+            putting: localStorage.getItem('arcade_putting_file') || DEFAULT_FILES.putting
+        };
+
+        function applyFilenamesToUI() {
+            // Update Play links
+            document.getElementById('hoops-play-link').setAttribute('href', gameFiles.hoops);
+            document.getElementById('putting-play-link').setAttribute('href', gameFiles.putting);
+
+            // Update card filename badges
+            document.getElementById('hoops-file-badge').textContent = gameFiles.hoops;
+            document.getElementById('putting-file-badge').textContent = gameFiles.putting;
+
+            // Update Folder Guide modal
+            document.getElementById('guide-hoops-filename').textContent = '📄 ' + gameFiles.hoops;
+            document.getElementById('guide-putting-filename').textContent = '📄 ' + gameFiles.putting;
+
+            // Update input fields
+            document.getElementById('input-hoops-file').value = gameFiles.hoops;
+            document.getElementById('input-putting-file').value = gameFiles.putting;
+        }
+
+        function saveFilenames() {
+            const hoopsVal = document.getElementById('input-hoops-file').value.trim() || DEFAULT_FILES.hoops;
+            const puttingVal = document.getElementById('input-putting-file').value.trim() || DEFAULT_FILES.putting;
+
+            gameFiles.hoops = hoopsVal;
+            gameFiles.putting = puttingVal;
+
+            localStorage.setItem('arcade_hoops_file', hoopsVal);
+            localStorage.setItem('arcade_putting_file', puttingVal);
+
+            applyFilenamesToUI();
+            closeModal('config-modal');
+        }
+
+        function resetFilenames() {
+            gameFiles.hoops = DEFAULT_FILES.hoops;
+            gameFiles.putting = DEFAULT_FILES.putting;
+            localStorage.removeItem('arcade_hoops_file');
+            localStorage.removeItem('arcade_putting_file');
+            applyFilenamesToUI();
+        }
+
+        function openModal(id) {
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        function copyTextToClipboard(text, callback) {
+            const tempInput = document.createElement('textarea');
+            tempInput.value = text;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            try {
+                document.execCommand('copy');
+                if (callback) callback();
+            } catch (err) {
+                console.error('Copy failed', err);
+            }
+            document.body.removeChild(tempInput);
+        }
+
+        function getBaseDirectoryUrl() {
+            const loc = window.location.href.split('?')[0].split('#')[0];
+            if (loc.endsWith('.html')) {
+                return loc.substring(0, loc.lastIndexOf('/') + 1);
+            }
+            return loc.endsWith('/') ? loc : loc + '/';
+        }
+
+        function copyGameLink(gameKey) {
+            const file = gameKey === 'hoops' ? gameFiles.hoops : gameFiles.putting;
+            const fullUrl = getBaseDirectoryUrl() + file;
+            const labelId = gameKey === 'hoops' ? 'hoops-copy-label' : 'putting-copy-label';
+            const labelEl = document.getElementById(labelId);
+
+            copyTextToClipboard(fullUrl, () => {
+                labelEl.textContent = 'Copied!';
+                setTimeout(() => {
+                    labelEl.textContent = 'Copy Link';
+                }, 1800);
+            });
+        }
+
+        function copyHubLink() {
+            const fullUrl = getBaseDirectoryUrl();
+            const labelEl = document.getElementById('hub-copy-label');
+            copyTextToClipboard(fullUrl, () => {
+                labelEl.textContent = '✅ Link Copied!';
+                setTimeout(() => {
+                    labelEl.textContent = '📋 Copy Main Arcade Link';
+                }, 1800);
+            });
+        }
+
+        // Initialize on load
+        applyFilenamesToUI();
+    </script>
+</body>
+</html>
