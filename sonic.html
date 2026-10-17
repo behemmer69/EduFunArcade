@@ -1,0 +1,1396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sonic Wave & Frequency Lab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #060913;
+            color: #f8fafc;
+            font-family: 'Inter', sans-serif;
+            touch-action: none;
+        }
+        .font-arcade {
+            font-family: 'Orbitron', sans-serif;
+        }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.65);
+        }
+        #scope-canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        .tap-btn-active {
+            transform: translateX(-50%) scale(0.93) !important;
+            box-shadow: 0 0 35px rgba(52, 211, 153, 0.8), inset 0 0 15px rgba(255, 255, 255, 0.5) !important;
+        }
+        @keyframes sound-wave-pulse {
+            0%, 100% { box-shadow: 0 0 18px rgba(251, 191, 36, 0.45), inset 0 0 10px rgba(251, 191, 36, 0.25); transform: scale(1); }
+            50% { box-shadow: 0 0 30px rgba(251, 191, 36, 0.85), inset 0 0 18px rgba(251, 191, 36, 0.45); transform: scale(1.02); }
+        }
+        .test-tone-active {
+            animation: sound-wave-pulse 0.85s ease-in-out infinite;
+            background: linear-gradient(135deg, #f59e0b, #ea580c) !important;
+            color: #090d16 !important;
+            border-color: #fde68a !important;
+        }
+    </style>
+</head>
+<body class="relative w-full h-full select-none overflow-hidden">
+
+    <!-- Fullscreen Oscilloscope Canvas -->
+    <canvas id="scope-canvas"></canvas>
+
+    <!-- Top Telemetry HUD Bar -->
+    <header class="fixed top-0 left-0 right-0 z-20 p-2.5 sm:p-4 flex items-center justify-between gap-2 pointer-events-none">
+        
+        <!-- Left: Target Frequency & Wavelength Readout -->
+        <div class="glass-panel rounded-2xl px-3.5 py-2 sm:px-5 sm:py-2.5 flex items-center gap-3 sm:gap-5 pointer-events-auto border border-cyan-500/35">
+            <div>
+                <div class="text-[10px] uppercase tracking-widest text-cyan-400 font-bold">Target Freq</div>
+                <div id="hud-target-freq" class="font-arcade text-lg sm:text-2xl font-black text-white">400 Hz</div>
+            </div>
+            <div class="h-7 w-[1px] bg-slate-700/80"></div>
+            <div>
+                <div class="text-[10px] uppercase tracking-widest text-emerald-400 font-bold">Screen Cycles</div>
+                <div id="hud-cycles" class="font-arcade text-sm sm:text-lg font-bold text-emerald-300">5.0 λ</div>
+            </div>
+            <div class="hidden sm:block h-7 w-[1px] bg-slate-700/80"></div>
+            <div class="hidden sm:block">
+                <div class="text-[10px] uppercase tracking-widest text-amber-300 font-bold">200x Visual Rate</div>
+                <div id="hud-crest-rate" class="font-arcade text-sm sm:text-lg font-bold text-amber-200">2.0 /s</div>
+            </div>
+        </div>
+
+        <!-- Center: Phase Status & 15s Countdown Timer -->
+        <div class="glass-panel rounded-2xl px-4 py-2 sm:px-6 sm:py-2.5 text-center pointer-events-auto border border-amber-500/35 min-w-[135px] sm:min-w-[180px]">
+            <div id="hud-phase-label" class="text-[10px] uppercase tracking-widest text-amber-300 font-bold">15s Recording</div>
+            <div id="hud-timer" class="font-arcade text-xl sm:text-3xl font-black text-white tracking-wider">15.0s</div>
+        </div>
+
+        <!-- Right: Live Tap Count & Audio/Menu Controls -->
+        <div class="flex items-center gap-2 pointer-events-auto">
+            <div class="glass-panel rounded-2xl px-3.5 py-2 sm:px-4 sm:py-2.5 text-center border border-purple-500/35">
+                <div class="text-[10px] uppercase tracking-widest text-purple-300 font-bold">Taps</div>
+                <div id="hud-taps" class="font-arcade text-lg sm:text-2xl font-black text-purple-200">0</div>
+            </div>
+            <button id="mute-btn" type="button" title="Toggle Sound" class="glass-panel hover:bg-slate-800 active:scale-95 transition p-2.5 sm:p-3 rounded-2xl border border-white/15 text-base sm:text-lg">
+                🔊
+            </button>
+            <button id="setup-menu-btn" type="button" title="Change Frequency" class="glass-panel hover:bg-slate-800 active:scale-95 transition p-2.5 sm:p-3 rounded-2xl border border-white/15 text-base sm:text-lg">
+                ⚙️
+            </button>
+        </div>
+    </header>
+
+    <!-- ERGONOMIC TOUCH AREA DIRECTLY UNDER THE VERTICAL SENSOR LINE (70% X) -->
+    <div id="touch-zone-wrapper" class="fixed bottom-3 sm:bottom-5 left-0 right-0 z-20 pointer-events-none h-24 sm:h-28">
+        <button
+            id="crest-tap-pad"
+            type="button"
+            style="left: 70%; transform: translateX(-50%);"
+            class="pointer-events-auto absolute bottom-0 w-48 sm:w-60 h-20 sm:h-24 rounded-3xl bg-gradient-to-b from-emerald-500/90 to-teal-600/95 hover:from-emerald-400 hover:to-teal-500 border-2 border-emerald-200/80 shadow-2xl shadow-emerald-500/30 flex flex-col items-center justify-center transition-transform duration-75 focus:outline-none"
+        >
+            <div class="w-8 h-1 rounded-full bg-emerald-200/80 mb-1"></div>
+            <span class="font-arcade text-sm sm:text-base font-black text-slate-950 tracking-wider">TAP ON CREST</span>
+            <span id="tap-pad-subtext" class="text-[10px] sm:text-xs font-bold text-emerald-950/90 mt-0.5">Hit as Peak Crosses Line • [SPACE]</span>
+        </button>
+    </div>
+
+    <!-- START / FREQUENCY SELECTION MODAL -->
+    <div id="setup-modal" class="fixed inset-0 z-30 flex items-center justify-center p-2.5 sm:p-4 bg-slate-950/85 backdrop-blur-md overflow-y-auto">
+        <div class="glass-panel max-w-xl w-full rounded-3xl p-4 sm:p-6 border border-cyan-500/40 shadow-2xl relative my-auto">
+            <!-- Header Row with Title & Badge -->
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+                <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-500/15 border border-cyan-400/30 text-cyan-300 text-[10px] sm:text-xs font-bold uppercase tracking-widest">
+                    〰️ 200x Slow-Motion Acoustic Lab
+                </div>
+                <span id="test-tone-live-pill" class="hidden items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-300 text-[10px] font-arcade font-bold animate-pulse">
+                    🔊 PLAYING <span id="test-tone-live-hz">400</span> Hz
+                </span>
+            </div>
+
+            <h1 class="font-arcade text-xl sm:text-3xl font-black text-white tracking-wide">
+                SONIC WAVE TIMING
+            </h1>
+            <p class="text-xs sm:text-sm text-slate-300 mt-1 leading-snug">
+                Watch the wave travel left-to-right across the vertical sensor gate. Tap the pad underneath <span class="text-emerald-300 font-semibold">every time a wave crest passes the line</span> for 15s—then hear your recorded tone warble!
+            </p>
+
+            <!-- Custom Frequency Input + Prominent Top TEST TONE Button -->
+            <div class="mt-3 bg-slate-900/90 p-3 sm:p-4 rounded-2xl border border-white/10">
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+                    <label for="freq-number-input" class="text-[11px] sm:text-xs uppercase tracking-wider text-cyan-300 font-bold">
+                        Target Frequency (200 – 2,000 Hz)
+                    </label>
+                    <!-- TOP TEST TONE BUTTON NEXT TO INPUT (ONLY PLAYS WHEN CLICKED) -->
+                    <button
+                        type="button"
+                        id="test-tone-top-btn"
+                        class="py-1.5 px-3 rounded-xl bg-amber-500/20 hover:bg-amber-500/35 active:scale-95 transition border border-amber-400/60 text-amber-200 font-arcade font-extrabold text-[11px] sm:text-xs flex items-center gap-1.5 shadow-md shadow-amber-500/10"
+                    >
+                        <span id="test-tone-top-label">🔊 TEST TONE (PREVIEW)</span>
+                    </button>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <input
+                        id="freq-number-input"
+                        type="number"
+                        min="200"
+                        max="2000"
+                        step="10"
+                        value="400"
+                        class="font-arcade text-xl sm:text-2xl font-black text-white bg-slate-950 border border-cyan-500/50 rounded-xl px-3 py-1.5 w-28 sm:w-36 text-center focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                    />
+                    <div class="flex-1">
+                        <input
+                            id="freq-slider-input"
+                            type="range"
+                            min="200"
+                            max="2000"
+                            step="10"
+                            value="400"
+                            class="w-full accent-cyan-400 cursor-pointer"
+                        />
+                        <div class="flex justify-between text-[10px] text-slate-400 font-semibold mt-0.5">
+                            <span>200 Hz (Easy)</span>
+                            <span>1,000 Hz</span>
+                            <span>2,000 Hz (Extreme)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Preset Buttons (8 Presets: 200, 300, 400, 600, 800, 1000, 1400, 2000 Hz — Silent selection) -->
+                <div class="grid grid-cols-4 sm:grid-cols-8 gap-1.5 mt-2.5">
+                    <button type="button" data-preset="200" class="preset-btn py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-arcade font-bold text-emerald-300 border border-emerald-500/30">200</button>
+                    <button type="button" data-preset="300" class="preset-btn py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-arcade font-bold text-teal-300 border border-teal-500/30">300</button>
+                    <button type="button" data-preset="400" class="preset-btn py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-arcade font-bold text-cyan-300 border border-cyan-500/30">400</button>
+                    <button type="button" data-preset="600" class="preset-btn py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-arcade font-bold text-sky-300 border border-sky-500/30">600</button>
+                    <button type="button" data-preset="800" class="preset-btn py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-arcade font-bold text-indigo-300 border border-indigo-500/30">800</button>
+                    <button type="button" data-preset="1000" class="preset-btn py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-arcade font-bold text-amber-300 border border-amber-500/30">1000</button>
+                    <button type="button" data-preset="1400" class="preset-btn py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-arcade font-bold text-orange-300 border border-orange-500/30">1400</button>
+                    <button type="button" data-preset="2000" class="preset-btn py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-arcade font-bold text-rose-300 border border-rose-500/30">2000</button>
+                </div>
+            </div>
+
+            <!-- Live Preview Physics Readout -->
+            <div class="grid grid-cols-3 gap-2 my-3 text-center">
+                <div class="bg-slate-900/75 p-2 rounded-xl border border-white/10">
+                    <div class="text-[10px] uppercase text-slate-400 font-bold">Screen Cycles</div>
+                    <div id="preview-cycles" class="font-arcade text-sm sm:text-base font-extrabold text-emerald-300 mt-0.5">5.0 λ</div>
+                    <div class="text-[10px] text-slate-500">2.5 to 50 range</div>
+                </div>
+                <div class="bg-slate-900/75 p-2 rounded-xl border border-white/10">
+                    <div class="text-[10px] uppercase text-slate-400 font-bold">Tap Rate (200x)</div>
+                    <div id="preview-tap-rate" class="font-arcade text-sm sm:text-base font-extrabold text-amber-300 mt-0.5">2.0 / sec</div>
+                    <div id="preview-period" class="text-[10px] text-slate-500">T = 0.500 s</div>
+                </div>
+                <div class="bg-slate-900/75 p-2 rounded-xl border border-white/10">
+                    <div class="text-[10px] uppercase text-slate-400 font-bold">Difficulty</div>
+                    <div id="preview-difficulty" class="font-arcade text-sm sm:text-base font-extrabold text-cyan-300 mt-0.5">STEADY</div>
+                    <div id="preview-expected-taps" class="text-[10px] text-slate-500">~30 crests in 15s</div>
+                </div>
+            </div>
+
+            <!-- Action Row: Prominent Bottom TEST TONE Button + START 15s CHALLENGE Button -->
+            <div class="flex flex-col sm:flex-row items-stretch gap-2.5">
+                <button
+                    id="test-tone-bottom-btn"
+                    type="button"
+                    class="py-3 px-4 rounded-2xl bg-slate-800/95 hover:bg-slate-700 active:scale-95 transition border-2 border-amber-400/60 text-amber-300 font-arcade font-black text-xs sm:text-sm tracking-wide flex items-center justify-center gap-2 sm:w-52 shadow-lg shadow-amber-500/10"
+                >
+                    <span id="test-tone-bottom-label">🔊 TEST TONE</span>
+                </button>
+                <button
+                    id="start-wave-btn"
+                    type="button"
+                    class="flex-1 py-3 px-5 rounded-2xl bg-gradient-to-r from-cyan-500 via-teal-400 to-emerald-400 hover:from-cyan-400 hover:to-emerald-300 active:scale-98 transition text-slate-950 font-arcade font-black text-sm sm:text-base tracking-wider shadow-lg shadow-cyan-500/25"
+                >
+                    START 15-SECOND CHALLENGE →
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PERSISTENT POST-ROUND RESULTS & WARBLE SYNTHESIZER MODAL -->
+    <!-- Dismiss & Retry buttons are placed in the TOP-LEFT corner, far away from the bottom-right (70% X) Touch Pad -->
+    <div id="results-modal" class="hidden fixed inset-0 z-30 flex items-start sm:items-center justify-center p-3 sm:p-5 pb-28 sm:pb-24 bg-slate-950/90 backdrop-blur-md overflow-y-auto">
+        <div class="glass-panel max-w-2xl w-full rounded-3xl p-4 sm:p-6 border border-emerald-500/40 shadow-2xl relative mt-2 sm:my-auto">
+            
+            <!-- TOP-LEFT NAVIGATION BAR (Far from bottom-right touch pad + 1.5s Safety Lock) -->
+            <div class="flex flex-wrap items-center justify-between gap-2.5 border-b border-white/10 pb-3.5 mb-3.5">
+                <div class="flex items-center gap-2">
+                    <button
+                        type="button"
+                        id="change-freq-btn"
+                        disabled
+                        class="py-2 px-3 sm:px-4 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-400/40 active:scale-95 transition text-cyan-200 font-arcade font-bold text-[11px] sm:text-xs disabled:opacity-40 disabled:pointer-events-none"
+                    >
+                        <span id="change-freq-btn-text">🔒 1.5s</span>
+                    </button>
+                    <button
+                        type="button"
+                        id="retry-same-btn"
+                        disabled
+                        class="py-2 px-3 sm:px-4 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 active:scale-95 transition text-white font-arcade font-bold text-[11px] sm:text-xs disabled:opacity-40 disabled:pointer-events-none"
+                    >
+                        <span id="retry-same-btn-text">🔒 RETRY</span>
+                    </button>
+                </div>
+
+                <div class="text-right ml-auto">
+                    <div class="text-[9px] sm:text-[10px] uppercase tracking-widest text-emerald-400 font-bold">15s Acoustic Report</div>
+                    <div id="grade-badge" class="inline-block mt-0.5 px-3 py-0.5 rounded-lg font-arcade text-[11px] sm:text-xs font-black bg-emerald-500/20 text-emerald-300 border border-emerald-400/40">
+                        S-RANK SYNC
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tone Playback Synthesizer Controls (Placed in Upper Section) -->
+            <div id="tone-buttons-row" class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3.5">
+                <button type="button" id="play-warble-btn" class="py-2.5 px-3 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 active:scale-95 transition text-slate-950 font-arcade font-black text-xs shadow-lg shadow-amber-500/25 flex items-center justify-center gap-1.5">
+                    <span>〰️ MY WARBLE TONE</span>
+                </button>
+                <button type="button" id="play-pure-btn" class="py-2.5 px-3 rounded-2xl bg-slate-800 hover:bg-slate-700 active:scale-95 transition border border-cyan-400/40 text-cyan-200 font-arcade font-bold text-xs flex items-center justify-center gap-1.5">
+                    <span>🎯 PURE TARGET</span>
+                </button>
+                <button type="button" id="play-compare-btn" class="py-2.5 px-3 rounded-2xl bg-slate-800 hover:bg-slate-700 active:scale-95 transition border border-emerald-400/40 text-emerald-200 font-arcade font-bold text-xs flex items-center justify-center gap-1.5">
+                    <span>🔄 A/B COMPARE</span>
+                </button>
+                <button type="button" id="stop-audio-btn" class="py-2.5 px-3 rounded-2xl bg-slate-900 hover:bg-slate-800 active:scale-95 transition border border-rose-400/30 text-rose-300 font-arcade font-bold text-xs flex items-center justify-center gap-1.5">
+                    <span>⏹️ STOP AUDIO</span>
+                </button>
+            </div>
+
+            <!-- Warning if fewer than 2 taps were recorded -->
+            <div id="low-taps-warning" class="hidden my-4 p-4 rounded-2xl bg-rose-500/20 border border-rose-400/40 text-center">
+                <div class="font-arcade text-base font-bold text-rose-200">Not Enough Taps Recorded!</div>
+                <p class="text-xs text-rose-100 mt-1">
+                    Tap the emerald pad directly under the vertical target line at least 2 times as wave crests pass through to compute your average frequency, standard deviation, and warble tone.
+                </p>
+            </div>
+
+            <!-- Primary Computed Statistics Grid -->
+            <div id="metrics-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 my-3.5">
+                <div class="bg-slate-900/85 p-3 rounded-2xl border border-white/10">
+                    <div class="text-[10px] uppercase text-slate-400 font-bold">Target Freq</div>
+                    <div id="res-target-hz" class="font-arcade text-lg sm:text-2xl font-black text-cyan-300 mt-0.5">400.0 Hz</div>
+                    <div id="res-target-period" class="text-[10px] text-slate-400">Tap T = 0.500s</div>
+                </div>
+                <div class="bg-slate-900/85 p-3 rounded-2xl border border-emerald-500/30">
+                    <div class="text-[10px] uppercase text-emerald-400 font-bold">Your Mean Freq</div>
+                    <div id="res-avg-hz" class="font-arcade text-lg sm:text-2xl font-black text-white mt-0.5">398.2 Hz</div>
+                    <div id="res-error-pct" class="text-[10px] text-emerald-300 font-semibold">-0.5% (-1.8 Hz)</div>
+                </div>
+                <div class="bg-slate-900/85 p-3 rounded-2xl border border-amber-500/30">
+                    <div class="text-[10px] uppercase text-amber-300 font-bold">Std Deviation (σ)</div>
+                    <div id="res-std-hz" class="font-arcade text-lg sm:text-2xl font-black text-amber-300 mt-0.5">±11.4 Hz</div>
+                    <div id="res-jitter-ms" class="text-[10px] text-slate-400">Jitter: ±14 ms</div>
+                </div>
+                <div class="bg-slate-900/85 p-3 rounded-2xl border border-white/10">
+                    <div class="text-[10px] uppercase text-purple-300 font-bold">Crest Phase Lock</div>
+                    <div id="res-phase-acc" class="font-arcade text-lg sm:text-2xl font-black text-purple-300 mt-0.5">92%</div>
+                    <div id="res-tap-total" class="text-[10px] text-slate-400">30 / 30 Crests</div>
+                </div>
+            </div>
+
+            <!-- Interactive Warble Pitch Curve & Live Playhead (Bottom Area is Inert to Stray Taps) -->
+            <div id="warble-visualizer-box" class="bg-slate-900/90 rounded-2xl p-3 border border-white/10">
+                <div class="flex flex-wrap items-center justify-between gap-2 text-[11px] mb-1.5">
+                    <span class="font-bold text-slate-300 uppercase tracking-wider">Recorded Pitch Warble Curve (Hz over Time)</span>
+                    <div class="flex items-center gap-2">
+                        <span id="live-playhead-hz" class="font-arcade text-xs font-black px-2 py-0.5 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-400/30">--- Hz</span>
+                        <span id="playback-status-text" class="font-arcade text-xs font-bold text-emerald-300">Ready</span>
+                    </div>
+                </div>
+                <canvas id="warble-graph-canvas" class="w-full h-36 sm:h-44 rounded-xl bg-slate-950 border border-white/10 block pointer-events-none"></canvas>
+                <div class="flex flex-wrap items-center justify-between gap-2 text-[10px] text-slate-400 mt-2">
+                    <label class="inline-flex items-center gap-1.5 cursor-pointer text-slate-300 font-semibold hover:text-white">
+                        <input id="loop-playback-toggle" type="checkbox" class="rounded accent-amber-400 cursor-pointer" />
+                        <span>Loop Audio Continuously</span>
+                    </label>
+                    <div class="flex items-center gap-3">
+                        <span class="flex items-center gap-1.5"><span class="w-3 h-0.5 bg-cyan-400 inline-block"></span> Pure Target</span>
+                        <span class="flex items-center gap-1.5"><span class="w-3 h-1 bg-amber-400 inline-block rounded"></span> Your Warble Tone</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        /**
+         * SONIC WAVE & FREQUENCY LAB
+         * - Frequency Range: 200 Hz to 2,000 Hz
+         * - Slow-Motion Time Factor: 200x (f_visual = f_target / 200, from 1.0 crest/s to 10.0 crests/s)
+         * - Visible Screen Cycles: 2.5 to 50.0 cycles across the screen width
+         * - Start Screen Audio Policy: The tone NEVER auto-plays when adjusting sliders, typing numbers, or clicking preset Hz buttons.
+         *   It ONLY plays on the Start Page when the player explicitly clicks one of the Test Tone buttons.
+         */
+        const MIN_FREQ_HZ = 200;
+        const MAX_FREQ_HZ = 2000;
+        const TIME_SLOWDOWN_FACTOR = 200; // 200x slowdown so 200 Hz = 1 tap/s and 2000 Hz = 10 taps/s
+        const MIN_SCREEN_CYCLES = 2.5;
+        const MAX_SCREEN_CYCLES = 50.0;
+        const SENSOR_X_RATIO = 0.70;      // Short vertical reference line at 70% of screen width
+        const LEAD_IN_DURATION = 3.0;     // 3-second rhythm lead-in before 15s recording starts
+        const ROUND_DURATION = 15.0;      // 15-second tap recording window
+        const SAFETY_LOCK_DURATION = 1.5; // 1.5s lock on top-left dismiss buttons so stray taps never close results
+
+        function getCyclesOnScreen(freqHz) {
+            // 2.5 cycles at 200 Hz up to 50.0 cycles at 2,000 Hz
+            const ratio = Math.max(0, Math.min(1, (freqHz - MIN_FREQ_HZ) / (MAX_FREQ_HZ - MIN_FREQ_HZ)));
+            return MIN_SCREEN_CYCLES + ratio * (MAX_SCREEN_CYCLES - MIN_SCREEN_CYCLES);
+        }
+
+        function getVisualFreq(freqHz) {
+            return freqHz / TIME_SLOWDOWN_FACTOR;
+        }
+
+        // Web Audio Synthesizer for Reference Tone, Tap Clicks, and Warble Playback
+        class WaveAudioEngine {
+            constructor() {
+                this.ctx = null;
+                this.muted = false;
+                this.refOsc1 = null;
+                this.refOsc2 = null;
+                this.refGain = null;
+                this.testOsc1 = null;
+                this.testOsc2 = null;
+                this.testGain = null;
+                this.testTimer = null;
+                this.testTonePlaying = false;
+                this.playOsc1 = null;
+                this.playOsc2 = null;
+                this.playGain = null;
+                this.playbackTimer = null;
+                this.playheadActive = false;
+                this.playheadStartTime = 0;
+                this.playheadDuration = 0;
+                this.playheadMode = 'warble';
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    if (AudioCtx) this.ctx = new AudioCtx();
+                }
+                if (this.ctx && this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+
+            toggleTestTone(freqHz, onStateChange) {
+                if (this.testTonePlaying) {
+                    this.stopTestTone(onStateChange);
+                } else {
+                    this.startTestTone(freqHz, onStateChange);
+                }
+            }
+
+            startTestTone(freqHz, onStateChange) {
+                this.init();
+                this.stopTestTone();
+                if (!this.ctx) return;
+
+                const now = this.ctx.currentTime;
+                this.testOsc1 = this.ctx.createOscillator();
+                this.testOsc2 = this.ctx.createOscillator();
+                this.testGain = this.ctx.createGain();
+                const harmGain = this.ctx.createGain();
+
+                // Warm Sine + Triangle 2nd harmonic so 200 Hz sounds clear & full on any speaker
+                this.testOsc1.type = 'sine';
+                this.testOsc1.frequency.setValueAtTime(freqHz, now);
+
+                this.testOsc2.type = 'triangle';
+                this.testOsc2.frequency.setValueAtTime(freqHz * 2, now);
+                harmGain.gain.setValueAtTime(0.22, now);
+
+                const targetVol = this.muted ? 0.0001 : 0.22;
+                this.testGain.gain.setValueAtTime(0.0001, now);
+                this.testGain.gain.exponentialRampToValueAtTime(targetVol, now + 0.05);
+
+                this.testOsc1.connect(this.testGain);
+                this.testOsc2.connect(harmGain);
+                harmGain.connect(this.testGain);
+                this.testGain.connect(this.ctx.destination);
+
+                this.testOsc1.start(now);
+                this.testOsc2.start(now);
+                this.testTonePlaying = true;
+                if (onStateChange) onStateChange(true);
+
+                // Play for 3.0 seconds or until clicked again / round starts
+                this.testTimer = setTimeout(() => {
+                    this.stopTestTone(onStateChange);
+                }, 3000);
+            }
+
+            updateTestToneFrequency(freqHz) {
+                // Only updates pitch if the user ALREADY turned the Test Tone on via the Test Tone button
+                if (!this.testTonePlaying || !this.ctx || !this.testOsc1) return;
+                const now = this.ctx.currentTime;
+                this.testOsc1.frequency.setTargetAtTime(freqHz, now, 0.015);
+                this.testOsc2.frequency.setTargetAtTime(freqHz * 2, now, 0.015);
+                if (this.testTimer) {
+                    clearTimeout(this.testTimer);
+                    this.testTimer = setTimeout(() => {
+                        this.stopTestTone(updateTestToneButtonsUI);
+                    }, 2200);
+                }
+            }
+
+            stopTestTone(onStateChange) {
+                if (this.testTimer) {
+                    clearTimeout(this.testTimer);
+                    this.testTimer = null;
+                }
+                if (this.testOsc1) {
+                    try {
+                        const now = this.ctx ? this.ctx.currentTime : 0;
+                        if (this.testGain && this.ctx) {
+                            this.testGain.gain.setValueAtTime(this.testGain.gain.value, now);
+                            this.testGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.04);
+                        }
+                        this.testOsc1.stop(now + 0.05);
+                        this.testOsc2.stop(now + 0.05);
+                    } catch (e) {}
+                    this.testOsc1 = null;
+                    this.testOsc2 = null;
+                    this.testGain = null;
+                }
+                this.testTonePlaying = false;
+                if (onStateChange) onStateChange(false);
+            }
+
+            startReferenceTone(freqHz) {
+                this.init();
+                this.stopTestTone(updateTestToneButtonsUI);
+                this.stopReferenceTone();
+                if (!this.ctx) return;
+
+                const now = this.ctx.currentTime;
+                this.refOsc1 = this.ctx.createOscillator();
+                this.refOsc2 = this.ctx.createOscillator();
+                this.refGain = this.ctx.createGain();
+                const subGain = this.ctx.createGain();
+
+                // Fundamental sine + subtle 2nd harmonic triangle so 200 Hz is warm & audible on phone/laptop speakers
+                this.refOsc1.type = 'sine';
+                this.refOsc1.frequency.setValueAtTime(freqHz, now);
+
+                this.refOsc2.type = 'triangle';
+                this.refOsc2.frequency.setValueAtTime(freqHz * 2, now);
+                subGain.gain.setValueAtTime(0.18, now);
+
+                const masterVol = this.muted ? 0.0001 : 0.16;
+                this.refGain.gain.setValueAtTime(0.0001, now);
+                this.refGain.gain.exponentialRampToValueAtTime(masterVol, now + 0.08);
+
+                this.refOsc1.connect(this.refGain);
+                this.refOsc2.connect(subGain);
+                subGain.connect(this.refGain);
+                this.refGain.connect(this.ctx.destination);
+
+                this.refOsc1.start(now);
+                this.refOsc2.start(now);
+            }
+
+            stopReferenceTone() {
+                if (this.refOsc1) {
+                    try {
+                        const now = this.ctx ? this.ctx.currentTime : 0;
+                        if (this.refGain && this.ctx) {
+                            this.refGain.gain.setValueAtTime(this.refGain.gain.value, now);
+                            this.refGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.04);
+                        }
+                        this.refOsc1.stop(now + 0.05);
+                        this.refOsc2.stop(now + 0.05);
+                    } catch (e) {}
+                    this.refOsc1 = null;
+                    this.refOsc2 = null;
+                    this.refGain = null;
+                }
+            }
+
+            playTapClick(phaseError) {
+                if (this.muted || !this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                // Higher crisp click when locked onto crest, lower thud when off-phase
+                const clickFreq = phaseError < 0.18 ? 1200 : (phaseError < 0.32 ? 820 : 480);
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(clickFreq, now);
+                osc.frequency.exponentialRampToValueAtTime(180, now + 0.045);
+
+                gain.gain.setValueAtTime(0.22, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.045);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.045);
+            }
+
+            stopPlaybackTone() {
+                if (this.playbackTimer) {
+                    clearTimeout(this.playbackTimer);
+                    this.playbackTimer = null;
+                }
+                if (this.playOsc1) {
+                    try {
+                        this.playOsc1.stop();
+                        this.playOsc2.stop();
+                    } catch (e) {}
+                    this.playOsc1 = null;
+                    this.playOsc2 = null;
+                    this.playGain = null;
+                }
+                this.playheadActive = false;
+                const statusEl = document.getElementById('playback-status-text');
+                if (statusEl) statusEl.textContent = '⏹️ Audio Stopped';
+            }
+
+            playWarbleSequence(instFreqs, targetFreq, mode = 'warble') {
+                this.init();
+                this.stopPlaybackTone();
+                if (!this.ctx || !instFreqs || instFreqs.length === 0) return;
+
+                const statusEl = document.getElementById('playback-status-text');
+                const now = this.ctx.currentTime;
+
+                this.playOsc1 = this.ctx.createOscillator();
+                this.playOsc2 = this.ctx.createOscillator();
+                this.playGain = this.ctx.createGain();
+                const harmGain = this.ctx.createGain();
+
+                this.playOsc1.type = 'sine';
+                this.playOsc2.type = 'triangle';
+                harmGain.gain.setValueAtTime(0.22, now);
+
+                const vol = this.muted ? 0.0001 : 0.22;
+                this.playGain.gain.setValueAtTime(0.0001, now);
+                this.playGain.gain.exponentialRampToValueAtTime(vol, now + 0.05);
+
+                this.playOsc1.connect(this.playGain);
+                this.playOsc2.connect(harmGain);
+                harmGain.connect(this.playGain);
+                this.playGain.connect(this.ctx.destination);
+
+                let totalDuration = 4.2;
+                this.playheadMode = mode;
+
+                if (mode === 'pure') {
+                    totalDuration = 3.2;
+                    this.playOsc1.frequency.setValueAtTime(targetFreq, now);
+                    this.playOsc2.frequency.setValueAtTime(targetFreq * 2, now);
+                    if (statusEl) statusEl.textContent = `🎯 Playing Pure ${targetFreq} Hz Target...`;
+                } else if (mode === 'warble') {
+                    totalDuration = Math.min(6.0, Math.max(3.2, instFreqs.length * 0.22));
+                    const stepDur = totalDuration / instFreqs.length;
+                    this.playOsc1.frequency.setValueAtTime(instFreqs[0], now);
+                    this.playOsc2.frequency.setValueAtTime(instFreqs[0] * 2, now);
+
+                    instFreqs.forEach((hz, idx) => {
+                        const clampedHz = Math.max(80, Math.min(4000, hz));
+                        const t = now + (idx + 0.5) * stepDur;
+                        this.playOsc1.frequency.linearRampToValueAtTime(clampedHz, t);
+                        this.playOsc2.frequency.linearRampToValueAtTime(clampedHz * 2, t);
+                    });
+                    if (statusEl) statusEl.textContent = '〰️ Playing Your Recorded Warble Tone...';
+                } else if (mode === 'compare') {
+                    const pureDur = 2.0;
+                    const warbleDur = Math.min(4.5, Math.max(2.8, instFreqs.length * 0.18));
+                    totalDuration = pureDur + warbleDur;
+
+                    // First 2.0s: Pure Target Tone
+                    this.playOsc1.frequency.setValueAtTime(targetFreq, now);
+                    this.playOsc2.frequency.setValueAtTime(targetFreq * 2, now);
+                    this.playOsc1.frequency.setValueAtTime(targetFreq, now + pureDur - 0.02);
+                    this.playOsc2.frequency.setValueAtTime(targetFreq * 2, now + pureDur - 0.02);
+
+                    // Next: Player's Warble Sequence
+                    const stepDur = warbleDur / instFreqs.length;
+                    instFreqs.forEach((hz, idx) => {
+                        const clampedHz = Math.max(80, Math.min(4000, hz));
+                        const t = now + pureDur + (idx + 0.5) * stepDur;
+                        this.playOsc1.frequency.linearRampToValueAtTime(clampedHz, t);
+                        this.playOsc2.frequency.linearRampToValueAtTime(clampedHz * 2, t);
+                    });
+                    if (statusEl) statusEl.textContent = '🔄 A/B: Pure Target (2s) → Your Warble Tone...';
+                }
+
+                this.playGain.gain.setValueAtTime(vol, now + totalDuration - 0.06);
+                this.playGain.gain.exponentialRampToValueAtTime(0.0001, now + totalDuration);
+
+                this.playOsc1.start(now);
+                this.playOsc2.start(now);
+                this.playOsc1.stop(now + totalDuration + 0.02);
+                this.playOsc2.stop(now + totalDuration + 0.02);
+
+                this.playheadActive = true;
+                this.playheadStartTime = performance.now();
+                this.playheadDuration = totalDuration * 1000;
+
+                this.playbackTimer = setTimeout(() => {
+                    this.playheadActive = false;
+                    const loopToggle = document.getElementById('loop-playback-toggle');
+                    if (loopToggle && loopToggle.checked && state.phase === 'results') {
+                        this.playWarbleSequence(instFreqs, targetFreq, mode);
+                    } else if (statusEl) {
+                        statusEl.textContent = '✅ Playback Complete (Click any button above to replay)';
+                    }
+                }, totalDuration * 1000 + 40);
+            }
+        }
+
+        const audio = new WaveAudioEngine();
+
+        const scopeCanvas = document.getElementById('scope-canvas');
+        const sCtx = scopeCanvas.getContext('2d');
+        const warbleCanvas = document.getElementById('warble-graph-canvas');
+        const wCtx = warbleCanvas.getContext('2d');
+
+        const state = {
+            phase: 'setup', // 'setup' | 'lead_in' | 'recording' | 'results'
+            targetFreq: 400,
+            leadInLeft: LEAD_IN_DURATION,
+            timeLeft: ROUND_DURATION,
+            elapsedWaveTime: 0,
+            taps: [],        // Array of { timeSec, phaseError, instFreq }
+            tapRipples: [],  // Visual feedback rings at vertical gate
+            lastAnalysis: null,
+            resultsLockLeft: 0
+        };
+
+        function resizeCanvases() {
+            scopeCanvas.width = window.innerWidth;
+            scopeCanvas.height = window.innerHeight;
+
+            if (warbleCanvas.clientWidth > 0 && warbleCanvas.clientHeight > 0) {
+                warbleCanvas.width = warbleCanvas.clientWidth * window.devicePixelRatio;
+                warbleCanvas.height = warbleCanvas.clientHeight * window.devicePixelRatio;
+            }
+        }
+
+        window.addEventListener('resize', resizeCanvases);
+        resizeCanvases();
+
+        function updateTestToneButtonsUI(isPlaying) {
+            const topBtn = document.getElementById('test-tone-top-btn');
+            const botBtn = document.getElementById('test-tone-bottom-btn');
+            const topLbl = document.getElementById('test-tone-top-label');
+            const botLbl = document.getElementById('test-tone-bottom-label');
+            const pill = document.getElementById('test-tone-live-pill');
+
+            if (isPlaying) {
+                topBtn.classList.add('test-tone-active');
+                botBtn.classList.add('test-tone-active');
+                topLbl.textContent = `⏹️ STOP (${state.targetFreq} Hz)`;
+                botLbl.textContent = `⏹️ STOP ${state.targetFreq} Hz`;
+                pill.classList.remove('hidden');
+                pill.classList.add('inline-flex');
+                document.getElementById('test-tone-live-hz').textContent = state.targetFreq;
+            } else {
+                topBtn.classList.remove('test-tone-active');
+                botBtn.classList.remove('test-tone-active');
+                topLbl.textContent = '🔊 TEST TONE (PREVIEW)';
+                botLbl.textContent = '🔊 TEST TONE';
+                pill.classList.add('hidden');
+                pill.classList.remove('inline-flex');
+            }
+        }
+
+        // Update Setup Modal Preview & Top HUD (Strictly silent unless Test Tone is already active)
+        function syncFrequencyPreview(rawVal) {
+            const clamped = Math.max(MIN_FREQ_HZ, Math.min(MAX_FREQ_HZ, Math.round(Number(rawVal) || 400)));
+            state.targetFreq = clamped;
+
+            if (audio.testTonePlaying) {
+                audio.updateTestToneFrequency(clamped);
+                updateTestToneButtonsUI(true);
+            }
+
+            const cycles = getCyclesOnScreen(clamped);
+            const visualRate = getVisualFreq(clamped);
+            const visualPeriod = 1 / visualRate;
+            const expectedTaps = Math.round(visualRate * ROUND_DURATION);
+
+            document.getElementById('preview-cycles').textContent = `${cycles.toFixed(1)} λ`;
+            document.getElementById('preview-tap-rate').textContent = `${visualRate.toFixed(1)} / sec`;
+            document.getElementById('preview-period').textContent = `T = ${visualPeriod.toFixed(3)} s`;
+            document.getElementById('preview-expected-taps').textContent = `~${expectedTaps} crests in 15s`;
+
+            let diffLabel = 'EASY';
+            let diffColor = 'text-emerald-300';
+            if (clamped >= 1500) {
+                diffLabel = 'EXTREME';
+                diffColor = 'text-rose-400';
+            } else if (clamped >= 1000) {
+                diffLabel = 'HARD';
+                diffColor = 'text-orange-300';
+            } else if (clamped >= 500) {
+                diffLabel = 'MEDIUM';
+                diffColor = 'text-amber-300';
+            } else {
+                diffLabel = 'STEADY';
+                diffColor = 'text-cyan-300';
+            }
+            const diffEl = document.getElementById('preview-difficulty');
+            diffEl.textContent = diffLabel;
+            diffEl.className = `font-arcade text-sm sm:text-base font-extrabold mt-0.5 ${diffColor}`;
+
+            // Update Top HUD
+            document.getElementById('hud-target-freq').textContent = `${clamped} Hz`;
+            document.getElementById('hud-cycles').textContent = `${cycles.toFixed(1)} λ`;
+            document.getElementById('hud-crest-rate').textContent = `${visualRate.toFixed(1)} /s`;
+        }
+
+        const numInput = document.getElementById('freq-number-input');
+        const sliderInput = document.getElementById('freq-slider-input');
+
+        numInput.addEventListener('input', (e) => {
+            const val = Number(e.target.value);
+            if (val >= MIN_FREQ_HZ && val <= MAX_FREQ_HZ) {
+                sliderInput.value = val;
+                syncFrequencyPreview(val);
+            }
+        });
+
+        numInput.addEventListener('change', (e) => {
+            const clamped = Math.max(MIN_FREQ_HZ, Math.min(MAX_FREQ_HZ, Math.round(Number(e.target.value) || 400)));
+            numInput.value = clamped;
+            sliderInput.value = clamped;
+            syncFrequencyPreview(clamped);
+        });
+
+        sliderInput.addEventListener('input', (e) => {
+            numInput.value = e.target.value;
+            syncFrequencyPreview(e.target.value);
+        });
+
+        // Preset buttons strictly update the frequency value and visual wave without auto-playing sound
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const hz = Number(btn.getAttribute('data-preset'));
+                numInput.value = hz;
+                sliderInput.value = hz;
+                syncFrequencyPreview(hz);
+            });
+        });
+
+        // Test Tone only plays when the player explicitly clicks a Test Tone button
+        document.getElementById('test-tone-top-btn').addEventListener('click', () => {
+            syncFrequencyPreview(numInput.value);
+            audio.toggleTestTone(state.targetFreq, updateTestToneButtonsUI);
+        });
+
+        document.getElementById('test-tone-bottom-btn').addEventListener('click', () => {
+            syncFrequencyPreview(numInput.value);
+            audio.toggleTestTone(state.targetFreq, updateTestToneButtonsUI);
+        });
+
+        // Start 3s Lead-In + 15s Wave Recording Round
+        function startNewWaveRun() {
+            syncFrequencyPreview(numInput.value);
+            audio.stopTestTone(updateTestToneButtonsUI);
+            audio.stopPlaybackTone();
+            audio.startReferenceTone(state.targetFreq);
+
+            state.phase = 'lead_in';
+            state.leadInLeft = LEAD_IN_DURATION;
+            state.timeLeft = ROUND_DURATION;
+            state.taps = [];
+            state.tapRipples = [];
+            state.lastAnalysis = null;
+
+            document.getElementById('hud-taps').textContent = '0';
+            document.getElementById('hud-phase-label').textContent = 'GET READY (SYNC)';
+            document.getElementById('hud-timer').textContent = `${LEAD_IN_DURATION.toFixed(1)}s`;
+            document.getElementById('setup-modal').classList.add('hidden');
+            document.getElementById('results-modal').classList.add('hidden');
+        }
+
+        document.getElementById('start-wave-btn').addEventListener('click', startNewWaveRun);
+
+        // Compute how close the wave at the vertical sensor line is to a crest (0 = exact crest, 0.5 = trough)
+        function getSensorCrestFraction() {
+            const N = getCyclesOnScreen(state.targetFreq);
+            const fVis = getVisualFreq(state.targetFreq);
+            // Wave arg at x = SENSOR_X_RATIO: 2*PI * (N * SENSOR_X_RATIO - fVis * t)
+            // Crest occurs when sin(arg) == 1 -> arg = PI/2 (mod 2*PI) -> (N * SENSOR_X_RATIO - fVis * t - 0.25) is an integer
+            const rawCycles = N * SENSOR_X_RATIO - fVis * state.elapsedWaveTime - 0.25;
+            const nearestDiff = Math.abs(rawCycles - Math.round(rawCycles)); // 0.0 (exact crest) to 0.5 (exact trough)
+            return nearestDiff;
+        }
+
+        function handlePlayerCrestTap() {
+            if (state.phase !== 'lead_in' && state.phase !== 'recording') return;
+
+            const padBtn = document.getElementById('crest-tap-pad');
+            padBtn.classList.add('tap-btn-active');
+            setTimeout(() => padBtn.classList.remove('tap-btn-active'), 90);
+
+            const phaseErr = getSensorCrestFraction(); // 0 = perfect crest, 0.5 = trough
+            audio.playTapClick(phaseErr);
+
+            // Spawn visual ripple on the vertical line
+            let color = '#34d399'; // Emerald for on-crest
+            let label = 'CREST LOCK!';
+            if (phaseErr > 0.28) {
+                color = '#fb7185';
+                label = 'OFF-PHASE';
+            } else if (phaseErr > 0.14) {
+                color = '#fbbf24';
+                label = 'CLOSE';
+            }
+
+            state.tapRipples.push({
+                radius: 10,
+                alpha: 1.0,
+                color,
+                label,
+                yOffset: 0
+            });
+
+            // Record timestamps strictly during the 15-second recording phase
+            if (state.phase === 'recording') {
+                const nowSec = performance.now() / 1000;
+                let instFreq = null;
+                if (state.taps.length > 0) {
+                    const dt = nowSec - state.taps[state.taps.length - 1].timeSec;
+                    if (dt > 0.025) {
+                        instFreq = TIME_SLOWDOWN_FACTOR / dt;
+                    }
+                }
+                state.taps.push({
+                    timeSec: nowSec,
+                    phaseError: phaseErr,
+                    instFreq
+                });
+                document.getElementById('hud-taps').textContent = String(state.taps.length);
+            }
+        }
+
+        const tapPad = document.getElementById('crest-tap-pad');
+        tapPad.addEventListener('pointerdown', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handlePlayerCrestTap();
+        });
+
+        window.addEventListener('keydown', (e) => {
+            if (e.repeat) return;
+            if (e.code === 'Space' || e.code === 'ArrowDown') {
+                if (state.phase === 'lead_in' || state.phase === 'recording') {
+                    e.preventDefault();
+                    handlePlayerCrestTap();
+                }
+            }
+        });
+
+        // Finish 15-Second Round & Compute Player Frequency Statistics + Warble Tone
+        function finishWaveRun() {
+            state.phase = 'results';
+            state.resultsLockLeft = SAFETY_LOCK_DURATION;
+            audio.stopReferenceTone();
+
+            // Lock top-left dismiss/retry buttons for 1.5 seconds so stray taps never dismiss results
+            const changeBtn = document.getElementById('change-freq-btn');
+            const retryBtn = document.getElementById('retry-same-btn');
+            const changeTxt = document.getElementById('change-freq-btn-text');
+            const retryTxt = document.getElementById('retry-same-btn-text');
+            changeBtn.disabled = true;
+            retryBtn.disabled = true;
+            changeTxt.textContent = `🔒 ${SAFETY_LOCK_DURATION.toFixed(1)}s`;
+            retryTxt.textContent = '🔒 RETRY';
+
+            const resultsModal = document.getElementById('results-modal');
+            const lowTapsWarn = document.getElementById('low-taps-warning');
+            const metricsGrid = document.getElementById('metrics-grid');
+            const warbleBox = document.getElementById('warble-visualizer-box');
+            const toneBtns = document.getElementById('tone-buttons-row');
+
+            resultsModal.classList.remove('hidden');
+            resizeCanvases();
+
+            if (state.taps.length < 2) {
+                lowTapsWarn.classList.remove('hidden');
+                metricsGrid.classList.add('hidden');
+                warbleBox.classList.add('hidden');
+                toneBtns.classList.add('hidden');
+                document.getElementById('grade-badge').textContent = 'INCOMPLETE';
+                return;
+            }
+
+            lowTapsWarn.classList.add('hidden');
+            metricsGrid.classList.remove('hidden');
+            warbleBox.classList.remove('hidden');
+            toneBtns.classList.remove('hidden');
+
+            // Compute intervals dt_i and instantaneous frequencies f_i = 200 / dt_i
+            const intervals = [];
+            const instFreqs = [];
+            for (let i = 1; i < state.taps.length; i++) {
+                const dt = state.taps[i].timeSec - state.taps[i - 1].timeSec;
+                if (dt > 0.025) {
+                    intervals.push(dt);
+                    instFreqs.push(TIME_SLOWDOWN_FACTOR / dt);
+                }
+            }
+
+            const n = instFreqs.length;
+            const meanPeriod = intervals.reduce((a, b) => a + b, 0) / n;
+            const meanFreqFromIntervals = instFreqs.reduce((a, b) => a + b, 0) / n;
+
+            // Standard deviation of instantaneous frequencies (Hz) & tap intervals (ms)
+            const varianceFreq = instFreqs.reduce((acc, f) => acc + Math.pow(f - meanFreqFromIntervals, 2), 0) / n;
+            const stdDevHz = Math.sqrt(varianceFreq);
+
+            const variancePeriod = intervals.reduce((acc, dt) => acc + Math.pow(dt - meanPeriod, 2), 0) / n;
+            const stdDevMs = Math.sqrt(variancePeriod) * 1000;
+
+            // Crest Phase Accuracy (0 error = 100%, 0.5 error = 0%)
+            const avgPhaseErr = state.taps.reduce((acc, t) => acc + t.phaseError, 0) / state.taps.length;
+            const phaseLockPct = Math.max(0, Math.min(100, Math.round((1 - avgPhaseErr * 2) * 100)));
+
+            const expectedCrests = Math.round(getVisualFreq(state.targetFreq) * ROUND_DURATION);
+            const targetPeriodSec = 1 / getVisualFreq(state.targetFreq);
+            const diffHz = meanFreqFromIntervals - state.targetFreq;
+            const diffPct = (diffHz / state.targetFreq) * 100;
+
+            // Populate Results UI
+            document.getElementById('res-target-hz').textContent = `${state.targetFreq.toFixed(1)} Hz`;
+            document.getElementById('res-target-period').textContent = `Tap T = ${targetPeriodSec.toFixed(3)}s`;
+
+            document.getElementById('res-avg-hz').textContent = `${meanFreqFromIntervals.toFixed(1)} Hz`;
+            const sign = diffHz >= 0 ? '+' : '';
+            document.getElementById('res-error-pct').textContent = `${sign}${diffPct.toFixed(1)}% (${sign}${diffHz.toFixed(1)} Hz)`;
+
+            document.getElementById('res-std-hz').textContent = `±${stdDevHz.toFixed(1)} Hz`;
+            document.getElementById('res-jitter-ms').textContent = `Jitter: ±${Math.round(stdDevMs)} ms`;
+
+            document.getElementById('res-phase-acc').textContent = `${phaseLockPct}%`;
+            document.getElementById('res-tap-total').textContent = `${state.taps.length} / ${expectedCrests} Crests`;
+
+            // Compute Rank Badge
+            const relStd = stdDevHz / state.targetFreq;
+            const relErr = Math.abs(diffHz) / state.targetFreq;
+            const badge = document.getElementById('grade-badge');
+            if (relErr < 0.04 && relStd < 0.06 && phaseLockPct >= 82) {
+                badge.textContent = '🏆 S-RANK ATOMIC CLOCK';
+                badge.className = 'inline-block mt-0.5 px-3 py-0.5 rounded-lg font-arcade text-[11px] sm:text-xs font-black bg-emerald-500/20 text-emerald-300 border border-emerald-400/40';
+            } else if (relErr < 0.09 && relStd < 0.14) {
+                badge.textContent = '⚡ A-RANK HARMONIC LOCK';
+                badge.className = 'inline-block mt-0.5 px-3 py-0.5 rounded-lg font-arcade text-[11px] sm:text-xs font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/40';
+            } else if (relErr < 0.18) {
+                badge.textContent = '〰️ B-RANK WOBBLE SYNTH';
+                badge.className = 'inline-block mt-0.5 px-3 py-0.5 rounded-lg font-arcade text-[11px] sm:text-xs font-black bg-amber-500/20 text-amber-300 border border-amber-400/40';
+            } else {
+                badge.textContent = '🌪️ C-RANK WILD WARBLE';
+                badge.className = 'inline-block mt-0.5 px-3 py-0.5 rounded-lg font-arcade text-[11px] sm:text-xs font-black bg-rose-500/20 text-rose-300 border border-rose-400/40';
+            }
+
+            state.lastAnalysis = {
+                targetFreq: state.targetFreq,
+                meanFreq: meanFreqFromIntervals,
+                stdDevHz,
+                instFreqs
+            };
+
+            // Automatically play the player's Warbly Tone after 350ms
+            setTimeout(() => {
+                if (state.phase === 'results' && state.lastAnalysis) {
+                    audio.playWarbleSequence(instFreqs, state.targetFreq, 'warble');
+                }
+            }, 350);
+        }
+
+        // Results Modal Interactive Audio & Top-Left Navigation Listeners
+        document.getElementById('play-warble-btn').addEventListener('click', () => {
+            if (!state.lastAnalysis) return;
+            audio.playWarbleSequence(state.lastAnalysis.instFreqs, state.lastAnalysis.targetFreq, 'warble');
+        });
+
+        document.getElementById('play-pure-btn').addEventListener('click', () => {
+            if (!state.lastAnalysis) return;
+            audio.playWarbleSequence(state.lastAnalysis.instFreqs, state.lastAnalysis.targetFreq, 'pure');
+        });
+
+        document.getElementById('play-compare-btn').addEventListener('click', () => {
+            if (!state.lastAnalysis) return;
+            audio.playWarbleSequence(state.lastAnalysis.instFreqs, state.lastAnalysis.targetFreq, 'compare');
+        });
+
+        document.getElementById('stop-audio-btn').addEventListener('click', () => {
+            audio.stopPlaybackTone();
+        });
+
+        document.getElementById('retry-same-btn').addEventListener('click', () => {
+            if (state.resultsLockLeft > 0) return;
+            startNewWaveRun();
+        });
+
+        document.getElementById('change-freq-btn').addEventListener('click', () => {
+            if (state.resultsLockLeft > 0) return;
+            audio.stopPlaybackTone();
+            audio.stopTestTone(updateTestToneButtonsUI);
+            state.phase = 'setup';
+            document.getElementById('results-modal').classList.add('hidden');
+            document.getElementById('setup-modal').classList.remove('hidden');
+        });
+
+        document.getElementById('mute-btn').addEventListener('click', () => {
+            audio.muted = !audio.muted;
+            document.getElementById('mute-btn').textContent = audio.muted ? '🔇' : '🔊';
+            if (audio.refGain && audio.ctx) {
+                audio.refGain.gain.setValueAtTime(audio.muted ? 0.0001 : 0.16, audio.ctx.currentTime);
+            }
+            if (audio.testGain && audio.ctx) {
+                audio.testGain.gain.setValueAtTime(audio.muted ? 0.0001 : 0.22, audio.ctx.currentTime);
+            }
+        });
+
+        document.getElementById('setup-menu-btn').addEventListener('click', () => {
+            audio.stopReferenceTone();
+            audio.stopPlaybackTone();
+            audio.stopTestTone(updateTestToneButtonsUI);
+            state.phase = 'setup';
+            document.getElementById('results-modal').classList.add('hidden');
+            document.getElementById('setup-modal').classList.remove('hidden');
+        });
+
+        // Draw Main Traveling Wave Oscilloscope & Short Vertical Target Line
+        function drawMainOscilloscope(dt) {
+            const w = scopeCanvas.width;
+            const h = scopeCanvas.height;
+            const centerY = h * 0.45;
+            const waveAmp = Math.min(h * 0.21, 145);
+            const sensorX = w * SENSOR_X_RATIO;
+
+            // Oscilloscope dark background
+            sCtx.fillStyle = '#060913';
+            sCtx.fillRect(0, 0, w, h);
+
+            // Subtle Oscilloscope Grid
+            sCtx.strokeStyle = 'rgba(56, 189, 248, 0.07)';
+            sCtx.lineWidth = 1;
+            const gridStep = 48;
+            for (let x = 0; x < w; x += gridStep) {
+                sCtx.beginPath();
+                sCtx.moveTo(x, 0);
+                sCtx.lineTo(x, h);
+                sCtx.stroke();
+            }
+            for (let y = 0; y < h; y += gridStep) {
+                sCtx.beginPath();
+                sCtx.moveTo(0, y);
+                sCtx.lineTo(w, y);
+                sCtx.stroke();
+            }
+
+            // Center equilibrium axis
+            sCtx.strokeStyle = 'rgba(148, 163, 184, 0.2)';
+            sCtx.setLineDash([6, 6]);
+            sCtx.beginPath();
+            sCtx.moveTo(0, centerY);
+            sCtx.lineTo(w, centerY);
+            sCtx.stroke();
+            sCtx.setLineDash([]);
+
+            // Calculate Wave Parameters
+            const N = getCyclesOnScreen(state.targetFreq);
+            const fVis = getVisualFreq(state.targetFreq);
+            const crestErr = getSensorCrestFraction();
+            const isCrestCrossing = crestErr < 0.085;
+
+            // Vertical connector guide from short vertical line down to touch pad
+            sCtx.strokeStyle = 'rgba(52, 211, 153, 0.18)';
+            sCtx.lineWidth = 2;
+            sCtx.setLineDash([4, 6]);
+            sCtx.beginPath();
+            sCtx.moveTo(sensorX, centerY + waveAmp * 1.32);
+            sCtx.lineTo(sensorX, h - 95);
+            sCtx.stroke();
+            sCtx.setLineDash([]);
+
+            // SHORT VERTICAL TARGET LINE (Reference Gate at 70% Screen Width)
+            const gateTopY = centerY - waveAmp * 1.32;
+            const gateBotY = centerY + waveAmp * 1.32;
+
+            sCtx.save();
+            sCtx.strokeStyle = isCrestCrossing ? '#34d399' : '#fbbf24';
+            sCtx.lineWidth = isCrestCrossing ? 5 : 3.5;
+            sCtx.shadowColor = isCrestCrossing ? '#10b981' : '#f59e0b';
+            sCtx.shadowBlur = isCrestCrossing ? 22 : 10;
+
+            sCtx.beginPath();
+            sCtx.moveTo(sensorX, gateTopY);
+            sCtx.lineTo(sensorX, gateBotY);
+            sCtx.stroke();
+
+            // Top & Bottom Horizontal Gate Caps
+            sCtx.beginPath();
+            sCtx.moveTo(sensorX - 10, gateTopY);
+            sCtx.lineTo(sensorX + 10, gateTopY);
+            sCtx.moveTo(sensorX - 10, gateBotY);
+            sCtx.lineTo(sensorX + 10, gateBotY);
+            sCtx.stroke();
+            sCtx.restore();
+
+            // Label above short vertical line
+            sCtx.fillStyle = isCrestCrossing ? '#6ee7b7' : '#fde68a';
+            sCtx.font = '700 11px Orbitron, sans-serif';
+            sCtx.textAlign = 'center';
+            sCtx.fillText('CREST GATE', sensorX, gateTopY - 12);
+
+            // Draw Traveling Sine Wave (Moving Left -> Right)
+            sCtx.save();
+            sCtx.strokeStyle = '#38bdf8';
+            sCtx.lineWidth = N > 28 ? 2.2 : 3.2;
+            sCtx.shadowColor = '#0ea5e9';
+            sCtx.shadowBlur = 12;
+
+            sCtx.beginPath();
+            const stepPx = N > 30 ? 1.5 : 2.5;
+            for (let x = 0; x <= w; x += stepPx) {
+                const normX = x / w;
+                const phase = 2 * Math.PI * (N * normX - fVis * state.elapsedWaveTime);
+                const y = centerY - Math.sin(phase) * waveAmp;
+                if (x === 0) sCtx.moveTo(x, y);
+                else sCtx.lineTo(x, y);
+            }
+            sCtx.stroke();
+            sCtx.restore();
+
+            // Draw Glowing Wave Intersection Bead on the Vertical Target Line
+            const sensorPhase = 2 * Math.PI * (N * SENSOR_X_RATIO - fVis * state.elapsedWaveTime);
+            const beadY = centerY - Math.sin(sensorPhase) * waveAmp;
+
+            sCtx.save();
+            sCtx.fillStyle = isCrestCrossing ? '#34d399' : '#ffffff';
+            sCtx.shadowColor = isCrestCrossing ? '#10b981' : '#38bdf8';
+            sCtx.shadowBlur = 16;
+            sCtx.beginPath();
+            sCtx.arc(sensorX, beadY, isCrestCrossing ? 8 : 6, 0, Math.PI * 2);
+            sCtx.fill();
+            sCtx.restore();
+
+            // Draw Expanding Tap Ripples & Timing Feedback Labels at the Gate
+            for (let i = state.tapRipples.length - 1; i >= 0; i--) {
+                const rp = state.tapRipples[i];
+                rp.radius += dt * 110;
+                rp.yOffset -= dt * 45;
+                rp.alpha -= dt * 1.45;
+
+                if (rp.alpha <= 0) {
+                    state.tapRipples.splice(i, 1);
+                    continue;
+                }
+
+                sCtx.save();
+                sCtx.globalAlpha = rp.alpha;
+                sCtx.strokeStyle = rp.color;
+                sCtx.lineWidth = 2.5;
+                sCtx.beginPath();
+                sCtx.arc(sensorX, gateTopY + waveAmp * 0.32, rp.radius, 0, Math.PI * 2);
+                sCtx.stroke();
+
+                sCtx.fillStyle = rp.color;
+                sCtx.font = '800 12px Orbitron, sans-serif';
+                sCtx.textAlign = 'center';
+                sCtx.fillText(rp.label, sensorX, gateTopY - 28 + rp.yOffset);
+                sCtx.restore();
+            }
+        }
+
+        // Draw Player's Recorded Pitch Warble Curve on the Results Modal Canvas
+        function drawWarbleGraph() {
+            if (state.phase !== 'results' || !state.lastAnalysis) return;
+
+            const cw = warbleCanvas.width;
+            const ch = warbleCanvas.height;
+            if (cw === 0 || ch === 0) return;
+
+            const { instFreqs, targetFreq } = state.lastAnalysis;
+            wCtx.clearRect(0, 0, cw, ch);
+
+            const padL = 46 * window.devicePixelRatio;
+            const padR = 18 * window.devicePixelRatio;
+            const padT = 18 * window.devicePixelRatio;
+            const padB = 22 * window.devicePixelRatio;
+            const plotW = cw - padL - padR;
+            const plotH = ch - padT - padB;
+
+            // Compute vertical frequency scale centered around targetFreq
+            let maxDev = Math.max(targetFreq * 0.18, 40);
+            instFreqs.forEach(f => {
+                maxDev = Math.max(maxDev, Math.abs(f - targetFreq) * 1.15);
+            });
+            maxDev = Math.min(maxDev, targetFreq * 0.85);
+
+            const minHz = Math.max(50, targetFreq - maxDev);
+            const maxHz = targetFreq + maxDev;
+
+            const hzToY = (hz) => {
+                const clamped = Math.max(minHz, Math.min(maxHz, hz));
+                const norm = (clamped - minHz) / (maxHz - minHz);
+                return padT + plotH * (1 - norm);
+            };
+
+            // Target Frequency Reference Line
+            const targetY = hzToY(targetFreq);
+            wCtx.strokeStyle = 'rgba(56, 189, 248, 0.65)';
+            wCtx.lineWidth = 1.5 * window.devicePixelRatio;
+            wCtx.setLineDash([5, 5]);
+            wCtx.beginPath();
+            wCtx.moveTo(padL, targetY);
+            wCtx.lineTo(padL + plotW, targetY);
+            wCtx.stroke();
+            wCtx.setLineDash([]);
+
+            // Y-axis Hz labels
+            wCtx.fillStyle = '#94a3b8';
+            wCtx.font = `600 ${10 * window.devicePixelRatio}px Orbitron, sans-serif`;
+            wCtx.textAlign = 'right';
+            wCtx.fillText(`${Math.round(maxHz)}`, padL - 6 * window.devicePixelRatio, padT + 8);
+            wCtx.fillStyle = '#38bdf8';
+            wCtx.fillText(`${Math.round(targetFreq)}`, padL - 6 * window.devicePixelRatio, targetY + 4);
+            wCtx.fillStyle = '#94a3b8';
+            wCtx.fillText(`${Math.round(minHz)}`, padL - 6 * window.devicePixelRatio, padT + plotH);
+
+            // Draw Player's Recorded Warble Curve
+            if (instFreqs.length > 0) {
+                wCtx.strokeStyle = '#fbbf24';
+                wCtx.lineWidth = 2.5 * window.devicePixelRatio;
+                wCtx.beginPath();
+                instFreqs.forEach((hz, idx) => {
+                    const x = padL + (instFreqs.length === 1 ? plotW / 2 : (idx / (instFreqs.length - 1)) * plotW);
+                    const y = hzToY(hz);
+                    if (idx === 0) wCtx.moveTo(x, y);
+                    else wCtx.lineTo(x, y);
+                });
+                wCtx.stroke();
+
+                // Individual Tap Frequency Nodes
+                instFreqs.forEach((hz, idx) => {
+                    const x = padL + (instFreqs.length === 1 ? plotW / 2 : (idx / (instFreqs.length - 1)) * plotW);
+                    const y = hzToY(hz);
+                    wCtx.fillStyle = '#fde68a';
+                    wCtx.beginPath();
+                    wCtx.arc(x, y, 3.2 * window.devicePixelRatio, 0, Math.PI * 2);
+                    wCtx.fill();
+                });
+            }
+
+            // Draw Live Audio Playhead & Update Instantaneous Hz Badge
+            const liveBadge = document.getElementById('live-playhead-hz');
+            if (audio.playheadActive && audio.playheadDuration > 0) {
+                const elapsed = performance.now() - audio.playheadStartTime;
+                const progress = Math.max(0, Math.min(1, elapsed / audio.playheadDuration));
+                const playX = padL + progress * plotW;
+
+                wCtx.strokeStyle = '#34d399';
+                wCtx.lineWidth = 2 * window.devicePixelRatio;
+                wCtx.beginPath();
+                wCtx.moveTo(playX, padT);
+                wCtx.lineTo(playX, padT + plotH);
+                wCtx.stroke();
+
+                let currentHz = targetFreq;
+                if (audio.playheadMode === 'warble' && instFreqs.length > 0) {
+                    const idx = Math.min(instFreqs.length - 1, Math.floor(progress * instFreqs.length));
+                    currentHz = instFreqs[idx];
+                } else if (audio.playheadMode === 'compare' && instFreqs.length > 0) {
+                    const pureRatio = 2000 / audio.playheadDuration;
+                    if (progress > pureRatio) {
+                        const warbleProg = (progress - pureRatio) / (1 - pureRatio);
+                        const idx = Math.min(instFreqs.length - 1, Math.floor(warbleProg * instFreqs.length));
+                        currentHz = instFreqs[idx];
+                    }
+                }
+                if (liveBadge) liveBadge.textContent = `${currentHz.toFixed(1)} Hz`;
+            } else if (liveBadge && state.lastAnalysis) {
+                liveBadge.textContent = `Avg ${state.lastAnalysis.meanFreq.toFixed(1)} Hz`;
+            }
+        }
+
+        let lastTime = performance.now();
+
+        function animate(now) {
+            const dt = Math.min(0.05, (now - lastTime) / 1000);
+            lastTime = now;
+
+            state.elapsedWaveTime += dt;
+
+            if (state.phase === 'lead_in') {
+                state.leadInLeft -= dt;
+                document.getElementById('hud-timer').textContent = `READY ${Math.ceil(Math.max(0, state.leadInLeft))}`;
+                if (state.leadInLeft <= 0) {
+                    state.phase = 'recording';
+                    state.timeLeft = ROUND_DURATION;
+                    document.getElementById('hud-phase-label').textContent = '🔴 RECORDING TAPS';
+                }
+            } else if (state.phase === 'recording') {
+                state.timeLeft -= dt;
+                document.getElementById('hud-timer').textContent = `${Math.max(0, state.timeLeft).toFixed(1)}s`;
+                if (state.timeLeft <= 0) {
+                    state.timeLeft = 0;
+                    document.getElementById('hud-timer').textContent = '0.0s';
+                    finishWaveRun();
+                }
+            } else if (state.phase === 'results' && state.resultsLockLeft > 0) {
+                state.resultsLockLeft = Math.max(0, state.resultsLockLeft - dt);
+                const changeBtn = document.getElementById('change-freq-btn');
+                const retryBtn = document.getElementById('retry-same-btn');
+                const changeTxt = document.getElementById('change-freq-btn-text');
+                const retryTxt = document.getElementById('retry-same-btn-text');
+
+                if (state.resultsLockLeft <= 0) {
+                    changeBtn.disabled = false;
+                    retryBtn.disabled = false;
+                    changeTxt.textContent = '← NEW FREQ / DISMISS';
+                    retryTxt.textContent = '↻ RETRY SAME Hz';
+                } else {
+                    changeTxt.textContent = `🔒 ${state.resultsLockLeft.toFixed(1)}s`;
+                }
+            }
+
+            drawMainOscilloscope(dt);
+            drawWarbleGraph();
+
+            requestAnimationFrame(animate);
+        }
+
+        window.onload = function () {
+            resizeCanvases();
+            syncFrequencyPreview(400);
+            requestAnimationFrame(animate);
+        };
+    </script>
+</body>
+</html>

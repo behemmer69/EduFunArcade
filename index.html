@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arcade Lounge</title>
+    <title>Arcade Hub</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@700;800;900&display=swap" rel="stylesheet">
     <style>
@@ -24,373 +24,543 @@
             font-family: 'Orbitron', sans-serif;
         }
 
-        /* Subtle unified starlight & ambient background */
+        /* Deep Midnight-Slate Starlight & Ambient Glow Background */
         .bg-arcade-atmosphere {
             background-color: #0a0e1a;
             background-image: 
-                radial-gradient(circle at 18% 20%, rgba(249, 115, 22, 0.08) 0%, transparent 40%),
-                radial-gradient(circle at 50% 15%, rgba(16, 185, 129, 0.07) 0%, transparent 42%),
-                radial-gradient(circle at 82% 22%, rgba(56, 189, 248, 0.09) 0%, transparent 40%),
-                radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px);
-            background-size: 100% 100%, 100% 100%, 100% 100%, 32px 32px;
+                radial-gradient(circle at 14% 18%, rgba(249, 115, 22, 0.08) 0%, transparent 38%),
+                radial-gradient(circle at 38% 12%, rgba(16, 185, 129, 0.07) 0%, transparent 38%),
+                radial-gradient(circle at 64% 18%, rgba(6, 182, 212, 0.08) 0%, transparent 38%),
+                radial-gradient(circle at 88% 15%, rgba(168, 85, 247, 0.09) 0%, transparent 38%),
+                radial-gradient(rgba(255, 255, 255, 0.055) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 32px 32px;
         }
 
-        /* Unified Game Card Styling */
+        /* Symmetrical Responsive Grid: 1 col (<640px), 2x2 (640px-1180px), 1x4 (>1180px) */
+        .arcade-grid {
+            display: grid;
+            grid-template-columns: repeat(1, minmax(0, 1fr));
+            gap: 1.5rem;
+        }
+        @media (min-width: 640px) {
+            .arcade-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 1.5rem;
+            }
+        }
+        @media (min-width: 1181px) {
+            .arcade-grid {
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+                gap: 1.35rem;
+            }
+        }
+
+        /* Unified Glassmorphic Game Card Styling */
         .game-card {
-            background: rgba(15, 23, 42, 0.72);
+            background: rgba(15, 23, 42, 0.74);
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
             border: 1px solid rgba(255, 255, 255, 0.09);
-            box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.55);
+            box-shadow: 0 14px 34px -8px rgba(0, 0, 0, 0.6);
             transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.28s ease, box-shadow 0.28s ease;
         }
         .game-card:hover {
             transform: translateY(-6px);
         }
 
-        /* Subtle Accent Hover Glows */
+        /* Game-Specific Hover Accent Glows */
         .card-hoops:hover {
-            border-color: rgba(251, 146, 60, 0.55);
-            box-shadow: 0 22px 44px -12px rgba(249, 115, 22, 0.25);
+            border-color: rgba(249, 115, 22, 0.55);
+            box-shadow: 0 22px 44px -12px rgba(249, 115, 22, 0.26);
         }
         .card-putting:hover {
-            border-color: rgba(52, 211, 153, 0.55);
-            box-shadow: 0 22px 44px -12px rgba(16, 185, 129, 0.25);
+            border-color: rgba(16, 185, 129, 0.55);
+            box-shadow: 0 22px 44px -12px rgba(16, 185, 129, 0.26);
         }
         .card-waves:hover {
-            border-color: rgba(56, 189, 248, 0.55);
-            box-shadow: 0 22px 44px -12px rgba(14, 165, 233, 0.25);
+            border-color: rgba(6, 182, 212, 0.55);
+            box-shadow: 0 22px 44px -12px rgba(6, 182, 212, 0.26);
+        }
+        .card-sonic:hover {
+            border-color: rgba(168, 85, 247, 0.6);
+            box-shadow: 0 22px 44px -12px rgba(168, 85, 247, 0.28);
         }
 
-        /* Gentle SVG Idle Animations */
+        /* Subtle SVG Idle Animations */
         @keyframes floatGentle {
             0%, 100% { transform: translateY(0px); }
             50% { transform: translateY(-4px); }
         }
         @keyframes swayRaft {
-            0%, 100% { transform: translateY(0px) rotate(-1.5deg); }
+            0%, 100% { transform: translateY(0px) rotate(-1.6deg); }
             50% { transform: translateY(-3px) rotate(1.8deg); }
+        }
+        @keyframes pulseCrest {
+            0%, 100% { transform: scale(1); opacity: 0.9; }
+            50% { transform: scale(1.22); opacity: 0.45; }
         }
         .anim-float {
             animation: floatGentle 4.5s ease-in-out infinite;
         }
         .anim-raft {
             animation: swayRaft 4s ease-in-out infinite;
-            transform-origin: 175px 125px;
+            transform-origin: 185px 132px;
+        }
+        .anim-pulse-ring {
+            animation: pulseCrest 2.2s ease-in-out infinite;
+            transform-origin: 160px 62px;
         }
     </style>
 </head>
 <body class="bg-arcade-atmosphere flex flex-col justify-between min-h-screen py-6 px-4 sm:px-6 lg:px-8 select-none">
 
     <!-- Top Player Header -->
-    <header class="max-w-6xl w-full mx-auto text-center pt-2 pb-4 sm:pb-6">
-        <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/[0.04] border border-white/10 text-slate-300 text-xs font-semibold tracking-wide mb-3">
-            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span>INSTANT PLAY ARCADE</span>
+    <header class="max-w-7xl w-full mx-auto text-center pt-2 pb-5 sm:pb-7">
+        <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/[0.04] border border-white/10 text-slate-300 text-[11px] font-semibold tracking-widest uppercase mb-3 shadow-inner">
+            <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+            <span>GALACTIC &amp; LAB ARCADE</span>
         </div>
         <h1 class="font-display text-2xl sm:text-4xl font-black tracking-wider text-white">
-            SELECT A GAME TO PLAY
+            ARCADE HUB
         </h1>
         <p class="text-xs sm:text-sm text-slate-400 mt-1.5 max-w-md mx-auto">
-            Tap any challenge below to launch straight into the action.
+            Select a challenge below to launch instantly in your browser.
         </p>
     </header>
 
-    <!-- Main 3-Card Responsive Grid -->
-    <main class="max-w-6xl w-full mx-auto my-auto py-2">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6 items-stretch">
+    <!-- Main Symmetrical 4-Game Grid -->
+    <main class="max-w-7xl w-full mx-auto my-auto py-2">
+        <div class="arcade-grid items-stretch">
 
             <!-- CARD 1: GALACTIC POP-A-SHOT -->
             <a href="basketball.html" class="game-card card-hoops rounded-3xl overflow-hidden flex flex-col justify-between group focus:outline-none focus:ring-2 focus:ring-orange-400">
                 <div>
-                    <!-- Cohesive SVG Illustration Header -->
-                    <div class="relative h-44 sm:h-48 w-full bg-gradient-to-b from-slate-950/90 to-slate-900/90 border-b border-white/[0.07] flex items-center justify-center p-4 overflow-hidden">
-                        <div class="absolute w-36 h-36 rounded-full bg-orange-500/15 blur-2xl group-hover:bg-orange-500/25 transition-all"></div>
+                    <!-- 16:9 SVG Illustration Header -->
+                    <div class="relative aspect-video w-full bg-gradient-to-b from-slate-950/95 to-slate-900/90 border-b border-white/[0.08] flex items-center justify-center overflow-hidden">
+                        <div class="absolute w-40 h-40 rounded-full bg-orange-500/15 blur-2xl group-hover:bg-orange-500/25 transition-all"></div>
                         
-                        <svg viewBox="0 0 360 180" class="w-full h-full max-w-[320px] relative z-10 anim-float">
+                        <!-- Category Badge -->
+                        <span class="absolute top-3 left-3 z-20 text-[10px] font-display font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full bg-slate-950/80 text-orange-300 border border-orange-400/30 backdrop-blur-md">
+                            Cosmic Sports
+                        </span>
+
+                        <svg viewBox="0 0 320 180" class="w-full h-full relative z-10 anim-float">
                             <defs>
-                                <radialGradient id="planetGrad" cx="35%" cy="30%" r="70%">
+                                <radialGradient id="saturnBody" cx="35%" cy="30%" r="70%">
                                     <stop offset="0%" stop-color="#fde68a"/>
                                     <stop offset="55%" stop-color="#f59e0b"/>
                                     <stop offset="100%" stop-color="#78350f"/>
                                 </radialGradient>
-                                <radialGradient id="ballGrad" cx="35%" cy="30%" r="70%">
+                                <radialGradient id="earthBody" cx="35%" cy="30%" r="70%">
+                                    <stop offset="0%" stop-color="#7dd3fc"/>
+                                    <stop offset="55%" stop-color="#0284c7"/>
+                                    <stop offset="100%" stop-color="#0f172a"/>
+                                </radialGradient>
+                                <radialGradient id="hoopBall" cx="35%" cy="30%" r="70%">
                                     <stop offset="0%" stop-color="#fdba74"/>
                                     <stop offset="55%" stop-color="#ea580c"/>
                                     <stop offset="100%" stop-color="#7c2d12"/>
                                 </radialGradient>
-                                <linearGradient id="shotArc" x1="0%" y1="100%" x2="100%" y2="0%">
-                                    <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.1"/>
-                                    <stop offset="55%" stop-color="#38bdf8" stop-opacity="0.75"/>
-                                    <stop offset="100%" stop-color="#fb923c" stop-opacity="0.95"/>
+                                <linearGradient id="hoopArc" x1="0%" y1="100%" x2="100%" y2="0%">
+                                    <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.25"/>
+                                    <stop offset="50%" stop-color="#38bdf8" stop-opacity="0.85"/>
+                                    <stop offset="100%" stop-color="#f97316" stop-opacity="0.95"/>
                                 </linearGradient>
                             </defs>
 
-                            <!-- Ambient Stars -->
-                            <circle cx="38" cy="36" r="1.5" fill="#94a3b8" opacity="0.6"/>
-                            <circle cx="148" cy="24" r="1.5" fill="#e2e8f0" opacity="0.7"/>
-                            <circle cx="222" cy="40" r="1.2" fill="#38bdf8" opacity="0.6"/>
-                            <circle cx="115" cy="138" r="1.5" fill="#94a3b8" opacity="0.5"/>
+                            <!-- Starry Background -->
+                            <circle cx="30" cy="48" r="1.3" fill="#94a3b8" opacity="0.6"/>
+                            <circle cx="135" cy="24" r="1.5" fill="#e2e8f0" opacity="0.75"/>
+                            <circle cx="205" cy="34" r="1.2" fill="#38bdf8" opacity="0.7"/>
+                            <circle cx="288" cy="26" r="1.4" fill="#fde68a" opacity="0.6"/>
 
-                            <!-- Ringed Planet -->
-                            <g transform="translate(82, 68)">
-                                <ellipse cx="0" cy="0" rx="48" ry="14" fill="none" stroke="#fde047" stroke-width="4" opacity="0.4" transform="rotate(-18)"/>
-                                <circle cx="0" cy="0" r="27" fill="url(#planetGrad)"/>
-                                <path d="M-45,14 A48,14 0 0,0 45,-14" fill="none" stroke="#fef08a" stroke-width="4" opacity="0.85" transform="rotate(-18)"/>
+                            <!-- Distant Earth -->
+                            <g transform="translate(198, 42)">
+                                <circle cx="0" cy="0" r="11" fill="url(#earthBody)"/>
+                                <path d="M-5,-4 Q2,-6 4,1 Q1,7 -4,5 Z" fill="#34d399" opacity="0.75"/>
                             </g>
 
-                            <!-- Shot Trajectory Arc -->
-                            <path d="M 48,148 Q 165,16 268,82" fill="none" stroke="url(#shotArc)" stroke-width="4" stroke-dasharray="7 6" stroke-linecap="round"/>
-
-                            <!-- Basketball -->
-                            <g transform="translate(186, 56) rotate(-22)">
-                                <circle cx="0" cy="0" r="20" fill="url(#ballGrad)" stroke="#fb923c" stroke-width="1"/>
-                                <path d="M-20,0 L20,0 M0,-20 L0,20" stroke="#1c1917" stroke-width="2"/>
-                                <path d="M-11,-16 Q0,0 -11,16 M11,-16 Q0,0 11,16" fill="none" stroke="#1c1917" stroke-width="2"/>
+                            <!-- Ringed Saturn -->
+                            <g transform="translate(88, 62)">
+                                <ellipse cx="0" cy="0" rx="38" ry="11" fill="none" stroke="#fde047" stroke-width="3.2" opacity="0.4" transform="rotate(-18)"/>
+                                <circle cx="0" cy="0" r="21" fill="url(#saturnBody)"/>
+                                <path d="M-36,11 A38,11 0 0,0 36,-11" fill="none" stroke="#fef08a" stroke-width="3.2" opacity="0.85" transform="rotate(-18)"/>
                             </g>
 
-                            <!-- Hoop & Backboard -->
-                            <g transform="translate(248, 38)">
-                                <rect x="44" y="0" width="9" height="68" rx="4" fill="#e2e8f0" stroke="#38bdf8" stroke-width="2.5"/>
-                                <rect x="41" y="26" width="3.5" height="20" fill="#f97316"/>
-                                <path d="M6,44 L13,82 L33,82 L40,44" fill="none" stroke="#cbd5e1" stroke-width="2" opacity="0.85"/>
-                                <path d="M15,44 L21,82 M23,44 L27,82 M31,44 L23,82 M15,44 L10,82" stroke="#94a3b8" stroke-width="1.5" opacity="0.65"/>
-                                <line x1="9" y1="58" x2="37" y2="58" stroke="#e2e8f0" stroke-width="1.5" opacity="0.75"/>
-                                <line x1="11" y1="70" x2="35" y2="70" stroke="#e2e8f0" stroke-width="1.5" opacity="0.75"/>
-                                <line x1="4" y1="44" x2="43" y2="44" stroke="#ea580c" stroke-width="5.5" stroke-linecap="round"/>
+                            <!-- Court Horizon Line & Left Shooting Station -->
+                            <line x1="0" y1="158" x2="320" y2="158" stroke="#38bdf8" stroke-width="1.5" opacity="0.4"/>
+                            <ellipse cx="46" cy="158" rx="22" ry="5.5" fill="rgba(56, 189, 248, 0.2)" stroke="#38bdf8" stroke-width="1.5"/>
+                            <rect x="36" y="122" width="20" height="36" fill="url(#hoopArc)" opacity="0.18"/>
+
+                            <!-- Parabolic Shot Arc -->
+                            <path d="M 46,136 Q 152,14 252,78" fill="none" stroke="url(#hoopArc)" stroke-width="3.5" stroke-dasharray="6 5" stroke-linecap="round"/>
+
+                            <!-- Basketball in Flight -->
+                            <g transform="translate(166, 52) rotate(-20)">
+                                <circle cx="0" cy="0" r="16.5" fill="url(#hoopBall)" stroke="#fb923c" stroke-width="1"/>
+                                <path d="M-16.5,0 L16.5,0 M0,-16.5 L0,16.5" stroke="#1c1917" stroke-width="1.8"/>
+                                <path d="M-9,-13 Q0,0 -9,13 M9,-13 Q0,0 9,13" fill="none" stroke="#1c1917" stroke-width="1.8"/>
+                            </g>
+
+                            <!-- Right Hoop, Backboard & Stanchion -->
+                            <g transform="translate(232, 36)">
+                                <path d="M56,122 L56,18 L46,28" fill="none" stroke="#475569" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                                <rect x="40" y="0" width="8" height="58" rx="3.5" fill="#e2e8f0" stroke="#38bdf8" stroke-width="2"/>
+                                <rect x="37.5" y="22" width="3" height="17" fill="#f97316"/>
+                                <path d="M5,38 L11,70 L29,70 L35,38" fill="none" stroke="#cbd5e1" stroke-width="1.8" opacity="0.85"/>
+                                <path d="M13,38 L18,70 M20,38 L24,70 M27,38 L20,70 M13,38 L9,70" stroke="#94a3b8" stroke-width="1.3" opacity="0.65"/>
+                                <line x1="8" y1="50" x2="32" y2="50" stroke="#e2e8f0" stroke-width="1.3" opacity="0.75"/>
+                                <line x1="10" y1="60" x2="30" y2="60" stroke="#e2e8f0" stroke-width="1.3" opacity="0.75"/>
+                                <line x1="3" y1="38" x2="39" y2="38" stroke="#ea580c" stroke-width="4.5" stroke-linecap="round"/>
                             </g>
                         </svg>
                     </div>
 
                     <!-- Card Content -->
-                    <div class="p-5 sm:p-6">
-                        <h2 class="font-display text-lg sm:text-xl font-bold text-white group-hover:text-orange-400 transition-colors">
+                    <div class="p-5">
+                        <h2 class="font-display text-base sm:text-lg font-bold text-white group-hover:text-orange-400 transition-colors">
                             Galactic Pop-A-Shot
                         </h2>
-                        <p class="text-xs sm:text-sm text-slate-300 mt-2 leading-relaxed line-clamp-2">
-                            Swipe-to-shoot arcade basketball where gravity shifts between the 9 planets every 6 seconds.
+                        <p class="text-xs sm:text-[13px] text-slate-300 mt-2 leading-relaxed line-clamp-2">
+                            Swipe to set launch angle and velocity in rapid-fire arcade hoops while gravity shifts across 9 planets every 6 seconds.
                         </p>
 
-                        <!-- Mode Pills -->
+                        <!-- 3 Feature Pills -->
                         <div class="flex flex-wrap gap-1.5 mt-4">
-                            <span class="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-white/[0.05] text-slate-300 border border-white/10">
-                                Swipe Controls
-                            </span>
-                            <span class="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-white/[0.05] text-slate-300 border border-white/10">
-                                9 Planets
-                            </span>
-                            <span class="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-white/[0.05] text-slate-300 border border-white/10">
+                            <span class="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-white/[0.05] text-slate-300 border border-white/10">
                                 30s / 60s Modes
+                            </span>
+                            <span class="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-white/[0.05] text-slate-300 border border-white/10">
+                                9-Planet Gravity
+                            </span>
+                            <span class="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-white/[0.05] text-slate-300 border border-white/10">
+                                Swipe Physics
                             </span>
                         </div>
                     </div>
                 </div>
 
                 <!-- Card CTA Footer -->
-                <div class="px-5 pb-5 sm:px-6 sm:pb-6 pt-1">
-                    <div class="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 group-hover:from-orange-400 group-hover:to-amber-400 text-slate-950 font-display font-extrabold text-xs sm:text-sm tracking-wider text-center shadow-lg shadow-orange-500/20 group-hover:shadow-orange-500/40 transition-all flex items-center justify-center gap-2">
+                <div class="px-5 pb-5 pt-1">
+                    <div class="w-full py-2.5 px-4 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 group-hover:from-orange-400 group-hover:to-amber-400 text-slate-950 font-display font-extrabold text-xs tracking-wider text-center shadow-lg shadow-orange-500/20 group-hover:shadow-orange-500/40 transition-all flex items-center justify-center gap-2">
                         <span>PLAY NOW</span>
-                        <span class="text-base leading-none transform group-hover:translate-x-1 transition-transform">→</span>
+                        <span class="text-sm leading-none transform group-hover:translate-x-1 transition-transform">→</span>
                     </div>
                 </div>
             </a>
 
-            <!-- CARD 2: 3D PRO PUTTING -->
+            <!-- CARD 2: 3D PRO PUTTING CHALLENGE -->
             <a href="putting.html" class="game-card card-putting rounded-3xl overflow-hidden flex flex-col justify-between group focus:outline-none focus:ring-2 focus:ring-emerald-400">
                 <div>
-                    <!-- Cohesive SVG Illustration Header -->
-                    <div class="relative h-44 sm:h-48 w-full bg-gradient-to-b from-slate-950/90 to-slate-900/90 border-b border-white/[0.07] flex items-center justify-center p-4 overflow-hidden">
-                        <div class="absolute w-36 h-36 rounded-full bg-emerald-500/15 blur-2xl group-hover:bg-emerald-500/25 transition-all"></div>
+                    <!-- 16:9 SVG Illustration Header -->
+                    <div class="relative aspect-video w-full bg-gradient-to-b from-slate-950/95 to-slate-900/90 border-b border-white/[0.08] flex items-center justify-center overflow-hidden">
+                        <div class="absolute w-40 h-40 rounded-full bg-emerald-500/15 blur-2xl group-hover:bg-emerald-500/25 transition-all"></div>
 
-                        <svg viewBox="0 0 360 180" class="w-full h-full max-w-[320px] relative z-10 anim-float" style="animation-delay: 0.8s;">
+                        <!-- Category Badge -->
+                        <span class="absolute top-3 left-3 z-20 text-[10px] font-display font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full bg-slate-950/80 text-emerald-300 border border-emerald-400/30 backdrop-blur-md">
+                            Precision Golf
+                        </span>
+
+                        <svg viewBox="0 0 320 180" class="w-full h-full relative z-10 anim-float" style="animation-delay: 0.7s;">
                             <defs>
-                                <linearGradient id="greenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                                    <stop offset="0%" stop-color="#10b981" stop-opacity="0.8"/>
-                                    <stop offset="60%" stop-color="#059669" stop-opacity="0.88"/>
-                                    <stop offset="100%" stop-color="#064e3b" stop-opacity="0.95"/>
+                                <linearGradient id="puttingGreen" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#10b981" stop-opacity="0.82"/>
+                                    <stop offset="60%" stop-color="#059669" stop-opacity="0.9"/>
+                                    <stop offset="100%" stop-color="#064e3b" stop-opacity="0.96"/>
                                 </linearGradient>
-                                <radialGradient id="golfGrad" cx="35%" cy="30%" r="70%">
+                                <radialGradient id="proGolfBall" cx="35%" cy="30%" r="70%">
                                     <stop offset="0%" stop-color="#ffffff"/>
                                     <stop offset="70%" stop-color="#e2e8f0"/>
                                     <stop offset="100%" stop-color="#94a3b8"/>
                                 </radialGradient>
                             </defs>
 
-                            <!-- Undulating 3D Green Surface -->
-                            <path d="M 28,128 Q 112,82 186,94 Q 262,106 332,78 L 304,158 Q 188,172 56,156 Z" fill="url(#greenGrad)" stroke="#34d399" stroke-width="2"/>
+                            <!-- 3D Undulating Golf Green Surface -->
+                            <path d="M 22,130 Q 100,82 168,94 Q 238,106 300,76 L 276,160 Q 168,174 44,158 Z" fill="url(#puttingGreen)" stroke="#34d399" stroke-width="2"/>
 
-                            <!-- Subtle Contour Grid Lines -->
-                            <g stroke="#6ee7b7" stroke-width="1" opacity="0.4" fill="none">
-                                <path d="M 64,140 Q 165,106 316,96"/>
-                                <path d="M 48,133 Q 155,95 322,85"/>
-                                <path d="M 84,150 Q 185,122 308,114"/>
-                                <path d="M 96,112 L 76,153"/>
-                                <path d="M 156,96 L 146,160"/>
-                                <path d="M 216,96 L 216,162"/>
-                                <path d="M 274,89 L 278,156"/>
+                            <!-- Glowing Topographic Contour & Caddie Break Grid -->
+                            <g stroke="#6ee7b7" stroke-width="1" opacity="0.45" fill="none">
+                                <path d="M 54,142 Q 148,106 286,96"/>
+                                <path d="M 38,134 Q 138,94 292,84"/>
+                                <path d="M 72,152 Q 165,122 280,114"/>
+                                <path d="M 86,112 L 66,154"/>
+                                <path d="M 140,96 L 130,161"/>
+                                <path d="M 196,96 L 196,163"/>
+                                <path d="M 248,89 L 252,157"/>
                             </g>
 
-                            <!-- Curved Putt Trajectory Line -->
-                            <path d="M 94,134 Q 182,94 268,108" fill="none" stroke="#fbbf24" stroke-width="3.5" stroke-dasharray="6 5" stroke-linecap="round"/>
+                            <!-- Curved Dotted Putt Trajectory Reading Slope -->
+                            <path d="M 82,136 Q 162,92 242,108" fill="none" stroke="#fbbf24" stroke-width="3.2" stroke-dasharray="5 5" stroke-linecap="round"/>
 
                             <!-- Hole Cup & Flagstick -->
-                            <g transform="translate(270, 108)">
-                                <ellipse cx="0" cy="0" rx="12" ry="5.5" fill="#090d16" stroke="#cbd5e1" stroke-width="1.5"/>
-                                <line x1="0" y1="2" x2="0" y2="-78" stroke="#f8fafc" stroke-width="2.8" stroke-linecap="round"/>
-                                <path d="M 0,-78 L 38,-67 L 0,-54 Z" fill="#f43f5e"/>
+                            <g transform="translate(244, 108)">
+                                <ellipse cx="0" cy="0" rx="11" ry="5" fill="#090d16" stroke="#cbd5e1" stroke-width="1.5"/>
+                                <line x1="0" y1="2" x2="0" y2="-74" stroke="#f8fafc" stroke-width="2.5" stroke-linecap="round"/>
+                                <path d="M 0,-74 L 34,-63 L 0,-51 Z" fill="#10b981" stroke="#6ee7b7" stroke-width="1"/>
                             </g>
 
-                            <!-- Golf Ball -->
-                            <g transform="translate(92, 130)">
-                                <ellipse cx="2" cy="13" rx="14" ry="4.5" fill="rgba(0,0,0,0.4)"/>
-                                <circle cx="0" cy="0" r="13.5" fill="url(#golfGrad)"/>
-                                <circle cx="-4" cy="-3" r="1.3" fill="#94a3b8"/>
-                                <circle cx="2" cy="-5" r="1.3" fill="#94a3b8"/>
-                                <circle cx="5" cy="0" r="1.3" fill="#94a3b8"/>
-                                <circle cx="-1" cy="4" r="1.3" fill="#94a3b8"/>
+                            <!-- Foreground Golf Ball -->
+                            <g transform="translate(80, 132)">
+                                <ellipse cx="2" cy="12" rx="13" ry="4" fill="rgba(0,0,0,0.45)"/>
+                                <circle cx="0" cy="0" r="12.5" fill="url(#proGolfBall)"/>
+                                <circle cx="-3.5" cy="-2.5" r="1.2" fill="#94a3b8"/>
+                                <circle cx="2" cy="-4.5" r="1.2" fill="#94a3b8"/>
+                                <circle cx="4.5" cy="0" r="1.2" fill="#94a3b8"/>
+                                <circle cx="-1" cy="3.5" r="1.2" fill="#94a3b8"/>
                             </g>
                         </svg>
                     </div>
 
                     <!-- Card Content -->
-                    <div class="p-5 sm:p-6">
-                        <h2 class="font-display text-lg sm:text-xl font-bold text-white group-hover:text-emerald-400 transition-colors">
-                            3D Pro Putting
+                    <div class="p-5">
+                        <h2 class="font-display text-base sm:text-lg font-bold text-white group-hover:text-emerald-400 transition-colors">
+                            3D Pro Putting Challenge
                         </h2>
-                        <p class="text-xs sm:text-sm text-slate-300 mt-2 leading-relaxed line-clamp-2">
-                            Read undulating 3D green contours, master slope break physics, and sink putts in Guided or Pro mode.
+                        <p class="text-xs sm:text-[13px] text-slate-300 mt-2 leading-relaxed line-clamp-2">
+                            Read 3D undulating green slopes with the caddie break grid and dial in your pullback power to sink precision putts.
                         </p>
 
-                        <!-- Mode Pills -->
+                        <!-- 3 Feature Pills -->
                         <div class="flex flex-wrap gap-1.5 mt-4">
-                            <span class="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-white/[0.05] text-slate-300 border border-white/10">
-                                3D Physics
+                            <span class="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-white/[0.05] text-slate-300 border border-white/10">
+                                3D Green Topo
                             </span>
-                            <span class="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-white/[0.05] text-slate-300 border border-white/10">
-                                Break Grid
+                            <span class="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-white/[0.05] text-slate-300 border border-white/10">
+                                Caddie Break Grid
                             </span>
-                            <span class="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-white/[0.05] text-slate-300 border border-white/10">
-                                Guided & Pro
+                            <span class="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-white/[0.05] text-slate-300 border border-white/10">
+                                Guided &amp; Pro
                             </span>
                         </div>
                     </div>
                 </div>
 
                 <!-- Card CTA Footer -->
-                <div class="px-5 pb-5 sm:px-6 sm:pb-6 pt-1">
-                    <div class="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 group-hover:from-emerald-400 group-hover:to-teal-300 text-slate-950 font-display font-extrabold text-xs sm:text-sm tracking-wider text-center shadow-lg shadow-emerald-500/20 group-hover:shadow-emerald-500/40 transition-all flex items-center justify-center gap-2">
+                <div class="px-5 pb-5 pt-1">
+                    <div class="w-full py-2.5 px-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 group-hover:from-emerald-400 group-hover:to-teal-300 text-slate-950 font-display font-extrabold text-xs tracking-wider text-center shadow-lg shadow-emerald-500/20 group-hover:shadow-emerald-500/40 transition-all flex items-center justify-center gap-2">
                         <span>PLAY NOW</span>
-                        <span class="text-base leading-none transform group-hover:translate-x-1 transition-transform">→</span>
+                        <span class="text-sm leading-none transform group-hover:translate-x-1 transition-transform">→</span>
                     </div>
                 </div>
             </a>
 
-            <!-- CARD 3: WAVE & WAKE BALANCE -->
-            <a href="waves.html" class="game-card card-waves rounded-3xl overflow-hidden flex flex-col justify-between group focus:outline-none focus:ring-2 focus:ring-sky-400">
+            <!-- CARD 3: OCEAN WAVE & WAKE BALANCE -->
+            <a href="waves.html" class="game-card card-waves rounded-3xl overflow-hidden flex flex-col justify-between group focus:outline-none focus:ring-2 focus:ring-cyan-400">
                 <div>
-                    <!-- Cohesive SVG Illustration Header -->
-                    <div class="relative h-44 sm:h-48 w-full bg-gradient-to-b from-slate-950/90 to-slate-900/90 border-b border-white/[0.07] flex items-center justify-center p-4 overflow-hidden">
-                        <div class="absolute w-36 h-36 rounded-full bg-sky-500/15 blur-2xl group-hover:bg-sky-500/25 transition-all"></div>
+                    <!-- 16:9 SVG Illustration Header -->
+                    <div class="relative aspect-video w-full bg-gradient-to-b from-slate-950/95 to-slate-900/90 border-b border-white/[0.08] flex items-center justify-center overflow-hidden">
+                        <div class="absolute w-40 h-40 rounded-full bg-cyan-500/15 blur-2xl group-hover:bg-cyan-500/25 transition-all"></div>
 
-                        <svg viewBox="0 0 360 180" class="w-full h-full max-w-[320px] relative z-10">
+                        <!-- Category Badge -->
+                        <span class="absolute top-3 left-3 z-20 text-[10px] font-display font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full bg-slate-950/80 text-cyan-300 border border-cyan-400/30 backdrop-blur-md">
+                            Wave Physics
+                        </span>
+
+                        <svg viewBox="0 0 320 180" class="w-full h-full relative z-10">
                             <defs>
-                                <linearGradient id="swellBack" x1="0%" y1="0%" x2="0%" y2="100%">
-                                    <stop offset="0%" stop-color="#0284c7" stop-opacity="0.7"/>
-                                    <stop offset="100%" stop-color="#0c4a6e" stop-opacity="0.95"/>
+                                <linearGradient id="oceanSwellBack" x1="0%" y1="0%" x2="0%" y2="100%">
+                                    <stop offset="0%" stop-color="#0284c7" stop-opacity="0.72"/>
+                                    <stop offset="100%" stop-color="#0c4a6e" stop-opacity="0.96"/>
                                 </linearGradient>
-                                <linearGradient id="swellFront" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <linearGradient id="oceanSwellFront" x1="0%" y1="0%" x2="100%" y2="0%">
                                     <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.82"/>
-                                    <stop offset="50%" stop-color="#0ea5e9" stop-opacity="0.88"/>
-                                    <stop offset="100%" stop-color="#0369a1" stop-opacity="0.82"/>
+                                    <stop offset="50%" stop-color="#06b6d4" stop-opacity="0.9"/>
+                                    <stop offset="100%" stop-color="#0369a1" stop-opacity="0.84"/>
                                 </linearGradient>
-                                <linearGradient id="raftLogs" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <linearGradient id="woodLogs" x1="0%" y1="0%" x2="0%" y2="100%">
                                     <stop offset="0%" stop-color="#d97706"/>
                                     <stop offset="65%" stop-color="#92400e"/>
                                     <stop offset="100%" stop-color="#451a03"/>
                                 </linearGradient>
                             </defs>
 
-                            <!-- Horizon Ship Silhouette -->
-                            <g transform="translate(248, 42)" opacity="0.85">
-                                <rect x="16" y="4" width="22" height="10" rx="2" fill="#cbd5e1"/>
-                                <rect x="26" y="-3" width="6" height="8" fill="#f43f5e"/>
-                                <path d="M 0,13 L 58,13 L 50,25 L 7,25 Z" fill="#64748b"/>
-                                <path d="M -4,25 Q 25,28 62,25" stroke="#7dd3fc" stroke-width="2" fill="none" stroke-linecap="round"/>
+                            <!-- Horizon Passing Ship -->
+                            <g transform="translate(222, 40)" opacity="0.88">
+                                <rect x="14" y="4" width="20" height="9" rx="2" fill="#cbd5e1"/>
+                                <rect x="23" y="-3" width="5.5" height="7.5" fill="#f43f5e"/>
+                                <path d="M 0,12 L 52,12 L 45,23 L 6,23 Z" fill="#64748b"/>
+                                <path d="M -4,23 Q 22,26 56,23" stroke="#7dd3fc" stroke-width="2" fill="none" stroke-linecap="round"/>
                             </g>
 
-                            <!-- Expanding Wake Lines -->
-                            <path d="M 245,66 Q 182,82 98,112" fill="none" stroke="#7dd3fc" stroke-width="2" stroke-dasharray="5 5" opacity="0.65"/>
-                            <path d="M 256,68 Q 218,94 158,130" fill="none" stroke="#38bdf8" stroke-width="2" stroke-dasharray="5 5" opacity="0.55"/>
+                            <!-- Expanding Kelvin Wake Waves -->
+                            <path d="M 220,62 Q 162,78 88,110" fill="none" stroke="#7dd3fc" stroke-width="1.8" stroke-dasharray="5 5" opacity="0.65"/>
+                            <path d="M 230,64 Q 194,90 140,126" fill="none" stroke="#38bdf8" stroke-width="1.8" stroke-dasharray="5 5" opacity="0.55"/>
 
-                            <!-- Deep Ocean Swell -->
-                            <path d="M 0,114 Q 90,96 180,114 T 360,108 L 360,180 L 0,180 Z" fill="url(#swellBack)"/>
+                            <!-- Midground Ocean Swell -->
+                            <path d="M 0,114 Q 80,96 160,114 T 320,108 L 320,180 L 0,180 Z" fill="url(#oceanSwellBack)"/>
 
-                            <!-- Wooden Raft & Castaway Holding Water Bucket -->
+                            <!-- Tilting Wooden Raft & Castaway Holding Water Bucket -->
                             <g class="anim-raft">
                                 <!-- Wooden Raft -->
-                                <g transform="translate(108, 118)">
-                                    <rect x="0" y="9" width="130" height="13" rx="6" fill="url(#raftLogs)" stroke="#78350f" stroke-width="1.5"/>
-                                    <circle cx="14" cy="15.5" r="4.5" fill="#fbbf24" opacity="0.8"/>
-                                    <circle cx="40" cy="15.5" r="4.5" fill="#fbbf24" opacity="0.8"/>
-                                    <circle cx="65" cy="15.5" r="4.5" fill="#fbbf24" opacity="0.8"/>
-                                    <circle cx="90" cy="15.5" r="4.5" fill="#fbbf24" opacity="0.8"/>
-                                    <circle cx="116" cy="15.5" r="4.5" fill="#fbbf24" opacity="0.8"/>
-                                    <rect x="24" y="8" width="4.5" height="15" rx="2" fill="#fde68a"/>
-                                    <rect x="101" y="8" width="4.5" height="15" rx="2" fill="#fde68a"/>
+                                <g transform="translate(96, 118)">
+                                    <rect x="0" y="9" width="118" height="12" rx="6" fill="url(#woodLogs)" stroke="#78350f" stroke-width="1.4"/>
+                                    <circle cx="13" cy="15" r="4" fill="#fbbf24" opacity="0.8"/>
+                                    <circle cx="36" cy="15" r="4" fill="#fbbf24" opacity="0.8"/>
+                                    <circle cx="59" cy="15" r="4" fill="#fbbf24" opacity="0.8"/>
+                                    <circle cx="82" cy="15" r="4" fill="#fbbf24" opacity="0.8"/>
+                                    <circle cx="105" cy="15" r="4" fill="#fbbf24" opacity="0.8"/>
+                                    <rect x="22" y="8" width="4" height="14" rx="1.8" fill="#fde68a"/>
+                                    <rect x="92" y="8" width="4" height="14" rx="1.8" fill="#fde68a"/>
                                 </g>
 
-                                <!-- Castaway Balancing with Water Bucket -->
-                                <g transform="translate(173, 62)">
-                                    <line x1="-6" y1="36" x2="-14" y2="64" stroke="#f59e0b" stroke-width="5" stroke-linecap="round"/>
-                                    <line x1="6" y1="36" x2="14" y2="64" stroke="#f59e0b" stroke-width="5" stroke-linecap="round"/>
-                                    <path d="M -8.5,12 L 8.5,12 L 6.5,37 L -6.5,37 Z" fill="#0284c7" stroke="#38bdf8" stroke-width="1"/>
-                                    <circle cx="0" cy="1" r="8.5" fill="#fed7aa"/>
-                                    <path d="M -8,-2 Q 0,-6 8,-2" stroke="#f43f5e" stroke-width="3" fill="none"/>
-                                    <path d="M -8.5,15 L -15,27 L -6,31" fill="none" stroke="#fed7aa" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-                                    <path d="M 8.5,15 L 15,27 L 6,31" fill="none" stroke="#fed7aa" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-                                    <!-- Water Bucket -->
-                                    <path d="M -10.5,24 L 10.5,24 L 7.5,41 L -7.5,41 Z" fill="#475569" stroke="#cbd5e1" stroke-width="1.5"/>
-                                    <path d="M -9.5,26 Q 0,21 9.5,27" fill="#38bdf8" stroke="#bae6fd" stroke-width="1.8"/>
-                                    <circle cx="-14" cy="20" r="2" fill="#7dd3fc"/>
-                                    <circle cx="15" cy="22" r="2.5" fill="#38bdf8"/>
+                                <!-- Castaway Balancing with Sloshing Water Bucket -->
+                                <g transform="translate(155, 64)">
+                                    <line x1="-5.5" y1="34" x2="-13" y2="62" stroke="#f59e0b" stroke-width="4.5" stroke-linecap="round"/>
+                                    <line x1="5.5" y1="34" x2="13" y2="62" stroke="#f59e0b" stroke-width="4.5" stroke-linecap="round"/>
+                                    <path d="M -8,11 L 8,11 L 6,35 L -6,35 Z" fill="#0284c7" stroke="#38bdf8" stroke-width="1"/>
+                                    <circle cx="0" cy="1" r="8" fill="#fed7aa"/>
+                                    <path d="M -7.5,-2 Q 0,-5.5 7.5,-2" stroke="#f43f5e" stroke-width="2.8" fill="none"/>
+                                    <path d="M -8,14 L -14,25 L -5.5,29" fill="none" stroke="#fed7aa" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M 8,14 L 14,25 L 5.5,29" fill="none" stroke="#fed7aa" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <!-- Waist-Level Sloshing Water Bucket -->
+                                    <path d="M -10,23 L 10,23 L 7,39 L -7,39 Z" fill="#475569" stroke="#cbd5e1" stroke-width="1.4"/>
+                                    <path d="M -9,25 Q 0,20 9,26" fill="#38bdf8" stroke="#bae6fd" stroke-width="1.6"/>
+                                    <circle cx="-13" cy="19" r="1.8" fill="#7dd3fc"/>
+                                    <circle cx="14" cy="21" r="2.2" fill="#38bdf8"/>
                                 </g>
                             </g>
 
                             <!-- Foreground Wave Crest -->
-                            <path d="M 0,142 Q 85,126 175,142 T 360,136 L 360,180 L 0,180 Z" fill="url(#swellFront)" opacity="0.82"/>
-                            <path d="M 0,142 Q 85,126 175,142 T 360,136" fill="none" stroke="#e0f2fe" stroke-width="2" opacity="0.8"/>
+                            <path d="M 0,142 Q 76,126 156,142 T 320,136 L 320,180 L 0,180 Z" fill="url(#oceanSwellFront)" opacity="0.84"/>
+                            <path d="M 0,142 Q 76,126 156,142 T 320,136" fill="none" stroke="#e0f2fe" stroke-width="2" opacity="0.8"/>
                         </svg>
                     </div>
 
                     <!-- Card Content -->
-                    <div class="p-5 sm:p-6">
-                        <h2 class="font-display text-lg sm:text-xl font-bold text-white group-hover:text-sky-400 transition-colors">
-                            Wave &amp; Wake Balance
+                    <div class="p-5">
+                        <h2 class="font-display text-base sm:text-lg font-bold text-white group-hover:text-cyan-400 transition-colors">
+                            Ocean Wave &amp; Wake Balance
                         </h2>
-                        <p class="text-xs sm:text-sm text-slate-300 mt-2 leading-relaxed line-clamp-2">
-                            Keep your castaway balanced on a wooden raft and prevent the water bucket from spilling as passing ship wakes rock the ocean.
+                        <p class="text-xs sm:text-[13px] text-slate-300 mt-2 leading-relaxed line-clamp-2">
+                            Counterbalance overlapping ocean swells and passing ship wakes on a tilting wooden raft without spilling your water bucket.
                         </p>
 
-                        <!-- Mode Pills -->
+                        <!-- 3 Feature Pills -->
                         <div class="flex flex-wrap gap-1.5 mt-4">
-                            <span class="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-white/[0.05] text-slate-300 border border-white/10">
-                                Wave Physics
-                            </span>
-                            <span class="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-white/[0.05] text-slate-300 border border-white/10">
-                                Ship Wakes
-                            </span>
-                            <span class="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-white/[0.05] text-slate-300 border border-white/10">
+                            <span class="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-white/[0.05] text-slate-300 border border-white/10">
                                 30s / 60s Modes
+                            </span>
+                            <span class="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-white/[0.05] text-slate-300 border border-white/10">
+                                Ship Kelvin Wakes
+                            </span>
+                            <span class="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-white/[0.05] text-slate-300 border border-white/10">
+                                Wave Superposition
                             </span>
                         </div>
                     </div>
                 </div>
 
                 <!-- Card CTA Footer -->
-                <div class="px-5 pb-5 sm:px-6 sm:pb-6 pt-1">
-                    <div class="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-sky-500 to-cyan-400 group-hover:from-sky-400 group-hover:to-cyan-300 text-slate-950 font-display font-extrabold text-xs sm:text-sm tracking-wider text-center shadow-lg shadow-sky-500/20 group-hover:shadow-sky-500/40 transition-all flex items-center justify-center gap-2">
+                <div class="px-5 pb-5 pt-1">
+                    <div class="w-full py-2.5 px-4 rounded-2xl bg-gradient-to-r from-cyan-500 to-sky-400 group-hover:from-cyan-400 group-hover:to-sky-300 text-slate-950 font-display font-extrabold text-xs tracking-wider text-center shadow-lg shadow-cyan-500/20 group-hover:shadow-cyan-500/40 transition-all flex items-center justify-center gap-2">
                         <span>PLAY NOW</span>
-                        <span class="text-base leading-none transform group-hover:translate-x-1 transition-transform">→</span>
+                        <span class="text-sm leading-none transform group-hover:translate-x-1 transition-transform">→</span>
+                    </div>
+                </div>
+            </a>
+
+            <!-- CARD 4: SONIC WAVE & FREQUENCY LAB -->
+            <a href="sonic.html" class="game-card card-sonic rounded-3xl overflow-hidden flex flex-col justify-between group focus:outline-none focus:ring-2 focus:ring-purple-400">
+                <div>
+                    <!-- 16:9 SVG Illustration Header -->
+                    <div class="relative aspect-video w-full bg-gradient-to-b from-slate-950/95 to-slate-900/90 border-b border-white/[0.08] flex items-center justify-center overflow-hidden">
+                        <div class="absolute w-40 h-40 rounded-full bg-purple-500/15 blur-2xl group-hover:bg-purple-500/25 transition-all"></div>
+
+                        <!-- Category Badge -->
+                        <span class="absolute top-3 left-3 z-20 text-[10px] font-display font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full bg-slate-950/80 text-purple-300 border border-purple-400/30 backdrop-blur-md">
+                            Acoustic Lab
+                        </span>
+
+                        <svg viewBox="0 0 320 180" class="w-full h-full relative z-10">
+                            <defs>
+                                <linearGradient id="sonicWaveGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.35"/>
+                                    <stop offset="28%" stop-color="#a855f7" stop-opacity="0.95"/>
+                                    <stop offset="50%" stop-color="#ec4899" stop-opacity="1"/>
+                                    <stop offset="72%" stop-color="#a855f7" stop-opacity="0.95"/>
+                                    <stop offset="100%" stop-color="#38bdf8" stop-opacity="0.35"/>
+                                </linearGradient>
+                                <linearGradient id="timingLineGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                    <stop offset="0%" stop-color="#ec4899" stop-opacity="0.05"/>
+                                    <stop offset="50%" stop-color="#f472b6" stop-opacity="0.9"/>
+                                    <stop offset="100%" stop-color="#ec4899" stop-opacity="0.05"/>
+                                </linearGradient>
+                            </defs>
+
+                            <!-- Subtle Oscilloscope Phosphor Grid -->
+                            <g stroke="rgba(168, 85, 247, 0.14)" stroke-width="1">
+                                <line x1="0" y1="45" x2="320" y2="45"/>
+                                <line x1="0" y1="90" x2="320" y2="90" stroke="rgba(236, 72, 153, 0.22)" stroke-dasharray="3 3"/>
+                                <line x1="0" y1="135" x2="320" y2="135"/>
+                                <line x1="64" y1="0" x2="64" y2="180"/>
+                                <line x1="112" y1="0" x2="112" y2="180"/>
+                                <line x1="208" y1="0" x2="208" y2="180"/>
+                                <line x1="256" y1="0" x2="256" y2="180"/>
+                            </g>
+
+                            <!-- Oscilloscope Readout Motifs (Top Right) -->
+                            <g transform="translate(216, 12)">
+                                <rect x="0" y="0" width="92" height="22" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="rgba(168, 85, 247, 0.4)" stroke-width="1"/>
+                                <text x="46" y="14.5" fill="#e9d5ff" font-family="Orbitron, sans-serif" font-size="9.5" font-weight="700" text-anchor="middle">880 Hz • 200x</text>
+                            </g>
+
+                            <!-- Secondary Harmonic Ghost Wave -->
+                            <path d="M 0,90 C 16,44 32,44 48,90 C 64,136 80,136 96,90 C 112,44 128,44 144,90 C 160,136 176,136 192,90 C 208,44 224,44 240,90 C 256,136 272,136 288,90 C 304,44 320,44 336,90"
+                                  fill="none" stroke="rgba(56, 189, 248, 0.22)" stroke-width="2"/>
+
+                            <!-- Glowing Vertical Crest Timing Line -->
+                            <line x1="160" y1="14" x2="160" y2="166" stroke="url(#timingLineGrad)" stroke-width="2.5"/>
+
+                            <!-- Continuous Multi-Cycle Sinusoidal Sound Wave (Crest peaking at x=160, y=62) -->
+                            <path d="M 0,118 C 16,118 24,62 40,62 C 56,62 64,118 80,118 C 96,118 104,62 120,62 C 136,62 144,118 160,62 C 176,6 184,118 200,118 C 216,118 224,62 240,62 C 256,62 264,118 280,118 C 296,118 304,62 320,62"
+                                  fill="none" stroke="#000000" stroke-width="0" opacity="0"/>
+
+                            <!-- Smooth Periodic Sine Wave with Crest Aligned at x=160, y=62 -->
+                            <path d="M -8,90 Q 8,128 24,90 T 56,90 T 88,90 T 120,90 Q 132,124 144,90 Q 152,62 160,62 Q 168,62 176,90 Q 188,124 200,90 T 232,90 T 264,90 T 296,90 T 328,90"
+                                  fill="none" stroke="url(#sonicWaveGrad)" stroke-width="3.8" stroke-linecap="round"/>
+
+                            <!-- Target Pulse Ring at Crest Intersection (160, 62) -->
+                            <circle cx="160" cy="62" r="15" fill="none" stroke="#f472b6" stroke-width="2" class="anim-pulse-ring"/>
+                            <circle cx="160" cy="62" r="8.5" fill="rgba(236, 72, 153, 0.28)" stroke="#f9a8d4" stroke-width="1.8"/>
+                            <circle cx="160" cy="62" r="4" fill="#ffffff"/>
+
+                            <!-- Bottom Timing Sync Tag -->
+                            <g transform="translate(114, 144)">
+                                <rect x="0" y="0" width="92" height="20" rx="5" fill="rgba(15, 23, 42, 0.85)" stroke="rgba(236, 72, 153, 0.45)" stroke-width="1"/>
+                                <text x="46" y="13.5" fill="#fbcfe8" font-family="Orbitron, sans-serif" font-size="8.5" font-weight="700" text-anchor="middle">CREST LOCK</text>
+                            </g>
+                        </svg>
+                    </div>
+
+                    <!-- Card Content -->
+                    <div class="p-5">
+                        <h2 class="font-display text-base sm:text-lg font-bold text-white group-hover:text-purple-400 transition-colors">
+                            Sonic Wave &amp; Frequency Lab
+                        </h2>
+                        <p class="text-xs sm:text-[13px] text-slate-300 mt-2 leading-relaxed line-clamp-2">
+                            Lock onto live 200–2000 Hz warble tones on a time-scaled oscilloscope and tap in rhythm as wave crests cross the timing line.
+                        </p>
+
+                        <!-- 3 Feature Pills -->
+                        <div class="flex flex-wrap gap-1.5 mt-4">
+                            <span class="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-white/[0.05] text-slate-300 border border-white/10">
+                                200–2000 Hz Audio
+                            </span>
+                            <span class="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-white/[0.05] text-slate-300 border border-white/10">
+                                Live Oscilloscope
+                            </span>
+                            <span class="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-white/[0.05] text-slate-300 border border-white/10">
+                                15s Crest Timing
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card CTA Footer -->
+                <div class="px-5 pb-5 pt-1">
+                    <div class="w-full py-2.5 px-4 rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 group-hover:from-purple-400 group-hover:to-pink-400 text-slate-950 font-display font-extrabold text-xs tracking-wider text-center shadow-lg shadow-purple-500/20 group-hover:shadow-purple-500/40 transition-all flex items-center justify-center gap-2">
+                        <span>PLAY NOW</span>
+                        <span class="text-sm leading-none transform group-hover:translate-x-1 transition-transform">→</span>
                     </div>
                 </div>
             </a>
@@ -399,8 +569,8 @@
     </main>
 
     <!-- Minimal Player Footer -->
-    <footer class="max-w-6xl w-full mx-auto text-center pt-4 pb-1 text-xs text-slate-500">
-        Works on mobile, tablet, and desktop browsers
+    <footer class="max-w-7xl w-full mx-auto text-center pt-5 pb-1 text-xs text-slate-500">
+        Instant browser play on mobile, tablet, and desktop
     </footer>
 
 </body>
