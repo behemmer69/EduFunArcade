@@ -96,6 +96,13 @@
             background: linear-gradient(135deg, #dc2626, #991b1b) !important;
             border-color: #fca5a5 !important;
         }
+        @keyframes timer-urgent {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.04); }
+        }
+        .timer-critical {
+            animation: timer-urgent 0.45s ease-in-out infinite;
+        }
     </style>
 </head>
 <body>
@@ -103,10 +110,18 @@
     <!-- ROOT VIEWPORT SCALING WRAPPER -->
     <div id="scale-wrapper" style="width: 100vw; height: 100dvh; transform: scale(1);">
 
-        <!-- TOP TELEMETRY & LIVE SCALE CONTROL BAR -->
+        <!-- TOP TELEMETRY, TURN TIMER & LIVE SCALE CONTROL BAR -->
         <header class="w-full px-2.5 py-1.5 sm:px-4 sm:py-1.5 glass-panel border-b border-white/10 z-20 shrink-0 flex items-center justify-between gap-2 whitespace-nowrap overflow-x-auto no-scrollbar">
-            <!-- Left: Exit Progress, Principal Threat Gap & Score -->
+            <!-- Left: Title, Turn, Leo Distance, Principal Gap, Score -->
             <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                <div class="hidden sm:flex items-center gap-1 px-2 py-1 rounded-xl bg-cyan-500/15 border border-cyan-400/30">
+                    <span class="text-xs">📻</span>
+                    <span class="font-arcade text-[10px] font-black text-cyan-300 tracking-wider">SIGNAL OPS</span>
+                </div>
+                <div class="px-2 py-1 rounded-xl bg-slate-900/95 border border-white/15 flex items-center gap-1">
+                    <span class="text-[9px] uppercase tracking-wider text-slate-400 font-bold">Turn</span>
+                    <span id="hud-turn-count" class="font-arcade text-xs font-black text-white">1</span>
+                </div>
                 <div class="px-2.5 py-1 rounded-xl bg-slate-900/95 border border-cyan-500/40 flex items-center gap-1.5">
                     <span class="text-[9px] uppercase tracking-wider text-cyan-400 font-bold">Leo</span>
                     <span id="hud-leo-dist" class="font-arcade text-xs sm:text-sm font-black text-white">0m / 100m</span>
@@ -121,15 +136,21 @@
                 </div>
             </div>
 
-            <!-- Center: Weather/EMI Condition Badge -->
-            <div class="hidden lg:flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-900/80 border border-white/10 shrink-0">
-                <span class="text-[9px] uppercase tracking-wider text-slate-400 font-bold">RF Forecast:</span>
-                <span id="hud-weather-text" class="font-arcade text-xs font-bold text-cyan-300">Clear Night</span>
+            <!-- Center: Live Turn Countdown Timer Pill (10.0s or PRACTICE) -->
+            <div id="hud-timer-pill" class="px-3 py-1 rounded-xl bg-slate-900/95 border border-emerald-500/45 flex items-center gap-1.5 shrink-0">
+                <span class="text-[9px] uppercase tracking-wider text-emerald-300 font-bold" id="hud-timer-label">⏱️ TX Clock</span>
+                <span id="hud-timer-readout" class="font-mono-tech text-xs sm:text-sm font-extrabold text-white w-[46px] text-right">10.0s</span>
             </div>
 
-            <!-- Right: Live Zoom Control + Battery + Mode Switch + Mute + Menu -->
+            <!-- Right: Battery (Advanced Mode) + Live Zoom Control + Mode + Mute + Menu -->
             <div class="flex items-center gap-1.5 shrink-0">
-                <!-- Compact Live Scale Control: 🔍 − | AUTO (75%) | + -->
+                <!-- Battery Indicator (Advanced Mode) -->
+                <div id="hud-battery-wrap" class="hidden items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-900/95 border border-amber-500/45">
+                    <span class="text-xs">🔋</span>
+                    <span id="hud-battery" class="font-arcade text-[11px] font-black text-amber-200">100%</span>
+                </div>
+
+                <!-- Compact Live Scale Control: 🔍 − | AUTO | + -->
                 <div class="flex items-center bg-slate-900/95 rounded-xl border border-cyan-500/35 p-0.5">
                     <button id="hud-scale-down-btn" type="button" title="Zoom Out (-3%)" class="w-6 h-6 rounded-lg hover:bg-slate-800 active:scale-95 text-xs font-bold text-cyan-300 flex items-center justify-center cursor-pointer">−</button>
                     <button id="hud-scale-auto-btn" type="button" title="Reset to Auto-Fit Scale" class="px-2 h-6 rounded-lg hover:bg-slate-800 text-[10px] font-mono-tech font-bold text-cyan-200 flex items-center gap-1 cursor-pointer">
@@ -137,12 +158,6 @@
                         <span id="hud-scale-label">AUTO (100%)</span>
                     </button>
                     <button id="hud-scale-up-btn" type="button" title="Zoom In (+3%)" class="w-6 h-6 rounded-lg hover:bg-slate-800 active:scale-95 text-xs font-bold text-cyan-300 flex items-center justify-center cursor-pointer">+</button>
-                </div>
-
-                <!-- Battery Indicator (Advanced Mode) -->
-                <div id="hud-battery-wrap" class="hidden items-center gap-1 px-2 py-1 rounded-xl bg-slate-900/95 border border-amber-500/40">
-                    <span class="text-xs">🔋</span>
-                    <span id="hud-battery" class="font-arcade text-[11px] font-black text-amber-200">100%</span>
                 </div>
 
                 <button id="hud-mode-toggle-btn" type="button" title="Switch Standard / Advanced RF Mode" class="px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 border border-cyan-500/30 text-[10px] font-arcade font-bold text-cyan-200 transition cursor-pointer">
@@ -157,15 +172,15 @@
             </div>
         </header>
 
-        <!-- MAIN TOP-AND-BOTTOM STACKED WORKSPACE (flex-col, horizontally defined) -->
+        <!-- MAIN TOP-AND-BOTTOM STACKED WORKSPACE (flex-col, full horizontal width) -->
         <main id="main-workspace" class="flex-1 w-full max-w-5xl mx-auto px-2 py-1.5 sm:px-4 sm:py-2 flex flex-col justify-between gap-2 overflow-hidden min-h-0">
 
             <!-- ========================================================================= -->
-            <!-- TOP WINDOW: COMPACT PANORAMIC SCHOOL BLUEPRINT (<= 1/3 SCREEN HEIGHT)     -->
+            <!-- TOP WINDOW: COMPACT PANORAMIC SCHOOL BLUEPRINT (<= 26%-28% SCREEN HEIGHT) -->
             <!-- ========================================================================= -->
             <section id="top-blueprint-window" class="w-full glass-panel rounded-2xl p-2 flex flex-col justify-between border border-cyan-500/30 h-[26%] max-h-[28%] min-h-[112px] shrink-0 overflow-hidden">
                 
-                <!-- Single-Line Map Header + Integrated 0m–100m Progress Bar -->
+                <!-- Single-Line Map Header + Integrated 0m–100m Hallway Progress Bar -->
                 <div class="h-6 w-full flex items-center justify-between gap-2 whitespace-nowrap overflow-hidden shrink-0 mb-1">
                     <div class="flex items-center gap-1.5 min-w-0 shrink-0">
                         <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-cyan-500/20 border border-cyan-400/40 text-cyan-200 text-[10px] font-bold uppercase tracking-wider">
@@ -205,10 +220,29 @@
             </section>
 
             <!-- ========================================================================= -->
-            <!-- BOTTOM WINDOW: WALKIE-TALKIE RF CONSOLE (> 2/3 SCREEN HEIGHT)             -->
+            <!-- BOTTOM WINDOW: WALKIE-TALKIE RF CONSOLE (>70% SCREEN HEIGHT)              -->
             <!-- ========================================================================= -->
             <section id="bottom-walkie-window" class="w-full glass-panel rounded-2xl p-2.5 sm:p-3 flex flex-col justify-between border border-cyan-500/35 flex-1 min-h-0 overflow-hidden gap-1.5">
                 
+                <!-- DISMISSIBLE 30-SECOND ORIENTATION COUNTDOWN BANNER (Timed Mode Start) -->
+                <div id="orientation-banner" class="hidden w-full rounded-xl px-3 py-1.5 bg-gradient-to-r from-amber-500/25 via-cyan-500/20 to-emerald-500/25 border-2 border-amber-400/80 flex flex-wrap items-center justify-between gap-2 shrink-0 shadow-lg">
+                    <div class="flex items-center gap-2 min-w-0">
+                        <span class="px-2 py-0.5 rounded-md bg-amber-400 text-slate-950 font-arcade text-[10px] font-black shrink-0 animate-pulse">
+                            ⏱️ ORIENTATION: <span id="orientation-banner-clock">30.0s</span>
+                        </span>
+                        <span class="text-[11px] sm:text-xs font-bold text-amber-100 truncate">
+                            Inspect the map, scope &amp; tiers before Turn 1 clock starts—or transmit now!
+                        </span>
+                    </div>
+                    <button
+                        id="skip-orientation-btn"
+                        type="button"
+                        class="px-2.5 py-1 rounded-lg bg-amber-400 hover:bg-amber-300 active:scale-95 text-slate-950 font-arcade text-[10px] font-black tracking-wider shadow cursor-pointer shrink-0"
+                    >
+                        START NOW / SKIP 30s ✕
+                    </button>
+                </div>
+
                 <!-- 1. EXPANDED 2-ROW COMMS DIALOGUE PANEL (Sitrep + Last Transmission Outcome) -->
                 <div class="w-full bg-slate-950/95 rounded-xl px-3 py-2 border border-cyan-500/30 flex flex-col justify-between gap-1.5 shrink-0 shadow-inner">
                     <!-- Row 1: Leo's Current Hallway Sitrep & Obstacle Ahead -->
@@ -232,7 +266,7 @@
                             Leo: "Got my phone back from the office! Which hallway first?"
                         </div>
                         <div id="leo-action-result" class="text-[11px] sm:text-xs text-emerald-300 font-semibold truncate sm:text-right">
-                            Time Push-To-Talk when the green carrier wave rises above red static!
+                            Awaiting Turn 1 transmission... Press PUSH-TO-TALK when static dips low.
                         </div>
                     </div>
                 </div>
@@ -257,7 +291,7 @@
                     </div>
 
                     <!-- Fixed-Height Oscilloscope Canvas -->
-                    <div class="relative w-full h-[64px] sm:h-[72px] bg-slate-950 border border-cyan-500/40 overflow-hidden shadow-inner">
+                    <div class="relative w-full h-[62px] sm:h-[70px] bg-slate-950 border border-cyan-500/40 overflow-hidden shadow-inner">
                         <canvas id="scope-canvas" class="w-full h-full block"></canvas>
                     </div>
 
@@ -267,40 +301,40 @@
                     </div>
                 </div>
 
-                <!-- 3. EXPANDED ADVANCED RF CONTROLS BAR (Shown in Advanced RF Mode) -->
+                <!-- 3. ROOMY SINGLE-ROW ADVANCED RF CONTROLS BAR (Shown in Advanced RF Mode) -->
                 <div id="advanced-controls-bar" class="hidden bg-slate-900/95 rounded-xl px-3 py-1.5 border border-amber-500/45 shrink-0">
                     <div class="flex flex-wrap items-center justify-between gap-2 whitespace-nowrap overflow-x-auto no-scrollbar">
-                        <!-- TX Power Controls -->
+                        <!-- TX Power Selector (Labels populated dynamically from GAME_CONFIG.BATTERY_DRAIN) -->
                         <div class="flex items-center gap-1.5 shrink-0">
                             <span class="text-[10px] uppercase text-amber-300 font-arcade font-bold mr-0.5">⚡ TX POWER:</span>
-                            <button type="button" data-power="0.5" class="tx-power-btn px-2.5 py-1 rounded-lg bg-slate-800 text-[11px] font-arcade font-bold text-slate-300 border border-white/10 cursor-pointer">
-                                0.5W <span class="font-mono-tech text-[9px] text-slate-400">(-4.5dB)</span>
+                            <button id="power-btn-0.5" type="button" data-power="0.5" class="tx-power-btn px-2.5 py-1 rounded-lg bg-slate-800 text-[11px] font-arcade font-bold text-slate-300 border border-white/10 cursor-pointer">
+                                0.5W <span id="power-sub-0.5" class="font-mono-tech text-[9px] text-slate-400">(-12% bat, 0dB)</span>
                             </button>
-                            <button type="button" data-power="2.0" class="tx-power-btn px-2.5 py-1 rounded-lg bg-amber-500/30 text-[11px] font-arcade font-bold text-amber-200 border border-amber-400 cursor-pointer">
-                                2.0W <span class="font-mono-tech text-[9px] text-amber-100">(0dB)</span>
+                            <button id="power-btn-2.0" type="button" data-power="2.0" class="tx-power-btn px-2.5 py-1 rounded-lg bg-amber-500/30 text-[11px] font-arcade font-bold text-amber-200 border border-amber-400 cursor-pointer">
+                                2.0W <span id="power-sub-2.0" class="font-mono-tech text-[9px] text-amber-100">(-24% bat, +3.0dB)</span>
                             </button>
-                            <button type="button" data-power="5.0" class="tx-power-btn px-2.5 py-1 rounded-lg bg-slate-800 text-[11px] font-arcade font-bold text-slate-300 border border-white/10 cursor-pointer">
-                                5.0W <span class="font-mono-tech text-[9px] text-emerald-300">(+6.5dB)</span>
+                            <button id="power-btn-5.0" type="button" data-power="5.0" class="tx-power-btn px-2.5 py-1 rounded-lg bg-slate-800 text-[11px] font-arcade font-bold text-slate-300 border border-white/10 cursor-pointer">
+                                5.0W <span id="power-sub-5.0" class="font-mono-tech text-[9px] text-emerald-300">(-44% bat, +5.5dB)</span>
                             </button>
                         </div>
 
                         <div class="hidden sm:block h-4 w-[1px] bg-slate-700 shrink-0"></div>
 
-                        <!-- Forward Error Coding Controls -->
+                        <!-- Forward Error Coding Selector -->
                         <div class="flex items-center gap-1.5 shrink-0">
                             <span class="text-[10px] uppercase text-cyan-300 font-arcade font-bold mr-0.5">🛡️ CODING:</span>
                             <button type="button" data-fec="raw" class="fec-mode-btn px-2.5 py-1 rounded-lg bg-cyan-500/30 text-[11px] font-arcade font-bold text-cyan-200 border border-cyan-400 cursor-pointer">
-                                1x RAW <span class="font-mono-tech text-[9px] text-cyan-100">(1.0x Air)</span>
+                                1x RAW <span class="font-mono-tech text-[9px] text-cyan-100">(1.0x time)</span>
                             </button>
                             <button type="button" data-fec="repeat" class="fec-mode-btn px-2.5 py-1 rounded-lg bg-slate-800 text-[11px] font-arcade font-bold text-slate-300 border border-white/10 cursor-pointer">
-                                2x REPEAT <span class="font-mono-tech text-[9px] text-emerald-300">(85% Save)</span>
+                                2x REPEAT <span class="font-mono-tech text-[9px] text-emerald-300">(+3.2dB, 1.6x)</span>
                             </button>
                             <button type="button" data-fec="parity" class="fec-mode-btn px-2.5 py-1 rounded-lg bg-slate-800 text-[11px] font-arcade font-bold text-slate-300 border border-white/10 cursor-pointer">
-                                PARITY FEC <span class="font-mono-tech text-[9px] text-cyan-300">(60% Save)</span>
+                                PARITY FEC <span class="font-mono-tech text-[9px] text-cyan-300">(+4.8dB, 1.35x)</span>
                             </button>
                         </div>
 
-                        <!-- Scanner Warning Pill -->
+                        <!-- Live Scanner Alert / Brownout Status Pill -->
                         <span id="adv-scanner-status" class="text-[10px] font-mono-tech text-emerald-300 font-bold ml-auto shrink-0 px-2 py-0.5 rounded bg-slate-950 border border-white/10">
                             Scanner: SAFE
                         </span>
@@ -309,16 +343,16 @@
 
                 <!-- 4. EXPANDED HORIZONTAL SNAP CAROUSEL FOR MESSAGE COMPLEXITY TIERS -->
                 <div class="shrink-0 flex flex-col justify-center">
-                    <!-- Quick-Select Tabs + < and > Arrow Buttons -->
-                    <div class="h-6 flex items-center justify-between gap-1.5 mb-1 px-0.5 whitespace-nowrap overflow-hidden">
-                        <span class="text-[10px] sm:text-[11px] uppercase tracking-wider text-cyan-300 font-bold truncate">
-                            Select Message Complexity Tier (Swipe or Click Tabs)
-                        </span>
-                        <div class="flex items-center gap-1 shrink-0">
+                    <!-- Prominent 2-Line Capable Instruction Header + Quick-Select Tabs below/beside -->
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 mb-1.5 px-1">
+                        <div class="font-arcade text-sm sm:text-base font-black text-amber-300 tracking-wide leading-tight drop-shadow">
+                            🎯 SELECT MESSAGE COMPLEXITY TIER <span class="text-cyan-200 block sm:inline">(SWIPE OR CLICK TABS BELOW)</span>
+                        </div>
+                        <div class="flex items-center gap-1 shrink-0 self-start sm:self-auto">
                             <button type="button" id="carousel-prev-btn" class="w-6 h-6 rounded-lg bg-slate-800 hover:bg-slate-700 border border-white/15 text-xs font-bold text-white flex items-center justify-center cursor-pointer">&lt;</button>
-                            <button type="button" id="tab-t1-btn" class="px-2.5 py-0.5 rounded-lg font-arcade text-[10px] font-bold bg-slate-800 text-slate-300 border border-white/10 transition cursor-pointer">T1: BREVITY</button>
-                            <button type="button" id="tab-t2-btn" class="px-2.5 py-0.5 rounded-lg font-arcade text-[10px] font-bold bg-cyan-500/30 text-cyan-200 border border-cyan-400 transition cursor-pointer">T2: TACTICAL</button>
-                            <button type="button" id="tab-t3-btn" class="px-2.5 py-0.5 rounded-lg font-arcade text-[10px] font-bold bg-slate-800 text-slate-300 border border-white/10 transition cursor-pointer">T3: SITREP</button>
+                            <button type="button" id="tab-t1-btn" class="px-2.5 py-1 rounded-lg font-arcade text-[10px] sm:text-[11px] font-bold bg-slate-800 text-slate-300 border border-white/10 transition cursor-pointer">T1: BREVITY</button>
+                            <button type="button" id="tab-t2-btn" class="px-2.5 py-1 rounded-lg font-arcade text-[10px] sm:text-[11px] font-bold bg-cyan-500/30 text-cyan-200 border border-cyan-400 transition cursor-pointer">T2: TACTICAL</button>
+                            <button type="button" id="tab-t3-btn" class="px-2.5 py-1 rounded-lg font-arcade text-[10px] sm:text-[11px] font-bold bg-slate-800 text-slate-300 border border-white/10 transition cursor-pointer">T3: SITREP</button>
                             <button type="button" id="carousel-next-btn" class="w-6 h-6 rounded-lg bg-slate-800 hover:bg-slate-700 border border-white/15 text-xs font-bold text-white flex items-center justify-center cursor-pointer">&gt;</button>
                         </div>
                     </div>
@@ -340,7 +374,7 @@
                             </div>
                             <div class="flex items-center justify-between gap-2 text-[11px] whitespace-nowrap overflow-hidden border-t border-white/10 pt-1">
                                 <span class="text-emerald-300 font-bold">Move: <strong>+13m</strong> (+130 pts)</span>
-                                <span class="text-amber-300 font-semibold truncate">⚠️ 35% Ambiguity Guess • 1 Bit Err Wrecks All</span>
+                                <span id="t1-ambiguity-label" class="text-amber-300 font-semibold truncate">⚠️ 35% Ambiguity Guess • 1 Bit Err Wrecks All</span>
                             </div>
                         </div>
 
@@ -383,24 +417,24 @@
                     </div>
                 </div>
 
-                <!-- 5. TACTILE PUSH-TO-TALK (PTT) BUTTON -->
+                <!-- 5. FULL-WIDTH PUSH-TO-TALK (PTT) BUTTON WITH LIVE COUNTDOWN READOUT -->
                 <button
                     id="ptt-button"
                     type="button"
                     class="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-gradient-to-r from-rose-600 via-red-500 to-orange-500 hover:from-rose-500 hover:to-orange-400 active:scale-[0.99] transition text-white font-arcade font-black text-xs sm:text-sm tracking-wider shadow-xl shadow-rose-600/30 border border-rose-300/50 flex items-center justify-center gap-2 shrink-0 cursor-pointer"
                 >
                     <span class="w-2.5 h-2.5 rounded-full bg-white animate-ping"></span>
-                    <span id="ptt-button-text">PUSH TO TALK — TRANSMIT TIER 2 [SPACE]</span>
+                    <span id="ptt-button-text">PUSH TO TALK — TRANSMIT TIER 2 [10.0s]</span>
                 </button>
             </section>
         </main>
 
-        <!-- START MODAL (Mission Briefing, Mode Selector, Screen Scale Bar & Squelch Test) -->
+        <!-- START MODAL (Mission Briefing, Mode Selector, Practice Mode Toggle, Screen Scale Bar & Squelch Test) -->
         <div id="start-modal" class="fixed inset-0 z-30 flex items-center justify-center p-2.5 sm:p-4 bg-slate-950/88 backdrop-blur-md overflow-y-auto">
             <div class="glass-panel max-w-xl w-full rounded-3xl p-4 sm:p-5 border border-cyan-500/40 shadow-2xl text-center my-auto">
                 
                 <!-- Top Badges: Game Tag + Weather Condition -->
-                <div class="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-1">
                     <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-500/15 border border-cyan-400/30 text-cyan-300 text-[10px] font-bold uppercase tracking-widest">
                         📻 School Hallway Heist
                     </span>
@@ -412,12 +446,71 @@
                 <h1 class="font-arcade text-lg sm:text-2xl font-black text-white tracking-wide">
                     SIGNAL OPS: NOISY CHANNEL ESCAPE
                 </h1>
-                <p class="text-[11px] sm:text-xs text-slate-300 mt-1 leading-relaxed">
+                <p class="text-[11px] sm:text-xs text-slate-300 mt-0.5 leading-relaxed">
                     Guide your friend <strong class="text-cyan-300">Leo</strong> from <span class="text-white font-semibold">0m (Main Office)</span> to <span class="text-emerald-300 font-semibold">100m (West Exit)</span> across 4 school sectors before the Principal catches him (~14m/turn). Time your <span class="text-amber-300 font-semibold">Push-To-Talk</span> between static bursts!
                 </p>
 
+                <!-- MODE SELECTOR CARDS (Standard Mode vs Advanced RF Mode) -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 my-2.5 text-left">
+                    <button
+                        id="select-std-card"
+                        type="button"
+                        class="p-2.5 rounded-2xl bg-emerald-500/20 border-2 border-emerald-400 transition cursor-pointer text-left"
+                    >
+                        <div class="flex items-center justify-between">
+                            <span class="font-arcade text-xs font-black text-white">STANDARD MODE</span>
+                            <span id="std-card-pill" class="text-[9px] font-arcade font-bold px-2 py-0.5 rounded bg-emerald-400 text-slate-950">SELECTED</span>
+                        </div>
+                        <p class="text-[10px] text-slate-300 mt-1 leading-snug">
+                            Read the live SNR scope, pick Message Tiers 1–3, and time your Push-To-Talk. (Auto-scales ~75% on mobile).
+                        </p>
+                    </button>
+
+                    <button
+                        id="select-adv-card"
+                        type="button"
+                        class="p-2.5 rounded-2xl bg-slate-900/80 border-2 border-white/15 hover:border-amber-400/60 transition cursor-pointer text-left"
+                    >
+                        <div class="flex items-center justify-between">
+                            <span class="font-arcade text-xs font-black text-white">ADVANCED RF MODE</span>
+                            <span id="adv-card-pill" class="text-[9px] font-arcade font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-400">SELECT</span>
+                        </div>
+                        <p id="adv-card-desc" class="text-[10px] text-slate-300 mt-1 leading-snug">
+                            Adds <strong>TX Power (0.5W/2W/5W)</strong>, faster battery drain &amp; <strong>Error Coding (1x/2x/Parity FEC)</strong>!
+                        </p>
+                    </button>
+                </div>
+
+                <!-- TURN DECISION TIMER / PRACTICE MODE TOGGLE -->
+                <div class="my-2 bg-slate-900/95 rounded-2xl p-2.5 border border-emerald-500/35 text-left">
+                    <div class="flex items-center justify-between gap-2 mb-1.5">
+                        <span class="text-[10px] uppercase tracking-wider text-emerald-300 font-bold">
+                            ⏱️ Round Decision Clock / Practice Mode
+                        </span>
+                        <span id="start-timer-status" class="font-mono-tech text-[10px] font-bold text-amber-300">
+                            10.0s Per Turn Active
+                        </span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button
+                            id="toggle-timed-btn"
+                            type="button"
+                            class="py-1.5 px-3 rounded-xl font-arcade text-[10px] font-bold bg-emerald-500/30 text-emerald-200 border border-emerald-400 cursor-pointer flex items-center justify-center gap-1.5"
+                        >
+                            <span id="timed-btn-label">⏱️ TIMED MODE (10.0s)</span>
+                        </button>
+                        <button
+                            id="toggle-practice-btn"
+                            type="button"
+                            class="py-1.5 px-3 rounded-xl font-arcade text-[10px] font-bold bg-slate-800 text-slate-300 border border-white/10 cursor-pointer flex items-center justify-center gap-1.5"
+                        >
+                            <span>🎓 PRACTICE MODE (NO TIMER)</span>
+                        </button>
+                    </div>
+                </div>
+
                 <!-- SCREEN FIT / UI SCALE BAR (Auto-Fit, 100%, 85%, 75%, 66%, - / +) -->
-                <div class="mt-2.5 bg-slate-900/95 rounded-2xl p-2.5 border border-cyan-500/30 text-left">
+                <div class="my-2 bg-slate-900/95 rounded-2xl p-2.5 border border-cyan-500/30 text-left">
                     <div class="flex items-center justify-between gap-2 mb-1.5">
                         <span class="text-[10px] uppercase tracking-wider text-cyan-300 font-bold">
                             🔍 Screen Scale / Viewport Zoom
@@ -439,39 +532,8 @@
                     </div>
                 </div>
 
-                <!-- MODE SELECTOR CARDS (Standard Mode vs Advanced RF Mode) -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 my-2.5 text-left">
-                    <button
-                        id="select-std-card"
-                        type="button"
-                        class="p-3 rounded-2xl bg-emerald-500/20 border-2 border-emerald-400 transition cursor-pointer text-left"
-                    >
-                        <div class="flex items-center justify-between">
-                            <span class="font-arcade text-xs font-black text-white">STANDARD MODE</span>
-                            <span id="std-card-pill" class="text-[9px] font-arcade font-bold px-2 py-0.5 rounded bg-emerald-400 text-slate-950">SELECTED</span>
-                        </div>
-                        <p class="text-[10px] text-slate-300 mt-1 leading-snug">
-                            Read the live SNR scope, pick Message Tiers 1–3, and time your Push-To-Talk. (Auto-scales ~75% on mobile).
-                        </p>
-                    </button>
-
-                    <button
-                        id="select-adv-card"
-                        type="button"
-                        class="p-3 rounded-2xl bg-slate-900/80 border-2 border-white/15 hover:border-amber-400/60 transition cursor-pointer text-left"
-                    >
-                        <div class="flex items-center justify-between">
-                            <span class="font-arcade text-xs font-black text-white">ADVANCED RF MODE</span>
-                            <span id="adv-card-pill" class="text-[9px] font-arcade font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-400">SELECT</span>
-                        </div>
-                        <p class="text-[10px] text-slate-300 mt-1 leading-snug">
-                            Adds <strong>TX Power (0.5W/2W/5W)</strong> &amp; <strong>Error Coding (1x/2x/Parity FEC)</strong>! (Auto-scales ~66% on mobile).
-                        </p>
-                    </button>
-                </div>
-
                 <!-- Action Row: Test Radio Squelch + START MISSION Button -->
-                <div class="flex flex-col sm:flex-row items-stretch gap-2 mt-2">
+                <div class="flex flex-col sm:flex-row items-stretch gap-2 mt-2.5">
                     <button
                         id="test-squelch-btn"
                         type="button"
@@ -582,12 +644,101 @@
 
     <script>
         /**
-         * SIGNAL OPS: NOISY CHANNEL ESCAPE
-         * Top-and-Bottom Stacked Layout:
-         * - Top Window (<= 1/3 Screen Height): Panoramic School Blueprint Map with Large, High-Contrast Pill Labels
-         * - Bottom Window (> 2/3 Screen Height): Expanded Comms Dialogue, Zero-Shift Spectrum Scope, Larger Advanced Controls,
-         *   Spacious Horizontal Message Tier Carousel, and Push-To-Talk Button.
+         * ============================================================================
+         * CENTRALIZED TWEAKABLE GAME CONFIGURATION (EDIT THESE VALUES ANYTIME)
+         * ============================================================================
+         * 1. ORIENTATION_COUNTDOWN_SECONDS:
+         *    In Timed Mode, gives players a 30-second countdown at the start of a mission
+         *    to read the screen and inspect the layout before the 10-second turn clock begins.
+         *    Players can dismiss it early or press Push-To-Talk immediately.
+         *
+         * 2. TURN_TIMER_SECONDS:
+         *    Controls how many seconds the player has each round to pick a message tier
+         *    and press Push-To-Talk when Timed Mode is active (disabled in Practice Mode).
+         *
+         * 3. BATTERY_DRAIN:
+         *    Defined in ONLY THIS ONE PLACE. Controls the battery percentage drained per
+         *    transmission in Advanced RF Mode for 0.5W, 2.0W, and 5.0W.
+         *    Both the UI button labels and gameplay drain logic read directly from here.
+         *
+         * 4. TIER1_AMBIGUITY_RATE:
+         *    Probability (0.35 = 35%) that a 100% clean Tier 1 Brevity message still
+         *    results in an ambiguous hallway guess by Leo. Updates the Tier 1 card badge.
+         *
+         * 5. RF_FORECAST_PROFILES:
+         *    Defines the random atmospheric/building RF noise conditions selected each run:
+         *    - name: Display title shown on the Start Screen and Comms Console.
+         *    - snrOffset: dB shift applied to the channel (negative values raise the noise floor).
+         *    - burstRate: Poisson arrival probability per second for high-energy static spikes.
+         *    - fadingSpeed: Multiplier for how fast Multipath Rayleigh fading peaks/nulls oscillate.
+         * ============================================================================
          */
+        const GAME_CONFIG = {
+            // TWEAKABLE VALUE #1: Initial orientation reading countdown at mission start (in seconds)
+            ORIENTATION_COUNTDOWN_SECONDS: 30.0,
+
+            // TWEAKABLE VALUE #2: Per-round decision countdown timer (in seconds)
+            TURN_TIMER_SECONDS: 10.0,
+
+            // TWEAKABLE VALUE #3: Battery % drained per transmission in Advanced RF Mode
+            BATTERY_DRAIN: {
+                '0.5': 12, // 0.5W Low Power drains 12% battery per TX
+                '2.0': 24, // 2.0W Medium Power drains 24% battery per TX
+                '5.0': 44  // 5.0W High Power drains 44% battery per TX (max 2 uses per full charge)
+            },
+
+            // TWEAKABLE VALUE #4: Tier 1 Brevity Code ambiguity probability (0.35 = 35%)
+            TIER1_AMBIGUITY_RATE: 0.35,
+
+            // TWEAKABLE VALUE #5: Stochastic RF Forecast / Weather Profiles
+            RF_FORECAST_PROFILES: [
+                {
+                    name: "Clear Night RF",
+                    snrOffset: 0.0,    // Baseline thermal noise floor (-73 dBm)
+                    burstRate: 0.35,   // Moderate Poisson static burst frequency
+                    fadingSpeed: 1.85  // Gentle multipath Rayleigh wave oscillation
+                },
+                {
+                    name: "Janitor Buffer Shift",
+                    snrOffset: -5.5,   // Floor buffer motor raises noise floor by 5.5 dB
+                    burstRate: 0.52,   // Frequent motor commutator static spikes
+                    fadingSpeed: 2.15  // Moderate multipath oscillation
+                },
+                {
+                    name: "Lightning Storm",
+                    snrOffset: -3.5,   // Atmospheric static raises baseline noise by 3.5 dB
+                    burstRate: 0.68,   // High-frequency lightning impulse bursts
+                    fadingSpeed: 2.35  // Faster storm-induced fading swings
+                },
+                {
+                    name: "Solar Geomagnetic Spike",
+                    snrOffset: -8.0,   // Elevated RF noise floor (-8.0 dB SNR penalty)
+                    burstRate: 0.46,   // Moderate-to-high burst frequency
+                    fadingSpeed: 2.75  // Rapid ionospheric/multipath fading swings
+                }
+            ],
+
+            // TX Power Signal Gain (dB) and Emergency Brownout Penalty when Battery is 0%
+            POWER_GAIN_DB: {
+                '0.5': 0.0,
+                '2.0': 3.0,
+                '5.0': 5.5
+            },
+            BROWNOUT_PENALTY_DB: -5.0,
+
+            // Forward Error Coding Gain (dB) and Air-Time Multipliers
+            CODING_MODES: {
+                raw:    { gainDb: 0.0, airMult: 1.00, rescueProb: 0.00 },
+                repeat: { gainDb: 3.2, airMult: 1.60, rescueProb: 0.78 },
+                parity: { gainDb: 4.8, airMult: 1.35, rescueProb: 0.65 }
+            },
+
+            // Principal Pursuit & 5.0W Scanner Intercept Settings
+            SCANNER_ALERT_RANGE_M: 38,
+            SCANNER_PENALTY_M: 6,
+            PRINCIPAL_BASE_SPEED_M: 14
+        };
+
         const SECTORS = [
             {
                 id: 1,
@@ -603,7 +754,7 @@
                         airTime: 0.9,
                         progress: 13,
                         points: 130,
-                        ambiguity: 0.35,
+                        ambiguity: GAME_CONFIG.TIER1_AMBIGUITY_RATE,
                         ambigText: "Leo heard 'CORNER LEFT' but didn't know which locker was unlocked—he rattled a jammed red locker (+5m only)!",
                         cleanText: "Leo turned left at the Office corner (+13m)."
                     },
@@ -641,7 +792,7 @@
                         airTime: 0.9,
                         progress: 13,
                         points: 145,
-                        ambiguity: 0.35,
+                        ambiguity: GAME_CONFIG.TIER1_AMBIGUITY_RATE,
                         ambigText: "Leo heard 'HIDE DOOR'—there were 3 doors! He opened the Janitor's closet and knocked over a mop bucket (+5m)!",
                         cleanText: "Leo ducked into the side locker bay (+13m)."
                     },
@@ -679,7 +830,7 @@
                         airTime: 0.9,
                         progress: 13,
                         points: 160,
-                        ambiguity: 0.35,
+                        ambiguity: GAME_CONFIG.TIER1_AMBIGUITY_RATE,
                         ambigText: "Leo went North into the kitchen but slipped on a wet floor mat because you didn't warn him (+5m)!",
                         cleanText: "Leo crept North past the serving tables (+13m)."
                     },
@@ -717,7 +868,7 @@
                         airTime: 0.9,
                         progress: 13,
                         points: 180,
-                        ambiguity: 0.35,
+                        ambiguity: GAME_CONFIG.TIER1_AMBIGUITY_RATE,
                         ambigText: "Leo sprinted for the first exit door he saw—it had an alarm bar! He had to backtrack (+5m)!",
                         cleanText: "Leo dashed down the final science corridor (+13m)."
                     },
@@ -741,13 +892,6 @@
                     }
                 }
             }
-        ];
-
-        const RUN_CONDITIONS = [
-            { name: "Clear Night (Standard RF)", burstRate: 0.35, noiseBase: -73 },
-            { name: "Thunderstorm (Lightning Spikes)", burstRate: 0.65, noiseBase: -68 },
-            { name: "Janitor Shift (Floor Buffer EMI)", burstRate: 0.50, noiseBase: -66 },
-            { name: "Solar Flare (High Noise Floor)", burstRate: 0.45, noiseBase: -63 }
         ];
 
         // Panoramic Multi-Hallway Blueprint Path Coordinates (0.0 to 1.0)
@@ -850,6 +994,23 @@
                     osc.stop(now + 0.11);
                 } catch (e) {}
             }
+            playTimeoutBuzzer() {
+                try {
+                    if (this.muted || !this.ctx) return;
+                    const now = this.ctx.currentTime;
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(240, now);
+                    osc.frequency.setValueAtTime(175, now + 0.11);
+                    gain.gain.setValueAtTime(0.18, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.26);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.27);
+                } catch (e) {}
+            }
             playEndFanfare(won) {
                 try {
                     if (this.muted || !this.ctx) return;
@@ -879,19 +1040,23 @@
         const sCtx = scopeCanvas.getContext('2d');
 
         const state = {
-            mode: 'standard',     // 'standard' | 'advanced'
-            phase: 'setup',       // 'setup' | 'playing' | 'transmitting' | 'results'
-            scaleMode: 'auto',    // 'auto' | 'manual'
+            mode: 'standard',       // 'standard' | 'advanced'
+            practiceMode: false,    // false = Timed (GAME_CONFIG.TURN_TIMER_SECONDS), true = No Timer
+            phase: 'setup',         // 'setup' | 'playing' | 'transmitting' | 'results'
+            scaleMode: 'auto',      // 'auto' | 'manual'
             manualScale: 0.75,
             appliedScale: 1.0,
-            condition: RUN_CONDITIONS[0],
+            condition: GAME_CONFIG.RF_FORECAST_PROFILES[0],
+            orientationLeft: 0,     // 30.0s initial orientation countdown in Timed Mode
+            turnTimeLeft: GAME_CONFIG.TURN_TIMER_SECONDS,
             leoDist: 0,
             principalDist: -28,
             score: 0,
             battery: 100,
             selectedTier: 2,
-            txPowerWatts: 2.0,
-            fecMode: 'raw',       // 'raw' | 'repeat' | 'parity'
+            txPowerKey: '2.0',      // '0.5' | '2.0' | '5.0'
+            brownoutActive: false,  // true when battery < GAME_CONFIG.BATTERY_DRAIN['0.5']
+            fecMode: 'raw',         // 'raw' | 'repeat' | 'parity'
             turns: 0,
             totalWordsSent: 0,
             cleanWordsDelivered: 0,
@@ -914,9 +1079,58 @@
         };
 
         /**
+         * Populate TX Power Button Labels & Tier 1 Ambiguity Directly from GAME_CONFIG
+         * so changing GAME_CONFIG automatically updates all UI text.
+         */
+        function syncConfigLabelsToDOM() {
+            const d05 = GAME_CONFIG.BATTERY_DRAIN['0.5'];
+            const d20 = GAME_CONFIG.BATTERY_DRAIN['2.0'];
+            const d50 = GAME_CONFIG.BATTERY_DRAIN['5.0'];
+
+            const g05 = GAME_CONFIG.POWER_GAIN_DB['0.5'];
+            const g20 = GAME_CONFIG.POWER_GAIN_DB['2.0'];
+            const g50 = GAME_CONFIG.POWER_GAIN_DB['5.0'];
+
+            document.getElementById('power-sub-0.5').textContent = `(-${d05}% bat, ${g05 >= 0 ? '+' : ''}${g05.toFixed(1)}dB)`;
+            document.getElementById('power-sub-2.0').textContent = `(-${d20}% bat, +${g20.toFixed(1)}dB)`;
+            document.getElementById('power-sub-5.0').textContent = `(-${d50}% bat, +${g50.toFixed(1)}dB)`;
+
+            document.getElementById('timed-btn-label').textContent = `⏱️ TIMED MODE (${GAME_CONFIG.TURN_TIMER_SECONDS.toFixed(1)}s + ${GAME_CONFIG.ORIENTATION_COUNTDOWN_SECONDS.toFixed(0)}s PREP)`;
+
+            const ambigPct = Math.round(GAME_CONFIG.TIER1_AMBIGUITY_RATE * 100);
+            const ambigEl = document.getElementById('t1-ambiguity-label');
+            if (ambigEl) {
+                ambigEl.textContent = `⚠️ ${ambigPct}% Ambiguity Guess • 1 Bit Err Wrecks All`;
+            }
+        }
+
+        /**
+         * Enforce Battery Availability & Automatic Wattage Downshift in Advanced Mode
+         */
+        function enforceBatteryPowerLimits() {
+            if (state.mode !== 'advanced') {
+                state.brownoutActive = false;
+                return;
+            }
+            const minDrain = GAME_CONFIG.BATTERY_DRAIN['0.5'];
+            if (state.battery < minDrain) {
+                state.brownoutActive = true;
+                state.txPowerKey = '0.5';
+                return;
+            }
+            state.brownoutActive = false;
+            const currentNeeded = GAME_CONFIG.BATTERY_DRAIN[state.txPowerKey];
+            if (state.battery < currentNeeded) {
+                if (state.battery >= GAME_CONFIG.BATTERY_DRAIN['2.0']) {
+                    state.txPowerKey = '2.0';
+                } else {
+                    state.txPowerKey = '0.5';
+                }
+            }
+        }
+
+        /**
          * SMART VIEWPORT AUTO-SCALE & MANUAL ZOOM ENGINE
-         * Tuned for the Top-and-Bottom stacked layout: automatically scales to ~75% in Standard Mode
-         * and ~66% in Advanced RF Mode on mobile/compact screens, or honors manual preset zoom.
          */
         function computeAutoScaleFactor() {
             const vw = window.innerWidth || 800;
@@ -1017,9 +1231,7 @@
             }
         }
 
-        window.addEventListener('resize', () => {
-            applyViewportScale();
-        });
+        window.addEventListener('resize', applyViewportScale);
 
         function getActiveSector() {
             if (state.leoDist < 25) return SECTORS[0];
@@ -1030,31 +1242,22 @@
 
         function getCodingMultiplier() {
             if (state.mode !== 'advanced') return 1.0;
-            if (state.fecMode === 'parity') return 1.35;
-            if (state.fecMode === 'repeat') return 1.75;
-            return 1.0;
+            return GAME_CONFIG.CODING_MODES[state.fecMode].airMult;
         }
 
         function getEffectiveWordErrorProb() {
-            let fecRescue = 0;
-            if (state.mode === 'advanced') {
-                if (state.fecMode === 'parity') fecRescue = 0.60;
-                else if (state.fecMode === 'repeat') fecRescue = 0.85;
-            }
-            return state.currentBer * (1 - fecRescue);
+            const rescue = state.mode === 'advanced' ? GAME_CONFIG.CODING_MODES[state.fecMode].rescueProb : 0;
+            return state.currentBer * (1 - rescue);
         }
 
         function estimateTierSurvivalPct(tierNum) {
             const pWordErr = getEffectiveWordErrorProb();
             const pWordClean = 1 - pWordErr;
             if (tierNum === 1) {
-                // 2 words, 0 errors allowed
                 return Math.round(Math.pow(pWordClean, 2) * 100);
             } else if (tierNum === 2) {
-                // 5 words, clean lock on 0 errors
                 return Math.round(Math.pow(pWordClean, 5) * 100);
             } else {
-                // 8 words, shortcut succeeds on 0 or 1 error
                 const p0 = Math.pow(pWordClean, 8);
                 const p1 = 8 * pWordErr * Math.pow(pWordClean, 7);
                 return Math.round(Math.min(0.99, p0 + p1) * 100);
@@ -1079,34 +1282,39 @@
         function stepStochasticChannel(dt) {
             const sec = getActiveSector();
 
-            // Layer 2: Multipath Rayleigh Fading
-            state.rayleighPhase += dt * 2.05;
+            // Layer 2: Multipath Rayleigh Fading (oscillation speed controlled by GAME_CONFIG.RF_FORECAST_PROFILES)
+            const fadeSpeed = state.condition.fadingSpeed || 2.05;
+            state.rayleighPhase += dt * fadeSpeed;
             const rayleighDb = Math.sin(state.rayleighPhase) * sec.fadingDepth + Math.cos(state.rayleighPhase * 0.6) * 2.2;
 
-            // Layer 1: Path Loss & Wall Attenuation (-3.8 dB per concrete wall) + AWGN jitter
+            // Layer 1: Path Loss & Wall Attenuation (-3.8 dB per concrete wall) + TX Power / Coding Gain
             const wallLossDb = sec.walls * 3.8;
             const distLossDb = state.leoDist * 0.14;
             let txPowerDb = 0;
+            let codingGainDb = 0;
             if (state.mode === 'advanced') {
-                if (state.txPowerWatts === 5.0) txPowerDb = 6.5;
-                else if (state.txPowerWatts === 0.5) txPowerDb = -4.5;
+                txPowerDb = state.brownoutActive
+                    ? GAME_CONFIG.BROWNOUT_PENALTY_DB
+                    : (GAME_CONFIG.POWER_GAIN_DB[state.txPowerKey] || 0);
+                codingGainDb = GAME_CONFIG.CODING_MODES[state.fecMode].gainDb || 0;
             }
             const gaussianJitter = (Math.random() - 0.5) * 2.2;
-            state.currentSigDb = -26 - wallLossDb - distLossDb + txPowerDb + rayleighDb + gaussianJitter;
+            state.currentSigDb = -26 - wallLossDb - distLossDb + txPowerDb + codingGainDb + rayleighDb + gaussianJitter;
 
             // Layer 3: Poisson Impulse Bursts (with 0.5s pre-burst capacitor crackle warning)
+            const baseNoiseFloor = -73 - (state.condition.snrOffset || 0);
             const sectorBurstBoost = sec.id >= 3 ? 1.35 : 1.0;
             if (state.burstLeft > 0) {
                 state.burstLeft = Math.max(0, state.burstLeft - dt);
                 state.currentNoiseDb = -30 + (Math.random() * 9);
             } else if (state.preBurstLeft > 0) {
                 state.preBurstLeft = Math.max(0, state.preBurstLeft - dt);
-                state.currentNoiseDb = state.condition.noiseBase + 14 + Math.random() * 5;
+                state.currentNoiseDb = baseNoiseFloor + 14 + Math.random() * 5;
                 if (state.preBurstLeft <= 0) {
                     state.burstLeft = 0.42 + Math.random() * 0.45;
                 }
             } else {
-                const sectorNoiseFloor = sec.id === 4 ? state.condition.noiseBase + 4 : state.condition.noiseBase;
+                const sectorNoiseFloor = sec.id === 4 ? baseNoiseFloor + 4 : baseNoiseFloor;
                 state.currentNoiseDb = sectorNoiseFloor + (Math.random() - 0.5) * 5;
                 if (Math.random() < state.condition.burstRate * sectorBurstBoost * dt) {
                     state.preBurstLeft = 0.50;
@@ -1172,42 +1380,134 @@
             });
         }
 
-        function syncModeCardsOnStartModal() {
+        function syncStartModalButtons() {
             const stdCard = document.getElementById('select-std-card');
             const advCard = document.getElementById('select-adv-card');
             const stdPill = document.getElementById('std-card-pill');
             const advPill = document.getElementById('adv-card-pill');
 
             if (state.mode === 'standard') {
-                stdCard.className = 'p-3 rounded-2xl bg-emerald-500/20 border-2 border-emerald-400 transition cursor-pointer text-left';
-                advCard.className = 'p-3 rounded-2xl bg-slate-900/80 border-2 border-white/15 hover:border-amber-400/60 transition cursor-pointer text-left';
+                stdCard.className = 'p-2.5 rounded-2xl bg-emerald-500/20 border-2 border-emerald-400 transition cursor-pointer text-left';
+                advCard.className = 'p-2.5 rounded-2xl bg-slate-900/80 border-2 border-white/15 hover:border-amber-400/60 transition cursor-pointer text-left';
                 stdPill.textContent = 'SELECTED';
                 stdPill.className = 'text-[9px] font-arcade font-bold px-2 py-0.5 rounded bg-emerald-400 text-slate-950';
                 advPill.textContent = 'SELECT';
                 advPill.className = 'text-[9px] font-arcade font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-400';
             } else {
-                stdCard.className = 'p-3 rounded-2xl bg-slate-900/80 border-2 border-white/15 hover:border-emerald-400/60 transition cursor-pointer text-left';
-                advCard.className = 'p-3 rounded-2xl bg-amber-500/20 border-2 border-amber-400 transition cursor-pointer text-left';
+                stdCard.className = 'p-2.5 rounded-2xl bg-slate-900/80 border-2 border-white/15 hover:border-emerald-400/60 transition cursor-pointer text-left';
+                advCard.className = 'p-2.5 rounded-2xl bg-amber-500/20 border-2 border-amber-400 transition cursor-pointer text-left';
                 stdPill.textContent = 'SELECT';
                 stdPill.className = 'text-[9px] font-arcade font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-400';
                 advPill.textContent = 'SELECTED';
                 advPill.className = 'text-[9px] font-arcade font-bold px-2 py-0.5 rounded bg-amber-400 text-slate-950';
             }
+
+            // Practice Mode vs Timed Mode Toggle UI
+            const timedBtn = document.getElementById('toggle-timed-btn');
+            const pracBtn = document.getElementById('toggle-practice-btn');
+            const timerStatus = document.getElementById('start-timer-status');
+
+            if (!state.practiceMode) {
+                timedBtn.className = 'py-1.5 px-3 rounded-xl font-arcade text-[10px] font-bold bg-emerald-500/30 text-emerald-200 border border-emerald-400 cursor-pointer flex items-center justify-center gap-1.5';
+                pracBtn.className = 'py-1.5 px-3 rounded-xl font-arcade text-[10px] font-bold bg-slate-800 text-slate-300 border border-white/10 cursor-pointer flex items-center justify-center gap-1.5';
+                timerStatus.textContent = `${GAME_CONFIG.ORIENTATION_COUNTDOWN_SECONDS.toFixed(0)}s Prep + ${GAME_CONFIG.TURN_TIMER_SECONDS.toFixed(1)}s Per Turn`;
+                timerStatus.className = 'font-mono-tech text-[10px] font-bold text-amber-300';
+            } else {
+                timedBtn.className = 'py-1.5 px-3 rounded-xl font-arcade text-[10px] font-bold bg-slate-800 text-slate-300 border border-white/10 cursor-pointer flex items-center justify-center gap-1.5';
+                pracBtn.className = 'py-1.5 px-3 rounded-xl font-arcade text-[10px] font-bold bg-cyan-500/30 text-cyan-200 border border-cyan-400 cursor-pointer flex items-center justify-center gap-1.5';
+                timerStatus.textContent = 'Practice Mode (Timer Disabled)';
+                timerStatus.className = 'font-mono-tech text-[10px] font-bold text-cyan-300';
+            }
+        }
+
+        function dismissOrientationCountdown() {
+            if (state.orientationLeft <= 0) return;
+            state.orientationLeft = 0;
+            state.turnTimeLeft = GAME_CONFIG.TURN_TIMER_SECONDS;
+            const banner = document.getElementById('orientation-banner');
+            if (banner) banner.classList.add('hidden');
+            updateTurnClockHUD();
+        }
+
+        function updateTurnClockHUD() {
+            const pill = document.getElementById('hud-timer-pill');
+            const label = document.getElementById('hud-timer-label');
+            const readout = document.getElementById('hud-timer-readout');
+            const pttText = document.getElementById('ptt-button-text');
+            const orientBanner = document.getElementById('orientation-banner');
+            const orientClock = document.getElementById('orientation-banner-clock');
+
+            if (state.practiceMode) {
+                if (orientBanner) orientBanner.classList.add('hidden');
+                pill.className = 'px-3 py-1 rounded-xl bg-slate-900/95 border border-cyan-500/40 flex items-center gap-1.5 shrink-0';
+                label.textContent = '🎓 Mode';
+                label.className = 'text-[9px] uppercase tracking-wider text-cyan-300 font-bold';
+                readout.textContent = 'PRACTICE';
+                readout.className = 'font-arcade text-[10px] font-black text-cyan-200 w-[58px] text-right';
+                if (state.phase === 'playing') {
+                    pttText.textContent = `PUSH TO TALK — TRANSMIT TIER ${state.selectedTier} [PRACTICE]`;
+                }
+                return;
+            }
+
+            // If 30s Orientation Countdown is active in Timed Mode
+            if (state.phase === 'playing' && state.orientationLeft > 0) {
+                const oStr = `${Math.max(0, state.orientationLeft).toFixed(1)}s`;
+                if (orientBanner) orientBanner.classList.remove('hidden');
+                if (orientClock) orientClock.textContent = oStr;
+
+                pill.className = 'px-3 py-1 rounded-xl bg-amber-950/90 border border-amber-400 flex items-center gap-1.5 shrink-0';
+                label.textContent = '📖 Prep';
+                label.className = 'text-[9px] uppercase tracking-wider text-amber-300 font-bold';
+                readout.textContent = oStr;
+                readout.className = 'font-mono-tech text-xs sm:text-sm font-extrabold text-amber-200 w-[46px] text-right';
+                pttText.textContent = `PUSH TO TALK — TRANSMIT TIER ${state.selectedTier} [PREP ${oStr}]`;
+                return;
+            } else if (orientBanner) {
+                orientBanner.classList.add('hidden');
+            }
+
+            const tSec = Math.max(0, state.turnTimeLeft);
+            const tStr = `${tSec.toFixed(1)}s`;
+            label.textContent = '⏱️ TX Clock';
+            readout.textContent = tStr;
+
+            if (tSec <= 3.0 && state.phase === 'playing') {
+                pill.className = 'px-3 py-1 rounded-xl bg-rose-950/90 border border-rose-400 flex items-center gap-1.5 shrink-0 timer-critical';
+                label.className = 'text-[9px] uppercase tracking-wider text-rose-300 font-bold';
+                readout.className = 'font-mono-tech text-xs sm:text-sm font-extrabold text-rose-300 w-[46px] text-right';
+            } else if (tSec <= 6.0 && state.phase === 'playing') {
+                pill.className = 'px-3 py-1 rounded-xl bg-amber-950/80 border border-amber-400/70 flex items-center gap-1.5 shrink-0';
+                label.className = 'text-[9px] uppercase tracking-wider text-amber-300 font-bold';
+                readout.className = 'font-mono-tech text-xs sm:text-sm font-extrabold text-amber-200 w-[46px] text-right';
+            } else {
+                pill.className = 'px-3 py-1 rounded-xl bg-slate-900/95 border border-emerald-500/45 flex items-center gap-1.5 shrink-0';
+                label.className = 'text-[9px] uppercase tracking-wider text-emerald-300 font-bold';
+                readout.className = 'font-mono-tech text-xs sm:text-sm font-extrabold text-white w-[46px] text-right';
+            }
+
+            if (state.phase === 'playing') {
+                pttText.textContent = `PUSH TO TALK — TRANSMIT TIER ${state.selectedTier} [${tStr}]`;
+            }
         }
 
         function syncAllUI() {
+            enforceBatteryPowerLimits();
+
             const sec = getActiveSector();
             const mult = getCodingMultiplier();
             const gap = Math.max(0, Math.round(state.leoDist - state.principalDist));
 
+            document.getElementById('hud-turn-count').textContent = String(state.turns + 1);
             document.getElementById('hud-leo-dist').textContent = `${Math.min(100, Math.round(state.leoDist))}m / 100m`;
             const gapEl = document.getElementById('hud-principal-gap');
             gapEl.textContent = `${gap}m Behind`;
             gapEl.className = `font-arcade text-xs sm:text-sm font-black ${gap <= 15 ? 'text-rose-400 animate-pulse' : 'text-rose-300'}`;
 
             document.getElementById('hud-score').textContent = state.score.toLocaleString();
-            document.getElementById('hud-weather-text').textContent = state.condition.name;
-            document.getElementById('hud-battery').textContent = `${state.battery}%`;
+            const battEl = document.getElementById('hud-battery');
+            battEl.textContent = state.brownoutActive ? `${state.battery}% (LOW)` : `${state.battery}%`;
+            battEl.className = state.battery <= 24 ? 'font-arcade text-[11px] font-black text-rose-400 animate-pulse' : 'font-arcade text-[11px] font-black text-amber-200';
 
             // Top Window Distance Progress Bar & Telemetry
             document.getElementById('track-principal-pos').textContent = `🚨${Math.round(state.principalDist)}m`;
@@ -1232,7 +1532,7 @@
                 document.getElementById(`t${tNum}-message-preview`).textContent = `"${tData.words.join(' ')}"`;
             });
 
-            // Advanced Mode UI
+            // Advanced Mode UI & Power Button Lockout States
             const advBar = document.getElementById('advanced-controls-bar');
             const battWrap = document.getElementById('hud-battery-wrap');
             const modeBtn = document.getElementById('hud-mode-toggle-btn');
@@ -1242,15 +1542,37 @@
                 battWrap.classList.remove('hidden');
                 battWrap.classList.add('flex');
                 modeBtn.textContent = 'ADV RF';
+
+                ['0.5', '2.0', '5.0'].forEach(pKey => {
+                    const btn = document.getElementById(`power-btn-${pKey}`);
+                    const drainReq = GAME_CONFIG.BATTERY_DRAIN[pKey];
+                    const canAfford = state.battery >= drainReq;
+                    const isSelected = !state.brownoutActive && state.txPowerKey === pKey;
+
+                    btn.disabled = !canAfford;
+                    if (!canAfford) {
+                        btn.className = 'tx-power-btn px-2.5 py-1 rounded-lg bg-slate-900/50 text-[11px] font-arcade font-bold text-slate-600 border border-white/5 opacity-45 cursor-not-allowed';
+                    } else if (isSelected) {
+                        btn.className = 'tx-power-btn px-2.5 py-1 rounded-lg bg-amber-500/30 text-[11px] font-arcade font-bold text-amber-200 border border-amber-400 cursor-pointer';
+                    } else {
+                        btn.className = 'tx-power-btn px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] font-arcade font-bold text-slate-300 border border-white/10 cursor-pointer';
+                    }
+                });
+
                 const scanEl = document.getElementById('adv-scanner-status');
-                if (state.txPowerWatts === 5.0 && gap <= 32) {
-                    scanEl.textContent = '🚨 Scanner: ALERT (+5m)';
-                    scanEl.className = 'text-[10px] font-mono-tech text-rose-400 font-bold ml-auto shrink-0 px-2 py-0.5 rounded bg-rose-950/60 border border-rose-400/40';
-                } else if (state.txPowerWatts === 5.0) {
-                    scanEl.textContent = '⚠️ Scanner: HIGH';
-                    scanEl.className = 'text-[10px] font-mono-tech text-amber-300 font-bold ml-auto shrink-0 px-2 py-0.5 rounded bg-slate-950 border border-amber-400/30';
+                const withinScannerRange = gap <= GAME_CONFIG.SCANNER_ALERT_RANGE_M;
+
+                if (state.brownoutActive) {
+                    scanEl.textContent = `🪫 BROWNOUT (${GAME_CONFIG.BROWNOUT_PENALTY_DB}dB)`;
+                    scanEl.className = 'text-[10px] font-mono-tech text-rose-400 font-bold ml-auto shrink-0 px-2 py-0.5 rounded bg-rose-950/70 border border-rose-400/50 animate-pulse';
+                } else if (state.txPowerKey === '5.0' && withinScannerRange) {
+                    scanEl.textContent = `🚨 SCANNER ALERT (<${GAME_CONFIG.SCANNER_ALERT_RANGE_M}m: +${GAME_CONFIG.SCANNER_PENALTY_M}m Prin!)`;
+                    scanEl.className = 'text-[10px] font-mono-tech text-rose-300 font-extrabold ml-auto shrink-0 px-2 py-0.5 rounded bg-rose-600/40 border border-rose-400 animate-pulse';
+                } else if (withinScannerRange) {
+                    scanEl.textContent = `⚠️ Prin <${GAME_CONFIG.SCANNER_ALERT_RANGE_M}m (Avoid 5W)`;
+                    scanEl.className = 'text-[10px] font-mono-tech text-amber-300 font-bold ml-auto shrink-0 px-2 py-0.5 rounded bg-amber-950/60 border border-amber-400/40';
                 } else {
-                    scanEl.textContent = 'Scanner: SAFE';
+                    scanEl.textContent = `Scanner: SAFE (>${GAME_CONFIG.SCANNER_ALERT_RANGE_M}m)`;
                     scanEl.className = 'text-[10px] font-mono-tech text-emerald-300 font-bold ml-auto shrink-0 px-2 py-0.5 rounded bg-slate-950 border border-white/10';
                 }
             } else {
@@ -1260,11 +1582,8 @@
                 modeBtn.textContent = 'STD';
             }
 
-            if (state.phase === 'playing') {
-                document.getElementById('ptt-button-text').textContent = `PUSH TO TALK — TRANSMIT TIER ${state.selectedTier} [SPACE]`;
-            }
-
-            syncModeCardsOnStartModal();
+            updateTurnClockHUD();
+            syncStartModalButtons();
         }
 
         function selectTier(tierNum, smoothScroll = true) {
@@ -1332,11 +1651,9 @@
             document.getElementById(`slide-tier-${n}`).addEventListener('click', () => selectTier(n, true));
         });
 
-        // Scale Preset & Fine-Tune Listeners (Start Modal + Top HUD)
+        // Scale Preset & Fine-Tune Listeners
         document.querySelectorAll('.scale-preset-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                setScalePreset(btn.getAttribute('data-scale'));
-            });
+            btn.addEventListener('click', () => setScalePreset(btn.getAttribute('data-scale')));
         });
         document.getElementById('start-scale-minus').addEventListener('click', () => nudgeScale(-0.04));
         document.getElementById('start-scale-plus').addEventListener('click', () => nudgeScale(0.04));
@@ -1344,17 +1661,14 @@
         document.getElementById('hud-scale-up-btn').addEventListener('click', () => nudgeScale(0.03));
         document.getElementById('hud-scale-auto-btn').addEventListener('click', () => setScalePreset('auto'));
 
-        // Advanced RF Controls
+        // Advanced RF Controls Listeners
         document.querySelectorAll('.tx-power-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 if (state.phase === 'transmitting') return;
-                state.txPowerWatts = Number(btn.getAttribute('data-power'));
-                document.querySelectorAll('.tx-power-btn').forEach(b => {
-                    const active = Number(b.getAttribute('data-power')) === state.txPowerWatts;
-                    b.className = active
-                        ? 'tx-power-btn px-2.5 py-1 rounded-lg bg-amber-500/30 text-[11px] font-arcade font-bold text-amber-200 border border-amber-400 cursor-pointer'
-                        : 'tx-power-btn px-2.5 py-1 rounded-lg bg-slate-800 text-[11px] font-arcade font-bold text-slate-300 border border-white/10 cursor-pointer';
-                });
+                const pKey = btn.getAttribute('data-power');
+                const drainReq = GAME_CONFIG.BATTERY_DRAIN[pKey];
+                if (state.battery < drainReq) return;
+                state.txPowerKey = pKey;
                 syncAllUI();
             });
         });
@@ -1373,18 +1687,52 @@
             });
         });
 
+        /**
+         * Handle 10-Second Turn Decision Timeout (When Timed Mode is active and clock hits 0.0s)
+         */
+        function handleTurnTimeout() {
+            if (state.phase !== 'playing') return;
+            synth.init();
+            synth.playTimeoutBuzzer();
+
+            state.turns++;
+            const stride = GAME_CONFIG.PRINCIPAL_BASE_SPEED_M;
+            state.principalDist += stride;
+
+            document.getElementById('leo-outcome-pill').textContent = '⏱️ Turn Timeout (+0m)';
+            document.getElementById('leo-outcome-pill').className = 'text-[10px] font-mono-tech font-extrabold px-2.5 py-0.5 rounded-md bg-rose-500 text-white shrink-0';
+            document.getElementById('leo-transcript-text').textContent = 'Heard: "[NO TRANSMISSION — RADIO SILENCE]"';
+            document.getElementById('leo-action-result').textContent = `${GAME_CONFIG.TURN_TIMER_SECONDS.toFixed(0)}s clock expired! Leo hesitated in place (+0m) while the Principal marched +${stride}m closer!`;
+
+            const streamBar = document.getElementById('live-packet-bar');
+            streamBar.innerHTML = `<span class="text-rose-400 font-bold text-[11px]">⏱️ TIMEOUT! No packet sent within ${GAME_CONFIG.TURN_TIMER_SECONDS.toFixed(1)}s — Principal advanced +${stride}m!</span>`;
+
+            if (state.principalDist >= state.leoDist) {
+                finishMission(false);
+            } else {
+                state.turnTimeLeft = GAME_CONFIG.TURN_TIMER_SECONDS;
+                syncAllUI();
+            }
+        }
+
         // Live Word-by-Word Packet Transmission
         function startPacketTransmission() {
             if (state.phase !== 'playing') return;
+            // Automatically dismiss the 30-second orientation countdown if player transmits early
+            if (state.orientationLeft > 0) {
+                dismissOrientationCountdown();
+            }
             synth.init();
             synth.playSquelch();
 
+            enforceBatteryPowerLimits();
+            const transmittedPowerKey = state.txPowerKey;
+            const wasBrownout = state.brownoutActive;
+
+            // Deduct battery using centralized GAME_CONFIG.BATTERY_DRAIN
             if (state.mode === 'advanced') {
-                const battDrain = state.txPowerWatts === 5.0 ? 16 : (state.txPowerWatts === 2.0 ? 9 : 4);
-                if (state.battery < battDrain) {
-                    state.txPowerWatts = 0.5;
-                }
-                state.battery = Math.max(0, state.battery - battDrain);
+                const drainAmount = wasBrownout ? state.battery : (GAME_CONFIG.BATTERY_DRAIN[transmittedPowerKey] || 12);
+                state.battery = Math.max(0, state.battery - drainAmount);
             }
 
             state.phase = 'transmitting';
@@ -1412,7 +1760,7 @@
             const timer = setInterval(() => {
                 if (idx >= words.length) {
                     clearInterval(timer);
-                    resolvePacketOutcome(tierObj, receivedWords, packetCorruptedCount, packetFecSavedCount);
+                    resolvePacketOutcome(tierObj, receivedWords, packetCorruptedCount, packetFecSavedCount, transmittedPowerKey);
                     return;
                 }
 
@@ -1426,11 +1774,7 @@
                 let outWord = word;
 
                 if (errRoll < state.currentBer) {
-                    let fecRescueChance = 0;
-                    if (state.mode === 'advanced') {
-                        if (state.fecMode === 'parity') fecRescueChance = 0.60;
-                        else if (state.fecMode === 'repeat') fecRescueChance = 0.85;
-                    }
+                    const fecRescueChance = state.mode === 'advanced' ? GAME_CONFIG.CODING_MODES[state.fecMode].rescueProb : 0;
                     if (Math.random() < fecRescueChance) {
                         wordState = 'fec';
                         outWord = `${word}[FEC]`;
@@ -1471,7 +1815,7 @@
             }, stepMs);
         }
 
-        function resolvePacketOutcome(tierObj, receivedWords, corruptedCount, fecSavedCount) {
+        function resolvePacketOutcome(tierObj, receivedWords, corruptedCount, fecSavedCount, transmittedPowerKey) {
             synth.playSquelch();
             const pttBtn = document.getElementById('ptt-button');
             pttBtn.classList.remove('ptt-transmitting');
@@ -1479,18 +1823,20 @@
             state.turns++;
             const tierNum = state.selectedTier;
             let distDelta = 0;
-            let principalStride = 14;
+            let principalStride = GAME_CONFIG.PRINCIPAL_BASE_SPEED_M;
             let ptsEarned = 0;
             let pillLabel = '';
             let pillClass = '';
             let heardQuote = `"${receivedWords.join(' ')}"`;
             let actionSummary = '';
+            let scannerTriggered = false;
 
             if (state.mode === 'advanced' && state.fecMode === 'repeat') {
                 principalStride += 3;
             }
-            if (state.mode === 'advanced' && state.txPowerWatts === 5.0 && (state.leoDist - state.principalDist) <= 32) {
-                principalStride += 5;
+            if (state.mode === 'advanced' && transmittedPowerKey === '5.0' && (state.leoDist - state.principalDist) <= GAME_CONFIG.SCANNER_ALERT_RANGE_M) {
+                principalStride += GAME_CONFIG.SCANNER_PENALTY_M;
+                scannerTriggered = true;
             }
 
             if (tierNum === 1) {
@@ -1500,7 +1846,7 @@
                     pillLabel = '100% Packet Loss';
                     pillClass = 'text-[10px] font-mono-tech font-extrabold px-2.5 py-0.5 rounded-md bg-rose-500/25 text-rose-300 border border-rose-400/40 shrink-0';
                     actionSummary = '1 bit error wrecked 100% of the short message! Leo froze in place (+0m).';
-                } else if (Math.random() < tierObj.ambiguity) {
+                } else if (Math.random() < GAME_CONFIG.TIER1_AMBIGUITY_RATE) {
                     distDelta = 5;
                     ptsEarned = 45;
                     principalStride += 2;
@@ -1512,7 +1858,7 @@
                     ptsEarned = tierObj.points;
                     pillLabel = 'Brevity Clear (+13m)';
                     pillClass = 'text-[10px] font-mono-tech font-extrabold px-2.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 shrink-0';
-                    actionSummary = `${tierObj.cleanText} (Principal marches +14m/turn!)`;
+                    actionSummary = `${tierObj.cleanText} (Principal marches +${principalStride}m!)`;
                 }
             } else if (tierNum === 2) {
                 if (corruptedCount === 0) {
@@ -1559,6 +1905,10 @@
                 }
             }
 
+            if (scannerTriggered) {
+                actionSummary += ` 🚨 5W Scanner Alert (+${GAME_CONFIG.SCANNER_PENALTY_M}m Prin)!`;
+            }
+
             state.leoDist = Math.max(0, state.leoDist + distDelta);
             state.principalDist += principalStride;
             state.score += ptsEarned;
@@ -1575,6 +1925,7 @@
                 finishMission(false);
             } else {
                 state.phase = 'playing';
+                state.turnTimeLeft = GAME_CONFIG.TURN_TIMER_SECONDS;
                 syncAllUI();
             }
         }
@@ -1607,7 +1958,7 @@
 
             if (won) {
                 headEl.textContent = 'LEO ESCAPED OUT THE WEST DOORS!';
-                descEl.textContent = `Escaped in ${state.turns} transmissions with a +${finalGap}m lead (+${leadBonus} lead bonus pts)!`;
+                descEl.textContent = `Escaped in ${state.turns} turns with a +${finalGap}m lead (+${leadBonus} lead bonus pts)!`;
                 if (state.score >= 2200 && actualBerPct <= 15) {
                     rankEl.textContent = '🏆 S-RANK SHANNON MASTER';
                     rankEl.className = 'px-2.5 py-0.5 rounded-lg font-arcade text-[11px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-400/40';
@@ -1626,7 +1977,7 @@
             }
 
             document.getElementById('res-final-score').textContent = state.score.toLocaleString();
-            document.getElementById('res-turns-used').textContent = `${state.turns} Transmissions`;
+            document.getElementById('res-turns-used').textContent = `${state.turns} Turns`;
             document.getElementById('res-throughput').textContent = `${netBps} bps`;
             document.getElementById('res-words-ratio').textContent = `${efficiencyPct}% Efficiency (${state.cleanWordsDelivered}/${state.totalWordsSent})`;
             document.getElementById('res-ber-actual').textContent = `${actualBerPct.toFixed(1)}%`;
@@ -1651,7 +2002,7 @@
             currentSharePayloadText = [
                 `📻 Signal Ops: Noisy Channel Escape`,
                 `🏅 Rank: ${rankText}`,
-                `🎯 Final Score: ${state.score.toLocaleString()} pts (${state.mode === 'advanced' ? 'Advanced RF' : 'Standard'} Mode)`,
+                `🎯 Final Score: ${state.score.toLocaleString()} pts (${state.mode === 'advanced' ? 'Advanced RF' : 'Standard'}${state.practiceMode ? ' • Practice' : ''})`,
                 `⚡ Net Throughput: ${netBps} bps | Channel Efficiency: ${efficiencyPct}%`,
                 `Play here: ${url}`
             ].join('\n');
@@ -1709,17 +2060,29 @@
             applyViewportScale();
         }
 
+        function setPracticeMode(isPractice) {
+            state.practiceMode = isPractice;
+            state.orientationLeft = isPractice ? 0 : GAME_CONFIG.ORIENTATION_COUNTDOWN_SECONDS;
+            state.turnTimeLeft = GAME_CONFIG.TURN_TIMER_SECONDS;
+            syncAllUI();
+        }
+
         function launchMission() {
             synth.init();
             synth.playSquelch();
-            state.condition = RUN_CONDITIONS[Math.floor(Math.random() * RUN_CONDITIONS.length)];
+            const profiles = GAME_CONFIG.RF_FORECAST_PROFILES;
+            state.condition = profiles[Math.floor(Math.random() * profiles.length)];
             document.getElementById('start-weather-badge').textContent = `⚡ Forecast: ${state.condition.name}`;
 
             state.leoDist = 0;
             state.principalDist = -28;
             state.score = 0;
             state.battery = 100;
+            state.txPowerKey = '2.0';
+            state.brownoutActive = false;
             state.turns = 0;
+            state.orientationLeft = state.practiceMode ? 0 : GAME_CONFIG.ORIENTATION_COUNTDOWN_SECONDS;
+            state.turnTimeLeft = GAME_CONFIG.TURN_TIMER_SECONDS;
             state.totalWordsSent = 0;
             state.cleanWordsDelivered = 0;
             state.corruptedWordsCount = 0;
@@ -1738,8 +2101,8 @@
             document.getElementById('leo-outcome-pill').textContent = 'Channel Ready';
             document.getElementById('leo-outcome-pill').className = 'text-[10px] font-mono-tech font-extrabold px-2.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 shrink-0';
             document.getElementById('leo-transcript-text').textContent = 'Leo: "Got my phone back from the office! Waiting for your first radio call!"';
-            document.getElementById('leo-action-result').textContent = `Condition: ${state.condition.name}. Swipe/pick Tier 1–3 below and press Push-To-Talk!`;
-            document.getElementById('live-packet-bar').innerHTML = '<span class="text-slate-400 italic text-[11px]">Packet Stream Ready — select Tier 1, 2, or 3 below and press Push-To-Talk...</span>';
+            document.getElementById('leo-action-result').textContent = `Forecast: ${state.condition.name}. Awaiting Turn 1 transmission... Press PUSH-TO-TALK when static dips low.`;
+            document.getElementById('live-packet-bar').innerHTML = '<span class="text-slate-400 italic text-[11px]">Packet Stream Ready — press Push-To-Talk when carrier wave rises above noise...</span>';
 
             applyViewportScale();
             selectTier(2, true);
@@ -1747,8 +2110,15 @@
         }
 
         // Start Modal & Top Bar Listeners
+        document.getElementById('skip-orientation-btn').addEventListener('click', () => {
+            synth.init();
+            synth.playSquelch();
+            dismissOrientationCountdown();
+        });
         document.getElementById('select-std-card').addEventListener('click', () => setGameMode('standard'));
         document.getElementById('select-adv-card').addEventListener('click', () => setGameMode('advanced'));
+        document.getElementById('toggle-timed-btn').addEventListener('click', () => setPracticeMode(false));
+        document.getElementById('toggle-practice-btn').addEventListener('click', () => setPracticeMode(true));
         document.getElementById('test-squelch-btn').addEventListener('click', () => synth.playSquelchPreview());
         document.getElementById('start-mission-main-btn').addEventListener('click', () => launchMission());
 
@@ -1962,13 +2332,24 @@
             mCtx.arc(txX, txY, 4.5 * dpr, 0, Math.PI * 2);
             mCtx.fill();
 
-            // Principal Blip + Patrol Radar Cone + High-Contrast Pill Label
+            // Principal Blip + Patrol Radar Cone + 38m Scanner Ring + High-Contrast Pill Label
             const prinEffectiveDist = Math.max(0, state.principalDist);
             const prinPt = getPointAlongHallway(prinEffectiveDist);
             const prinAheadPt = getPointAlongHallway(Math.min(100, prinEffectiveDist + 8));
             const prinX = prinPt.x * w;
             const prinY = prinPt.y * h;
             const angle = Math.atan2((prinAheadPt.y - prinPt.y) * h, (prinAheadPt.x - prinPt.x) * w);
+
+            if (state.mode === 'advanced' && state.txPowerKey === '5.0') {
+                mCtx.save();
+                mCtx.strokeStyle = 'rgba(248, 113, 113, 0.45)';
+                mCtx.lineWidth = 1.4 * dpr;
+                mCtx.setLineDash([3 * dpr, 3 * dpr]);
+                mCtx.beginPath();
+                mCtx.arc(prinX, prinY, 34 * dpr, 0, Math.PI * 2);
+                mCtx.stroke();
+                mCtx.restore();
+            }
 
             mCtx.save();
             mCtx.fillStyle = 'rgba(239, 68, 68, 0.26)';
@@ -2084,15 +2465,35 @@
             });
         }
 
-        let prevTime = performance.now();
-        function animateLoop(now) {
-            const dt = Math.min(0.05, (now - prevTime) / 1000);
-            prevTime = now;
+        let lastTickTime = performance.now();
 
-            if (state.phase === 'playing' || state.phase === 'transmitting' || state.phase === 'setup') {
-                stepStochasticChannel(dt);
+        function animateLoop(now) {
+            const dt = Math.min(0.05, (now - lastTickTime) / 1000);
+            lastTickTime = now;
+
+            stepStochasticChannel(dt);
+
+            // Step 30s Orientation Countdown OR 10s Per-Round Decision Timer in Timed Mode
+            if (state.phase === 'playing' && !state.practiceMode) {
+                if (state.orientationLeft > 0) {
+                    state.orientationLeft -= dt;
+                    if (state.orientationLeft <= 0) {
+                        dismissOrientationCountdown();
+                    } else {
+                        updateTurnClockHUD();
+                    }
+                } else {
+                    state.turnTimeLeft -= dt;
+                    if (state.turnTimeLeft <= 0) {
+                        state.turnTimeLeft = 0;
+                        handleTurnTimeout();
+                    } else {
+                        updateTurnClockHUD();
+                    }
+                }
             }
 
+            // Step 1.5s Safety Lock on Results Modal Top-Left Buttons
             if (state.phase === 'results' && state.safetyLockLeft > 0) {
                 state.safetyLockLeft = Math.max(0, state.safetyLockLeft - dt);
                 const newBtn = document.getElementById('res-new-mission-btn');
@@ -2116,6 +2517,8 @@
         }
 
         window.addEventListener('DOMContentLoaded', () => {
+            syncConfigLabelsToDOM();
+
             try {
                 const savedMode = localStorage.getItem('signalOps_scaleMode');
                 const savedVal = parseFloat(localStorage.getItem('signalOps_manualScale'));
