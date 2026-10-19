@@ -1,0 +1,2137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Signal Ops: Noisy Channel Escape</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@600;700;800;900&family=JetBrains+Mono:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #050811;
+            color: #f8fafc;
+            font-family: 'Inter', sans-serif;
+            touch-action: manipulation;
+        }
+        .font-arcade {
+            font-family: 'Orbitron', sans-serif;
+        }
+        .font-mono-tech {
+            font-family: 'JetBrains Mono', monospace;
+            font-variant-numeric: tabular-nums;
+        }
+        /* Root Viewport Scaling Wrapper */
+        #scale-wrapper {
+            position: fixed;
+            top: 0;
+            left: 0;
+            transform-origin: top left;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            overflow: hidden;
+            background-color: #050811;
+        }
+        .glass-panel {
+            background: rgba(13, 19, 33, 0.94);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.65);
+        }
+        /* Horizontal Snap Carousel for Message Complexity Tiers */
+        .tier-carousel {
+            display: flex;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            scroll-behavior: smooth;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            -webkit-overflow-scrolling: touch;
+        }
+        .tier-carousel::-webkit-scrollbar {
+            display: none;
+        }
+        .tier-card {
+            flex: 0 0 88%;
+            min-width: 265px;
+            scroll-snap-align: center;
+            transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        @media (min-width: 768px) {
+            .tier-card {
+                flex: 0 0 56%;
+            }
+        }
+        .tier-card.active-tier {
+            border-color: rgba(56, 189, 248, 0.95);
+            background: rgba(14, 116, 144, 0.28);
+            box-shadow: inset 0 0 20px rgba(56, 189, 248, 0.24);
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        @keyframes tx-pulse {
+            0%, 100% { box-shadow: 0 0 16px rgba(239, 68, 68, 0.55), inset 0 0 10px rgba(239, 68, 68, 0.25); }
+            50% { box-shadow: 0 0 28px rgba(239, 68, 68, 0.9), inset 0 0 18px rgba(239, 68, 68, 0.45); }
+        }
+        .ptt-transmitting {
+            animation: tx-pulse 0.6s ease-in-out infinite;
+            background: linear-gradient(135deg, #dc2626, #991b1b) !important;
+            border-color: #fca5a5 !important;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ROOT VIEWPORT SCALING WRAPPER -->
+    <div id="scale-wrapper" style="width: 100vw; height: 100dvh; transform: scale(1);">
+
+        <!-- TOP TELEMETRY & LIVE SCALE CONTROL BAR -->
+        <header class="w-full px-2.5 py-1.5 sm:px-4 sm:py-1.5 glass-panel border-b border-white/10 z-20 shrink-0 flex items-center justify-between gap-2 whitespace-nowrap overflow-x-auto no-scrollbar">
+            <!-- Left: Exit Progress, Principal Threat Gap & Score -->
+            <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                <div class="px-2.5 py-1 rounded-xl bg-slate-900/95 border border-cyan-500/40 flex items-center gap-1.5">
+                    <span class="text-[9px] uppercase tracking-wider text-cyan-400 font-bold">Leo</span>
+                    <span id="hud-leo-dist" class="font-arcade text-xs sm:text-sm font-black text-white">0m / 100m</span>
+                </div>
+                <div class="px-2.5 py-1 rounded-xl bg-slate-900/95 border border-rose-500/40 flex items-center gap-1.5">
+                    <span class="text-[9px] uppercase tracking-wider text-rose-400 font-bold">Principal</span>
+                    <span id="hud-principal-gap" class="font-arcade text-xs sm:text-sm font-black text-rose-300">28m Behind</span>
+                </div>
+                <div class="px-2.5 py-1 rounded-xl bg-slate-900/95 border border-amber-500/35 flex items-center gap-1.5">
+                    <span class="text-[9px] uppercase tracking-wider text-amber-300 font-bold">Score</span>
+                    <span id="hud-score" class="font-arcade text-xs sm:text-sm font-black text-amber-200">0</span>
+                </div>
+            </div>
+
+            <!-- Center: Weather/EMI Condition Badge -->
+            <div class="hidden lg:flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-900/80 border border-white/10 shrink-0">
+                <span class="text-[9px] uppercase tracking-wider text-slate-400 font-bold">RF Forecast:</span>
+                <span id="hud-weather-text" class="font-arcade text-xs font-bold text-cyan-300">Clear Night</span>
+            </div>
+
+            <!-- Right: Live Zoom Control + Battery + Mode Switch + Mute + Menu -->
+            <div class="flex items-center gap-1.5 shrink-0">
+                <!-- Compact Live Scale Control: 🔍 − | AUTO (75%) | + -->
+                <div class="flex items-center bg-slate-900/95 rounded-xl border border-cyan-500/35 p-0.5">
+                    <button id="hud-scale-down-btn" type="button" title="Zoom Out (-3%)" class="w-6 h-6 rounded-lg hover:bg-slate-800 active:scale-95 text-xs font-bold text-cyan-300 flex items-center justify-center cursor-pointer">−</button>
+                    <button id="hud-scale-auto-btn" type="button" title="Reset to Auto-Fit Scale" class="px-2 h-6 rounded-lg hover:bg-slate-800 text-[10px] font-mono-tech font-bold text-cyan-200 flex items-center gap-1 cursor-pointer">
+                        <span>🔍</span>
+                        <span id="hud-scale-label">AUTO (100%)</span>
+                    </button>
+                    <button id="hud-scale-up-btn" type="button" title="Zoom In (+3%)" class="w-6 h-6 rounded-lg hover:bg-slate-800 active:scale-95 text-xs font-bold text-cyan-300 flex items-center justify-center cursor-pointer">+</button>
+                </div>
+
+                <!-- Battery Indicator (Advanced Mode) -->
+                <div id="hud-battery-wrap" class="hidden items-center gap-1 px-2 py-1 rounded-xl bg-slate-900/95 border border-amber-500/40">
+                    <span class="text-xs">🔋</span>
+                    <span id="hud-battery" class="font-arcade text-[11px] font-black text-amber-200">100%</span>
+                </div>
+
+                <button id="hud-mode-toggle-btn" type="button" title="Switch Standard / Advanced RF Mode" class="px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 border border-cyan-500/30 text-[10px] font-arcade font-bold text-cyan-200 transition cursor-pointer">
+                    STD
+                </button>
+                <button id="hud-mute-btn" type="button" title="Toggle Radio Audio" class="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-white/15 text-xs cursor-pointer">
+                    🔊
+                </button>
+                <button id="hud-menu-btn" type="button" title="Open Start & Scale Settings" class="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-white/15 text-xs cursor-pointer">
+                    ⚙️
+                </button>
+            </div>
+        </header>
+
+        <!-- MAIN TOP-AND-BOTTOM STACKED WORKSPACE (flex-col, horizontally defined) -->
+        <main id="main-workspace" class="flex-1 w-full max-w-5xl mx-auto px-2 py-1.5 sm:px-4 sm:py-2 flex flex-col justify-between gap-2 overflow-hidden min-h-0">
+
+            <!-- ========================================================================= -->
+            <!-- TOP WINDOW: COMPACT PANORAMIC SCHOOL BLUEPRINT (<= 1/3 SCREEN HEIGHT)     -->
+            <!-- ========================================================================= -->
+            <section id="top-blueprint-window" class="w-full glass-panel rounded-2xl p-2 flex flex-col justify-between border border-cyan-500/30 h-[26%] max-h-[28%] min-h-[112px] shrink-0 overflow-hidden">
+                
+                <!-- Single-Line Map Header + Integrated 0m–100m Progress Bar -->
+                <div class="h-6 w-full flex items-center justify-between gap-2 whitespace-nowrap overflow-hidden shrink-0 mb-1">
+                    <div class="flex items-center gap-1.5 min-w-0 shrink-0">
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-cyan-500/20 border border-cyan-400/40 text-cyan-200 text-[10px] font-bold uppercase tracking-wider">
+                            🗺️ MAP
+                        </span>
+                        <span id="map-sector-name" class="font-arcade text-[11px] sm:text-xs font-extrabold text-amber-300 truncate">
+                            Sector 1: Main Office
+                        </span>
+                    </div>
+
+                    <!-- Integrated 0m to 100m Hallway Progress Track -->
+                    <div class="flex-1 max-w-xs mx-1 bg-slate-900/95 px-2.5 py-0.5 rounded-lg border border-white/15 flex items-center gap-2 text-[10px] font-mono-tech">
+                        <span id="track-principal-pos" class="text-rose-300 font-bold shrink-0">🚨-28m</span>
+                        <div class="relative flex-1 h-2 bg-slate-950 rounded-full overflow-hidden border border-white/10">
+                            <div id="bar-principal-fill" class="absolute top-0 bottom-0 left-0 bg-rose-500/75 transition-all duration-300" style="width: 0%;"></div>
+                            <div id="bar-leo-fill" class="absolute top-0 bottom-0 left-0 bg-gradient-to-r from-cyan-400 to-emerald-400 transition-all duration-300" style="width: 2%;"></div>
+                        </div>
+                        <span id="track-leo-pos" class="text-cyan-200 font-bold shrink-0">🏃0m</span>
+                        <span id="track-lead-dist" class="hidden sm:inline text-emerald-300 font-bold shrink-0">Lead:+28m</span>
+                    </div>
+
+                    <!-- Wall Attenuation & EMI Badges -->
+                    <div class="flex items-center gap-1.5 font-mono-tech text-[10px] shrink-0">
+                        <span id="map-rf-obstruction" class="px-2 py-0.5 rounded bg-slate-900 border border-amber-400/30 text-amber-300 font-bold">
+                            1 Wall (-3.8dB)
+                        </span>
+                        <span id="map-emi-source" class="hidden md:inline px-2 py-0.5 rounded bg-slate-900 border border-white/10 text-slate-200 font-semibold">
+                            Low Office EMI
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Panoramic High-Contrast Blueprint Canvas -->
+                <div class="relative w-full flex-1 min-h-[68px] rounded-xl bg-slate-950 border border-white/15 overflow-hidden shadow-inner">
+                    <canvas id="map-canvas" class="w-full h-full block"></canvas>
+                </div>
+            </section>
+
+            <!-- ========================================================================= -->
+            <!-- BOTTOM WINDOW: WALKIE-TALKIE RF CONSOLE (> 2/3 SCREEN HEIGHT)             -->
+            <!-- ========================================================================= -->
+            <section id="bottom-walkie-window" class="w-full glass-panel rounded-2xl p-2.5 sm:p-3 flex flex-col justify-between border border-cyan-500/35 flex-1 min-h-0 overflow-hidden gap-1.5">
+                
+                <!-- 1. EXPANDED 2-ROW COMMS DIALOGUE PANEL (Sitrep + Last Transmission Outcome) -->
+                <div class="w-full bg-slate-950/95 rounded-xl px-3 py-2 border border-cyan-500/30 flex flex-col justify-between gap-1.5 shrink-0 shadow-inner">
+                    <!-- Row 1: Leo's Current Hallway Sitrep & Obstacle Ahead -->
+                    <div class="flex items-center justify-between gap-2 whitespace-nowrap overflow-hidden">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <span class="px-2 py-0.5 rounded bg-cyan-500/20 border border-cyan-400/40 font-arcade text-[9px] font-black text-cyan-200 shrink-0">
+                                📡 SITREP
+                            </span>
+                            <span id="comms-sitrep-text" class="text-xs sm:text-sm font-bold text-cyan-100 truncate">
+                                Office Corner: Jammed red locker &amp; unlocked blue locker ahead. Shortcut code is 4812.
+                            </span>
+                        </div>
+                        <span id="leo-outcome-pill" class="text-[10px] font-mono-tech font-extrabold px-2.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 shrink-0">
+                            Channel Ready
+                        </span>
+                    </div>
+
+                    <!-- Row 2: Last Transmission Heard & Action Result -->
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-3 border-t border-white/10 pt-1 overflow-hidden">
+                        <div id="leo-transcript-text" class="font-mono-tech text-xs sm:text-sm font-bold text-amber-200 truncate">
+                            Leo: "Got my phone back from the office! Which hallway first?"
+                        </div>
+                        <div id="leo-action-result" class="text-[11px] sm:text-xs text-emerald-300 font-semibold truncate sm:text-right">
+                            Time Push-To-Talk when the green carrier wave rises above red static!
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. ZERO-SHIFT SPECTRUM ANALYZER + LIVE WORD STREAM -->
+                <div class="w-full shrink-0">
+                    <!-- Strict 28px (h-7) Single-Line Spectrum Header (Never wraps or shifts) -->
+                    <div class="h-7 w-full flex items-center justify-between gap-2 whitespace-nowrap overflow-hidden bg-slate-950 px-2.5 rounded-t-xl border border-b-0 border-cyan-500/40">
+                        <div class="flex items-center gap-1.5 min-w-0">
+                            <span class="text-[10px] uppercase tracking-wider text-cyan-400 font-bold shrink-0">RF SCOPE</span>
+                            <span id="scope-state-pill" class="w-[74px] text-center font-arcade text-[9px] font-black py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 shrink-0">
+                                CLEAR
+                            </span>
+                            <span class="hidden sm:inline text-[10px] text-slate-400 truncate">
+                                Green = Carrier Signal • Red = Noise Floor &amp; Spikes
+                            </span>
+                        </div>
+                        <div class="flex items-center gap-2 font-mono-tech text-[11px] shrink-0">
+                            <div class="w-[84px] text-right">SNR:<span id="scope-snr-readout" class="font-bold text-emerald-300 ml-1">+14.0dB</span></div>
+                            <div class="w-[62px] text-right">BER:<span id="scope-ber-readout" class="font-bold text-emerald-300 ml-1">2%</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Fixed-Height Oscilloscope Canvas -->
+                    <div class="relative w-full h-[64px] sm:h-[72px] bg-slate-950 border border-cyan-500/40 overflow-hidden shadow-inner">
+                        <canvas id="scope-canvas" class="w-full h-full block"></canvas>
+                    </div>
+
+                    <!-- Fixed-Height (28px) Live Word Stream Bar -->
+                    <div id="live-packet-bar" class="h-[28px] w-full bg-slate-950 rounded-b-xl border border-t-0 border-cyan-500/40 px-2.5 flex items-center gap-1.5 overflow-x-auto whitespace-nowrap no-scrollbar font-mono-tech text-xs">
+                        <span class="text-slate-400 italic text-[11px]">Packet Stream Ready — select Tier 1, 2, or 3 below and press Push-To-Talk...</span>
+                    </div>
+                </div>
+
+                <!-- 3. EXPANDED ADVANCED RF CONTROLS BAR (Shown in Advanced RF Mode) -->
+                <div id="advanced-controls-bar" class="hidden bg-slate-900/95 rounded-xl px-3 py-1.5 border border-amber-500/45 shrink-0">
+                    <div class="flex flex-wrap items-center justify-between gap-2 whitespace-nowrap overflow-x-auto no-scrollbar">
+                        <!-- TX Power Controls -->
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            <span class="text-[10px] uppercase text-amber-300 font-arcade font-bold mr-0.5">⚡ TX POWER:</span>
+                            <button type="button" data-power="0.5" class="tx-power-btn px-2.5 py-1 rounded-lg bg-slate-800 text-[11px] font-arcade font-bold text-slate-300 border border-white/10 cursor-pointer">
+                                0.5W <span class="font-mono-tech text-[9px] text-slate-400">(-4.5dB)</span>
+                            </button>
+                            <button type="button" data-power="2.0" class="tx-power-btn px-2.5 py-1 rounded-lg bg-amber-500/30 text-[11px] font-arcade font-bold text-amber-200 border border-amber-400 cursor-pointer">
+                                2.0W <span class="font-mono-tech text-[9px] text-amber-100">(0dB)</span>
+                            </button>
+                            <button type="button" data-power="5.0" class="tx-power-btn px-2.5 py-1 rounded-lg bg-slate-800 text-[11px] font-arcade font-bold text-slate-300 border border-white/10 cursor-pointer">
+                                5.0W <span class="font-mono-tech text-[9px] text-emerald-300">(+6.5dB)</span>
+                            </button>
+                        </div>
+
+                        <div class="hidden sm:block h-4 w-[1px] bg-slate-700 shrink-0"></div>
+
+                        <!-- Forward Error Coding Controls -->
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            <span class="text-[10px] uppercase text-cyan-300 font-arcade font-bold mr-0.5">🛡️ CODING:</span>
+                            <button type="button" data-fec="raw" class="fec-mode-btn px-2.5 py-1 rounded-lg bg-cyan-500/30 text-[11px] font-arcade font-bold text-cyan-200 border border-cyan-400 cursor-pointer">
+                                1x RAW <span class="font-mono-tech text-[9px] text-cyan-100">(1.0x Air)</span>
+                            </button>
+                            <button type="button" data-fec="repeat" class="fec-mode-btn px-2.5 py-1 rounded-lg bg-slate-800 text-[11px] font-arcade font-bold text-slate-300 border border-white/10 cursor-pointer">
+                                2x REPEAT <span class="font-mono-tech text-[9px] text-emerald-300">(85% Save)</span>
+                            </button>
+                            <button type="button" data-fec="parity" class="fec-mode-btn px-2.5 py-1 rounded-lg bg-slate-800 text-[11px] font-arcade font-bold text-slate-300 border border-white/10 cursor-pointer">
+                                PARITY FEC <span class="font-mono-tech text-[9px] text-cyan-300">(60% Save)</span>
+                            </button>
+                        </div>
+
+                        <!-- Scanner Warning Pill -->
+                        <span id="adv-scanner-status" class="text-[10px] font-mono-tech text-emerald-300 font-bold ml-auto shrink-0 px-2 py-0.5 rounded bg-slate-950 border border-white/10">
+                            Scanner: SAFE
+                        </span>
+                    </div>
+                </div>
+
+                <!-- 4. EXPANDED HORIZONTAL SNAP CAROUSEL FOR MESSAGE COMPLEXITY TIERS -->
+                <div class="shrink-0 flex flex-col justify-center">
+                    <!-- Quick-Select Tabs + < and > Arrow Buttons -->
+                    <div class="h-6 flex items-center justify-between gap-1.5 mb-1 px-0.5 whitespace-nowrap overflow-hidden">
+                        <span class="text-[10px] sm:text-[11px] uppercase tracking-wider text-cyan-300 font-bold truncate">
+                            Select Message Complexity Tier (Swipe or Click Tabs)
+                        </span>
+                        <div class="flex items-center gap-1 shrink-0">
+                            <button type="button" id="carousel-prev-btn" class="w-6 h-6 rounded-lg bg-slate-800 hover:bg-slate-700 border border-white/15 text-xs font-bold text-white flex items-center justify-center cursor-pointer">&lt;</button>
+                            <button type="button" id="tab-t1-btn" class="px-2.5 py-0.5 rounded-lg font-arcade text-[10px] font-bold bg-slate-800 text-slate-300 border border-white/10 transition cursor-pointer">T1: BREVITY</button>
+                            <button type="button" id="tab-t2-btn" class="px-2.5 py-0.5 rounded-lg font-arcade text-[10px] font-bold bg-cyan-500/30 text-cyan-200 border border-cyan-400 transition cursor-pointer">T2: TACTICAL</button>
+                            <button type="button" id="tab-t3-btn" class="px-2.5 py-0.5 rounded-lg font-arcade text-[10px] font-bold bg-slate-800 text-slate-300 border border-white/10 transition cursor-pointer">T3: SITREP</button>
+                            <button type="button" id="carousel-next-btn" class="w-6 h-6 rounded-lg bg-slate-800 hover:bg-slate-700 border border-white/15 text-xs font-bold text-white flex items-center justify-center cursor-pointer">&gt;</button>
+                        </div>
+                    </div>
+
+                    <!-- Horizontal Snap Strip -->
+                    <div id="tier-carousel" class="tier-carousel w-full rounded-xl bg-slate-900/95 border border-white/15 p-1.5 gap-2.5">
+                        
+                        <!-- TIER 1 CARD (BREVITY CODE - 2 Words, ~0.9s, +13m) -->
+                        <div id="slide-tier-1" data-tier="1" class="tier-card rounded-xl px-3 py-2 bg-slate-950/95 border-2 border-white/10 cursor-pointer flex flex-col justify-between gap-1">
+                            <div class="flex items-center justify-between gap-2 whitespace-nowrap">
+                                <span class="font-arcade text-xs sm:text-sm font-black text-emerald-300">TIER 1 • BREVITY CODE</span>
+                                <div class="flex items-center gap-1.5">
+                                    <span id="t1-survival-badge" class="font-mono-tech text-[10px] font-extrabold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/40">96% Est. Clean</span>
+                                    <span id="t1-airtime-badge" class="font-mono-tech text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-200 border border-white/10">0.9s • 2 Words</span>
+                                </div>
+                            </div>
+                            <div id="t1-message-preview" class="font-mono-tech text-sm sm:text-base font-extrabold text-white tracking-wide truncate py-0.5">
+                                "CORNER LEFT"
+                            </div>
+                            <div class="flex items-center justify-between gap-2 text-[11px] whitespace-nowrap overflow-hidden border-t border-white/10 pt-1">
+                                <span class="text-emerald-300 font-bold">Move: <strong>+13m</strong> (+130 pts)</span>
+                                <span class="text-amber-300 font-semibold truncate">⚠️ 35% Ambiguity Guess • 1 Bit Err Wrecks All</span>
+                            </div>
+                        </div>
+
+                        <!-- TIER 2 CARD (TACTICAL ROUTE - 5 Words, ~1.9s, +26m) -->
+                        <div id="slide-tier-2" data-tier="2" class="tier-card active-tier rounded-xl px-3 py-2 bg-slate-950/95 border-2 border-white/10 cursor-pointer flex flex-col justify-between gap-1">
+                            <div class="flex items-center justify-between gap-2 whitespace-nowrap">
+                                <span class="font-arcade text-xs sm:text-sm font-black text-cyan-300">TIER 2 • TACTICAL ROUTE</span>
+                                <div class="flex items-center gap-1.5">
+                                    <span id="t2-survival-badge" class="font-mono-tech text-[10px] font-extrabold px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-200 border border-cyan-400/40">90% Est. Clean</span>
+                                    <span id="t2-airtime-badge" class="font-mono-tech text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-200 border border-white/10">1.9s • 5 Words</span>
+                                </div>
+                            </div>
+                            <div id="t2-message-preview" class="font-mono-tech text-sm sm:text-base font-extrabold text-white tracking-wide truncate py-0.5">
+                                "LEFT CORNER DUCK BLUE LOCKER"
+                            </div>
+                            <div class="flex items-center justify-between gap-2 text-[11px] whitespace-nowrap overflow-hidden border-t border-white/10 pt-1">
+                                <span class="text-cyan-300 font-bold">Move: <strong>+26m</strong> (+320 pts)</span>
+                                <span class="text-emerald-300 font-semibold truncate">✓ 0% Ambiguity (Safe) • 1 Err = Fallback (+14m)</span>
+                            </div>
+                        </div>
+
+                        <!-- TIER 3 CARD (FULL SITREP - 8 Words, ~3.1s, +44m) -->
+                        <div id="slide-tier-3" data-tier="3" class="tier-card rounded-xl px-3 py-2 bg-slate-950/95 border-2 border-white/10 cursor-pointer flex flex-col justify-between gap-1">
+                            <div class="flex items-center justify-between gap-2 whitespace-nowrap">
+                                <span class="font-arcade text-xs sm:text-sm font-black text-amber-300">TIER 3 • FULL SITREP SHORTCUT</span>
+                                <div class="flex items-center gap-1.5">
+                                    <span id="t3-survival-badge" class="font-mono-tech text-[10px] font-extrabold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-400/40">82% Est. Clean</span>
+                                    <span id="t3-airtime-badge" class="font-mono-tech text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-200 border border-white/10">3.1s • 8 Words</span>
+                                </div>
+                            </div>
+                            <div id="t3-message-preview" class="font-mono-tech text-sm sm:text-base font-extrabold text-white tracking-wide truncate py-0.5">
+                                "DONT RUN TAKE TROPHY HALL SHORTCUT CODE 4812"
+                            </div>
+                            <div class="flex items-center justify-between gap-2 text-[11px] whitespace-nowrap overflow-hidden border-t border-white/10 pt-1">
+                                <span class="text-amber-300 font-bold">Move: <strong>+44m</strong> (+800 pts + Stalls Prin)</span>
+                                <span class="text-rose-300 font-semibold truncate">⚡ Static Causes Comedic Bit-Flip (-6m)!</span>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- 5. TACTILE PUSH-TO-TALK (PTT) BUTTON -->
+                <button
+                    id="ptt-button"
+                    type="button"
+                    class="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-gradient-to-r from-rose-600 via-red-500 to-orange-500 hover:from-rose-500 hover:to-orange-400 active:scale-[0.99] transition text-white font-arcade font-black text-xs sm:text-sm tracking-wider shadow-xl shadow-rose-600/30 border border-rose-300/50 flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+                >
+                    <span class="w-2.5 h-2.5 rounded-full bg-white animate-ping"></span>
+                    <span id="ptt-button-text">PUSH TO TALK — TRANSMIT TIER 2 [SPACE]</span>
+                </button>
+            </section>
+        </main>
+
+        <!-- START MODAL (Mission Briefing, Mode Selector, Screen Scale Bar & Squelch Test) -->
+        <div id="start-modal" class="fixed inset-0 z-30 flex items-center justify-center p-2.5 sm:p-4 bg-slate-950/88 backdrop-blur-md overflow-y-auto">
+            <div class="glass-panel max-w-xl w-full rounded-3xl p-4 sm:p-5 border border-cyan-500/40 shadow-2xl text-center my-auto">
+                
+                <!-- Top Badges: Game Tag + Weather Condition -->
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-500/15 border border-cyan-400/30 text-cyan-300 text-[10px] font-bold uppercase tracking-widest">
+                        📻 School Hallway Heist
+                    </span>
+                    <span id="start-weather-badge" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-400/30 text-amber-300 text-[10px] font-mono-tech font-bold">
+                        ⚡ Forecast: Clear Night
+                    </span>
+                </div>
+
+                <h1 class="font-arcade text-lg sm:text-2xl font-black text-white tracking-wide">
+                    SIGNAL OPS: NOISY CHANNEL ESCAPE
+                </h1>
+                <p class="text-[11px] sm:text-xs text-slate-300 mt-1 leading-relaxed">
+                    Guide your friend <strong class="text-cyan-300">Leo</strong> from <span class="text-white font-semibold">0m (Main Office)</span> to <span class="text-emerald-300 font-semibold">100m (West Exit)</span> across 4 school sectors before the Principal catches him (~14m/turn). Time your <span class="text-amber-300 font-semibold">Push-To-Talk</span> between static bursts!
+                </p>
+
+                <!-- SCREEN FIT / UI SCALE BAR (Auto-Fit, 100%, 85%, 75%, 66%, - / +) -->
+                <div class="mt-2.5 bg-slate-900/95 rounded-2xl p-2.5 border border-cyan-500/30 text-left">
+                    <div class="flex items-center justify-between gap-2 mb-1.5">
+                        <span class="text-[10px] uppercase tracking-wider text-cyan-300 font-bold">
+                            🔍 Screen Scale / Viewport Zoom
+                        </span>
+                        <span id="start-scale-status" class="font-mono-tech text-[10px] font-bold text-emerald-300">
+                            AUTO FIT (100%)
+                        </span>
+                    </div>
+                    <div class="grid grid-cols-7 gap-1">
+                        <button type="button" data-scale="auto" class="scale-preset-btn col-span-2 py-1.5 rounded-xl font-arcade text-[10px] font-bold bg-cyan-500/30 text-cyan-200 border border-cyan-400 cursor-pointer">AUTO FIT</button>
+                        <button type="button" data-scale="1.00" class="scale-preset-btn py-1.5 rounded-xl font-mono-tech text-[10px] font-bold bg-slate-800 text-slate-300 border border-white/10 cursor-pointer">100%</button>
+                        <button type="button" data-scale="0.85" class="scale-preset-btn py-1.5 rounded-xl font-mono-tech text-[10px] font-bold bg-slate-800 text-slate-300 border border-white/10 cursor-pointer">85%</button>
+                        <button type="button" data-scale="0.75" class="scale-preset-btn py-1.5 rounded-xl font-mono-tech text-[10px] font-bold bg-slate-800 text-slate-300 border border-white/10 cursor-pointer">75%</button>
+                        <button type="button" data-scale="0.66" class="scale-preset-btn py-1.5 rounded-xl font-mono-tech text-[10px] font-bold bg-slate-800 text-slate-300 border border-white/10 cursor-pointer">66%</button>
+                        <div class="flex items-center gap-1">
+                            <button type="button" id="start-scale-minus" class="flex-1 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 font-bold text-xs text-cyan-300 border border-white/10 cursor-pointer">−</button>
+                            <button type="button" id="start-scale-plus" class="flex-1 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 font-bold text-xs text-cyan-300 border border-white/10 cursor-pointer">+</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MODE SELECTOR CARDS (Standard Mode vs Advanced RF Mode) -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 my-2.5 text-left">
+                    <button
+                        id="select-std-card"
+                        type="button"
+                        class="p-3 rounded-2xl bg-emerald-500/20 border-2 border-emerald-400 transition cursor-pointer text-left"
+                    >
+                        <div class="flex items-center justify-between">
+                            <span class="font-arcade text-xs font-black text-white">STANDARD MODE</span>
+                            <span id="std-card-pill" class="text-[9px] font-arcade font-bold px-2 py-0.5 rounded bg-emerald-400 text-slate-950">SELECTED</span>
+                        </div>
+                        <p class="text-[10px] text-slate-300 mt-1 leading-snug">
+                            Read the live SNR scope, pick Message Tiers 1–3, and time your Push-To-Talk. (Auto-scales ~75% on mobile).
+                        </p>
+                    </button>
+
+                    <button
+                        id="select-adv-card"
+                        type="button"
+                        class="p-3 rounded-2xl bg-slate-900/80 border-2 border-white/15 hover:border-amber-400/60 transition cursor-pointer text-left"
+                    >
+                        <div class="flex items-center justify-between">
+                            <span class="font-arcade text-xs font-black text-white">ADVANCED RF MODE</span>
+                            <span id="adv-card-pill" class="text-[9px] font-arcade font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-400">SELECT</span>
+                        </div>
+                        <p class="text-[10px] text-slate-300 mt-1 leading-snug">
+                            Adds <strong>TX Power (0.5W/2W/5W)</strong> &amp; <strong>Error Coding (1x/2x/Parity FEC)</strong>! (Auto-scales ~66% on mobile).
+                        </p>
+                    </button>
+                </div>
+
+                <!-- Action Row: Test Radio Squelch + START MISSION Button -->
+                <div class="flex flex-col sm:flex-row items-stretch gap-2 mt-2">
+                    <button
+                        id="test-squelch-btn"
+                        type="button"
+                        class="py-2.5 px-4 rounded-2xl bg-slate-800 hover:bg-slate-700 active:scale-95 transition border border-amber-400/60 text-amber-300 font-arcade font-bold text-xs flex items-center justify-center gap-1.5 sm:w-48 cursor-pointer"
+                    >
+                        <span>🔊 TEST RADIO SQUELCH</span>
+                    </button>
+                    <button
+                        id="start-mission-main-btn"
+                        type="button"
+                        class="flex-1 py-3 px-5 rounded-2xl bg-gradient-to-r from-cyan-500 via-teal-400 to-emerald-400 hover:from-cyan-400 hover:to-emerald-300 active:scale-[0.99] transition text-slate-950 font-arcade font-black text-xs sm:text-sm tracking-wider shadow-lg shadow-cyan-500/25 cursor-pointer"
+                    >
+                        START MISSION →
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- PERSISTENT END-OF-MISSION TELEMETRY & SHARE MODAL -->
+        <div id="results-modal" class="hidden fixed inset-0 z-30 flex items-start sm:items-center justify-center p-3 sm:p-5 bg-slate-950/90 backdrop-blur-md overflow-y-auto">
+            <div class="glass-panel max-w-xl w-full rounded-3xl p-4 sm:p-5 border border-emerald-500/40 shadow-2xl relative my-auto">
+                
+                <!-- Top-Left Navigation Header (Far from bottom PTT button + 1.5s Safety Lock) -->
+                <div class="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-2.5 mb-2.5">
+                    <div class="flex items-center gap-2">
+                        <button
+                            id="res-new-mission-btn"
+                            type="button"
+                            disabled
+                            class="py-1.5 px-3 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-400/40 text-cyan-200 font-arcade font-bold text-[10px] sm:text-[11px] disabled:opacity-40 disabled:pointer-events-none transition cursor-pointer"
+                        >
+                            <span id="res-new-mission-label">🔒 1.5s</span>
+                        </button>
+                        <button
+                            id="res-retry-btn"
+                            type="button"
+                            disabled
+                            class="py-1.5 px-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-white font-arcade font-bold text-[10px] sm:text-[11px] disabled:opacity-40 disabled:pointer-events-none transition cursor-pointer"
+                        >
+                            <span id="res-retry-label">🔒 RETRY</span>
+                        </button>
+                    </div>
+                    <div id="res-rank-badge" class="px-2.5 py-0.5 rounded-lg font-arcade text-[11px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-400/40">
+                        🏆 S-RANK SHANNON MASTER
+                    </div>
+                </div>
+
+                <h2 id="res-headline" class="font-arcade text-lg sm:text-2xl font-black text-white">
+                    LEO ESCAPED OUT THE WEST DOORS!
+                </h2>
+                <p id="res-summary-desc" class="text-xs text-slate-300 mt-0.5">
+                    You guided Leo through the hallway maze before the Principal could catch up.
+                </p>
+
+                <!-- Telemetry Metrics Grid -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 my-3 text-center">
+                    <div class="bg-slate-900/90 p-2.5 rounded-2xl border border-white/10">
+                        <div class="text-[9px] uppercase text-slate-400 font-bold">Final Score</div>
+                        <div id="res-final-score" class="font-arcade text-base sm:text-lg font-black text-amber-300 mt-0.5">2,450</div>
+                        <div id="res-turns-used" class="text-[10px] text-slate-400">4 Transmissions</div>
+                    </div>
+                    <div class="bg-slate-900/90 p-2.5 rounded-2xl border border-emerald-500/30">
+                        <div class="text-[9px] uppercase text-emerald-400 font-bold">Net Throughput</div>
+                        <div id="res-throughput" class="font-arcade text-base sm:text-lg font-black text-white mt-0.5">42 bps</div>
+                        <div id="res-words-ratio" class="text-[10px] text-emerald-300">90% Efficiency</div>
+                    </div>
+                    <div class="bg-slate-900/90 p-2.5 rounded-2xl border border-cyan-500/30">
+                        <div class="text-[9px] uppercase text-cyan-300 font-bold">Observed BER</div>
+                        <div id="res-ber-actual" class="font-arcade text-base sm:text-lg font-black text-cyan-300 mt-0.5">8.5%</div>
+                        <div id="res-avg-snr" class="text-[10px] text-slate-400">Avg SNR: +12.4 dB</div>
+                    </div>
+                    <div class="bg-slate-900/90 p-2.5 rounded-2xl border border-purple-500/30">
+                        <div class="text-[9px] uppercase text-purple-300 font-bold">Lead / FEC</div>
+                        <div id="res-lead-or-fec" class="font-arcade text-base sm:text-lg font-black text-purple-300 mt-0.5">+34m Lead</div>
+                        <div id="res-fec-saves" class="text-[10px] text-slate-400">0 FEC Saves</div>
+                    </div>
+                </div>
+
+                <!-- Share Stats Toolbar -->
+                <div class="bg-slate-900/95 rounded-2xl p-2.5 border border-cyan-500/30">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <span class="text-[10px] uppercase tracking-widest text-cyan-300 font-bold">
+                            📣 Share Your Comms Telemetry &amp; Game Link
+                        </span>
+                        <span id="res-share-toast" class="hidden text-[10px] font-arcade font-bold px-2 py-0.5 rounded-full bg-emerald-500/25 text-emerald-300 border border-emerald-400/40">
+                            ✓ Copied!
+                        </span>
+                    </div>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        <button id="res-share-native-btn" type="button" class="py-2 px-2 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-400 hover:from-cyan-400 hover:to-teal-300 text-slate-950 font-arcade font-black text-[11px] flex items-center justify-center gap-1 shadow-md cursor-pointer">
+                            <span>📤 SHARE</span>
+                        </button>
+                        <a id="res-share-sms" href="#" class="py-2 px-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-emerald-400/40 text-emerald-200 font-arcade font-bold text-[11px] flex items-center justify-center gap-1">
+                            <span>💬 SMS / TEXT</span>
+                        </a>
+                        <a id="res-share-email" href="#" class="py-2 px-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-amber-400/40 text-amber-200 font-arcade font-bold text-[11px] flex items-center justify-center gap-1">
+                            <span>✉️ EMAIL</span>
+                        </a>
+                        <button id="res-share-copy-btn" type="button" class="py-2 px-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-purple-400/40 text-purple-200 font-arcade font-bold text-[11px] flex items-center justify-center gap-1 cursor-pointer">
+                            <span id="res-copy-btn-label">📋 COPY</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        /**
+         * SIGNAL OPS: NOISY CHANNEL ESCAPE
+         * Top-and-Bottom Stacked Layout:
+         * - Top Window (<= 1/3 Screen Height): Panoramic School Blueprint Map with Large, High-Contrast Pill Labels
+         * - Bottom Window (> 2/3 Screen Height): Expanded Comms Dialogue, Zero-Shift Spectrum Scope, Larger Advanced Controls,
+         *   Spacious Horizontal Message Tier Carousel, and Push-To-Talk Button.
+         */
+        const SECTORS = [
+            {
+                id: 1,
+                shortTag: "OFFICE 0-25m",
+                name: "Sector 1: Main Office Corridor",
+                sitrep: "Office Corner: Jammed red locker & unlocked blue locker ahead. Trophy Hall shortcut code is 4812.",
+                walls: 1,
+                emiLabel: "Low Office EMI (1 Wall)",
+                fadingDepth: 4.8,
+                tiers: {
+                    1: {
+                        words: ["CORNER", "LEFT"],
+                        airTime: 0.9,
+                        progress: 13,
+                        points: 130,
+                        ambiguity: 0.35,
+                        ambigText: "Leo heard 'CORNER LEFT' but didn't know which locker was unlocked—he rattled a jammed red locker (+5m only)!",
+                        cleanText: "Leo turned left at the Office corner (+13m)."
+                    },
+                    2: {
+                        words: ["LEFT", "CORNER", "DUCK", "BLUE", "LOCKER"],
+                        airTime: 1.9,
+                        progress: 26,
+                        points: 320,
+                        ambiguity: 0.0,
+                        cleanText: "Leo turned left and slipped silently behind the unlocked blue locker (+26m)!"
+                    },
+                    3: {
+                        words: ["DONT", "RUN", "TAKE", "TROPHY", "HALL", "SHORTCUT", "CODE", "4812"],
+                        airTime: 3.1,
+                        progress: 44,
+                        points: 800,
+                        ambiguity: 0.0,
+                        cleanText: "Leo punched 4812 into the Trophy Hall shortcut door and left the Principal behind (+44m)!",
+                        bitFlipHeard: "'...RUN! RING BELL! SHAKE TROPHY WALL!'",
+                        bitFlipAction: "Static ate 'DONT'! Leo sprinted into the trophy case and rang the bell (-6m setback)!"
+                    }
+                }
+            },
+            {
+                id: 2,
+                shortTag: "LOCKERS 25-50m",
+                name: "Sector 2: Steel Locker Row",
+                sitrep: "Steel Lockers: Janitor mop bucket blocking main hall; unlocked broom closet on right or service vent.",
+                walls: 2,
+                emiLabel: "Steel Lockers (Multipath)",
+                fadingDepth: 7.4,
+                tiers: {
+                    1: {
+                        words: ["HIDE", "DOOR"],
+                        airTime: 0.9,
+                        progress: 13,
+                        points: 145,
+                        ambiguity: 0.35,
+                        ambigText: "Leo heard 'HIDE DOOR'—there were 3 doors! He opened the Janitor's closet and knocked over a mop bucket (+5m)!",
+                        cleanText: "Leo ducked into the side locker bay (+13m)."
+                    },
+                    2: {
+                        words: ["TURN", "RIGHT", "HIDE", "BROOM", "CLOSET"],
+                        airTime: 1.9,
+                        progress: 26,
+                        points: 350,
+                        ambiguity: 0.0,
+                        cleanText: "Leo turned right and hid inside the unlocked broom closet until the patrol passed (+26m)!"
+                    },
+                    3: {
+                        words: ["SKIP", "MOP", "BUCKET", "CRAWL", "VENT", "TO", "CAFE", "WING"],
+                        airTime: 3.1,
+                        progress: 44,
+                        points: 850,
+                        ambiguity: 0.0,
+                        cleanText: "Leo stepped over the mop bucket and crawled through the service vent straight to the Cafeteria (+44m)!",
+                        bitFlipHeard: "'KICK MOP BUCKET! BRAWL IN VENT!'",
+                        bitFlipAction: "Bit-flip disaster! Leo kicked the metal mop bucket down Steel Locker Row (-6m setback)!"
+                    }
+                }
+            },
+            {
+                id: 3,
+                shortTag: "CAFETERIA 50-75m",
+                name: "Sector 3: Cafeteria & Kitchen",
+                sitrep: "Cafeteria Wing: Heavy microwave & freezer static bursts! Wet floor mat by kitchen; rollup door ahead.",
+                walls: 3,
+                emiLabel: "Microwaves & Freezer EMI",
+                fadingDepth: 6.8,
+                tiers: {
+                    1: {
+                        words: ["GO", "NORTH"],
+                        airTime: 0.9,
+                        progress: 13,
+                        points: 160,
+                        ambiguity: 0.35,
+                        ambigText: "Leo went North into the kitchen but slipped on a wet floor mat because you didn't warn him (+5m)!",
+                        cleanText: "Leo crept North past the serving tables (+13m)."
+                    },
+                    2: {
+                        words: ["CROUCH", "PAST", "FREEZER", "EXIT", "NORTH"],
+                        airTime: 1.9,
+                        progress: 26,
+                        points: 380,
+                        ambiguity: 0.0,
+                        cleanText: "Leo crouched past the humming walk-in freezer and exited North (+26m)!"
+                    },
+                    3: {
+                        words: ["QUIET", "BYPASS", "KITCHEN", "FREEZER", "SLIDE", "UNDER", "ROLL", "DOOR"],
+                        airTime: 3.1,
+                        progress: 44,
+                        points: 900,
+                        ambiguity: 0.0,
+                        cleanText: "Leo bypassed the kitchen traps and slid under the rollup door into the Science Wing (+44m)!",
+                        bitFlipHeard: "'RIOT! HIGH-FIVE KITCHEN FREEZER! SLAM ROLL DOOR!'",
+                        bitFlipAction: "Static corrupted the command! Leo slammed the metal rollup shutter and alerted the Principal (-6m)!"
+                    }
+                }
+            },
+            {
+                id: 4,
+                shortTag: "CHEM LAB 75-100m",
+                name: "Sector 4: Chem Lab & West Exit",
+                sitrep: "Chem Lab Final Stretch: Red fire-alarm bar on left door; disarmed green West Gym Exit on right!",
+                walls: 4,
+                emiLabel: "4 Walls + High Lab EMI",
+                fadingDepth: 8.2,
+                tiers: {
+                    1: {
+                        words: ["SPRINT", "OUT"],
+                        airTime: 0.9,
+                        progress: 13,
+                        points: 180,
+                        ambiguity: 0.35,
+                        ambigText: "Leo sprinted for the first exit door he saw—it had an alarm bar! He had to backtrack (+5m)!",
+                        cleanText: "Leo dashed down the final science corridor (+13m)."
+                    },
+                    2: {
+                        words: ["USE", "WEST", "GREEN", "EXIT", "DOOR"],
+                        airTime: 1.9,
+                        progress: 26,
+                        points: 420,
+                        ambiguity: 0.0,
+                        cleanText: "Leo spotted the disarm light on the West green door and pushed through (+26m)!"
+                    },
+                    3: {
+                        words: ["AVOID", "RED", "ALARM", "BAR", "OPEN", "WEST", "GYM", "DOORS"],
+                        airTime: 3.1,
+                        progress: 44,
+                        points: 950,
+                        ambiguity: 0.0,
+                        cleanText: "Leo bypassed the red alarm bar and burst out the West Gym Doors to freedom (+44m)!",
+                        bitFlipHeard: "'ANNOY RED ALARM BAR! OPEN ALL DOORS!'",
+                        bitFlipAction: "Acoustic bit-flip! Leo pushed the red fire alarm bar before ducking back (-6m setback)!"
+                    }
+                }
+            }
+        ];
+
+        const RUN_CONDITIONS = [
+            { name: "Clear Night (Standard RF)", burstRate: 0.35, noiseBase: -73 },
+            { name: "Thunderstorm (Lightning Spikes)", burstRate: 0.65, noiseBase: -68 },
+            { name: "Janitor Shift (Floor Buffer EMI)", burstRate: 0.50, noiseBase: -66 },
+            { name: "Solar Flare (High Noise Floor)", burstRate: 0.45, noiseBase: -63 }
+        ];
+
+        // Panoramic Multi-Hallway Blueprint Path Coordinates (0.0 to 1.0)
+        const HALLWAY_PATH = [
+            { x: 0.06, y: 0.65 },
+            { x: 0.25, y: 0.65 },
+            { x: 0.28, y: 0.42 },
+            { x: 0.50, y: 0.42 },
+            { x: 0.53, y: 0.66 },
+            { x: 0.75, y: 0.66 },
+            { x: 0.78, y: 0.44 },
+            { x: 0.94, y: 0.44 }
+        ];
+
+        class WalkieAudioSynth {
+            constructor() {
+                this.ctx = null;
+                this.muted = false;
+            }
+            init() {
+                try {
+                    if (!this.ctx) {
+                        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                        if (AudioCtx) this.ctx = new AudioCtx();
+                    }
+                    if (this.ctx && this.ctx.state === 'suspended') {
+                        this.ctx.resume().catch(() => {});
+                    }
+                } catch (e) {}
+            }
+            playSquelchPreview() {
+                this.init();
+                try {
+                    if (!this.ctx) return;
+                    const now = this.ctx.currentTime;
+                    const osc = this.ctx.createOscillator();
+                    const g = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(1046.5, now);
+                    osc.frequency.setValueAtTime(1318.5, now + 0.08);
+                    g.gain.setValueAtTime(0.16, now);
+                    g.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+                    osc.connect(g);
+                    g.connect(this.ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.19);
+                    setTimeout(() => this.playSquelch(), 180);
+                } catch (e) {}
+            }
+            playSquelch() {
+                try {
+                    if (this.muted || !this.ctx) return;
+                    const now = this.ctx.currentTime;
+                    const len = Math.floor(this.ctx.sampleRate * 0.065);
+                    const buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
+                    const data = buf.getChannelData(0);
+                    for (let i = 0; i < len; i++) {
+                        data[i] = (Math.random() * 2 - 1) * 0.7;
+                    }
+                    const src = this.ctx.createBufferSource();
+                    src.buffer = buf;
+                    const filter = this.ctx.createBiquadFilter();
+                    filter.type = 'bandpass';
+                    filter.frequency.setValueAtTime(1650, now);
+                    const gain = this.ctx.createGain();
+                    gain.gain.setValueAtTime(0.16, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+                    src.connect(filter);
+                    filter.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    src.start(now);
+                } catch (e) {}
+            }
+            playWordTone(status) {
+                try {
+                    if (this.muted || !this.ctx) return;
+                    const now = this.ctx.currentTime;
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    if (status === 'clean') {
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(920, now);
+                        osc.frequency.exponentialRampToValueAtTime(1240, now + 0.075);
+                        gain.gain.setValueAtTime(0.12, now);
+                    } else if (status === 'fec') {
+                        osc.type = 'triangle';
+                        osc.frequency.setValueAtTime(660, now);
+                        osc.frequency.exponentialRampToValueAtTime(990, now + 0.085);
+                        gain.gain.setValueAtTime(0.14, now);
+                    } else {
+                        osc.type = 'sawtooth';
+                        osc.frequency.setValueAtTime(195, now);
+                        osc.frequency.linearRampToValueAtTime(95, now + 0.11);
+                        gain.gain.setValueAtTime(0.18, now);
+                    }
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.11);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.11);
+                } catch (e) {}
+            }
+            playEndFanfare(won) {
+                try {
+                    if (this.muted || !this.ctx) return;
+                    const now = this.ctx.currentTime;
+                    const notes = won ? [523.25, 659.25, 783.99, 1046.5] : [311.13, 277.18, 233.08, 174.61];
+                    notes.forEach((freq, idx) => {
+                        const osc = this.ctx.createOscillator();
+                        const gain = this.ctx.createGain();
+                        osc.type = won ? 'triangle' : 'sawtooth';
+                        osc.frequency.setValueAtTime(freq, now + idx * 0.09);
+                        gain.gain.setValueAtTime(0.15, now + idx * 0.09);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.09 + 0.24);
+                        osc.connect(gain);
+                        gain.connect(this.ctx.destination);
+                        osc.start(now + idx * 0.09);
+                        osc.stop(now + idx * 0.09 + 0.25);
+                    });
+                } catch (e) {}
+            }
+        }
+
+        const synth = new WalkieAudioSynth();
+
+        const mapCanvas = document.getElementById('map-canvas');
+        const mCtx = mapCanvas.getContext('2d');
+        const scopeCanvas = document.getElementById('scope-canvas');
+        const sCtx = scopeCanvas.getContext('2d');
+
+        const state = {
+            mode: 'standard',     // 'standard' | 'advanced'
+            phase: 'setup',       // 'setup' | 'playing' | 'transmitting' | 'results'
+            scaleMode: 'auto',    // 'auto' | 'manual'
+            manualScale: 0.75,
+            appliedScale: 1.0,
+            condition: RUN_CONDITIONS[0],
+            leoDist: 0,
+            principalDist: -28,
+            score: 0,
+            battery: 100,
+            selectedTier: 2,
+            txPowerWatts: 2.0,
+            fecMode: 'raw',       // 'raw' | 'repeat' | 'parity'
+            turns: 0,
+            totalWordsSent: 0,
+            cleanWordsDelivered: 0,
+            corruptedWordsCount: 0,
+            fecSavesCount: 0,
+            totalAirTimeSec: 0,
+            snrAccumulator: 0,
+            snrSamplesCount: 0,
+            rayleighPhase: 0,
+            preBurstLeft: 0,
+            burstLeft: 0,
+            currentSigDb: -32,
+            currentNoiseDb: -70,
+            currentSnrDb: 16,
+            currentBer: 0.02,
+            scopeSamples: [],
+            wordMarkers: [],
+            safetyLockLeft: 0,
+            missionWon: false
+        };
+
+        /**
+         * SMART VIEWPORT AUTO-SCALE & MANUAL ZOOM ENGINE
+         * Tuned for the Top-and-Bottom stacked layout: automatically scales to ~75% in Standard Mode
+         * and ~66% in Advanced RF Mode on mobile/compact screens, or honors manual preset zoom.
+         */
+        function computeAutoScaleFactor() {
+            const vw = window.innerWidth || 800;
+            const vh = window.innerHeight || 600;
+
+            if (vw >= 1100 && vh >= 720) {
+                return 1.0;
+            }
+
+            const targetHeight = state.mode === 'advanced' ? 660 : 595;
+            const targetWidth = 540;
+
+            const hRatio = vh / targetHeight;
+            const wRatio = vw / targetWidth;
+            let rawScale = Math.min(hRatio, wRatio);
+
+            const modeCap = state.mode === 'advanced' ? 0.66 : 0.75;
+            if (vh < 650 || vw < 920) {
+                rawScale = Math.min(rawScale, modeCap);
+            }
+
+            return Math.max(0.50, Math.min(1.0, Math.round(rawScale * 100) / 100));
+        }
+
+        function applyViewportScale() {
+            const wrapper = document.getElementById('scale-wrapper');
+            if (!wrapper) return;
+
+            const s = state.scaleMode === 'auto' ? computeAutoScaleFactor() : state.manualScale;
+            state.appliedScale = s;
+
+            wrapper.style.transform = `scale(${s})`;
+            wrapper.style.width = `calc(100vw / ${s})`;
+            wrapper.style.height = `calc(100dvh / ${s})`;
+
+            const pctText = `${Math.round(s * 100)}%`;
+            const hudLbl = document.getElementById('hud-scale-label');
+            const startStatus = document.getElementById('start-scale-status');
+
+            if (hudLbl) {
+                hudLbl.textContent = state.scaleMode === 'auto' ? `AUTO (${pctText})` : pctText;
+            }
+            if (startStatus) {
+                startStatus.textContent = state.scaleMode === 'auto'
+                    ? `AUTO FIT (${pctText} in ${state.mode === 'advanced' ? 'ADV' : 'STD'})`
+                    : `MANUAL (${pctText})`;
+            }
+
+            document.querySelectorAll('.scale-preset-btn').forEach(btn => {
+                const val = btn.getAttribute('data-scale');
+                const isActive = (val === 'auto' && state.scaleMode === 'auto') ||
+                    (val !== 'auto' && state.scaleMode === 'manual' && Math.abs(Number(val) - state.manualScale) < 0.015);
+                if (val === 'auto') {
+                    btn.className = isActive
+                        ? 'scale-preset-btn col-span-2 py-1.5 rounded-xl font-arcade text-[10px] font-bold bg-cyan-500/30 text-cyan-200 border border-cyan-400 cursor-pointer'
+                        : 'scale-preset-btn col-span-2 py-1.5 rounded-xl font-arcade text-[10px] font-bold bg-slate-800 text-slate-300 border border-white/10 cursor-pointer';
+                } else {
+                    btn.className = isActive
+                        ? 'scale-preset-btn py-1.5 rounded-xl font-mono-tech text-[10px] font-bold bg-cyan-500/30 text-cyan-200 border border-cyan-400 cursor-pointer'
+                        : 'scale-preset-btn py-1.5 rounded-xl font-mono-tech text-[10px] font-bold bg-slate-800 text-slate-300 border border-white/10 cursor-pointer';
+                }
+            });
+
+            try {
+                localStorage.setItem('signalOps_scaleMode', state.scaleMode);
+                localStorage.setItem('signalOps_manualScale', String(state.manualScale));
+            } catch (e) {}
+
+            requestAnimationFrame(resizeAllCanvases);
+        }
+
+        function setScalePreset(val) {
+            if (val === 'auto') {
+                state.scaleMode = 'auto';
+            } else {
+                state.scaleMode = 'manual';
+                state.manualScale = Math.max(0.50, Math.min(1.00, Number(val)));
+            }
+            applyViewportScale();
+        }
+
+        function nudgeScale(delta) {
+            const base = state.scaleMode === 'auto' ? state.appliedScale : state.manualScale;
+            state.scaleMode = 'manual';
+            state.manualScale = Math.max(0.50, Math.min(1.00, Math.round((base + delta) * 100) / 100));
+            applyViewportScale();
+        }
+
+        function resizeAllCanvases() {
+            const dpr = window.devicePixelRatio || 1;
+            if (mapCanvas.clientWidth > 0 && mapCanvas.clientHeight > 0) {
+                mapCanvas.width = Math.floor(mapCanvas.clientWidth * dpr);
+                mapCanvas.height = Math.floor(mapCanvas.clientHeight * dpr);
+            }
+            if (scopeCanvas.clientWidth > 0 && scopeCanvas.clientHeight > 0) {
+                scopeCanvas.width = Math.floor(scopeCanvas.clientWidth * dpr);
+                scopeCanvas.height = Math.floor(scopeCanvas.clientHeight * dpr);
+            }
+        }
+
+        window.addEventListener('resize', () => {
+            applyViewportScale();
+        });
+
+        function getActiveSector() {
+            if (state.leoDist < 25) return SECTORS[0];
+            if (state.leoDist < 50) return SECTORS[1];
+            if (state.leoDist < 75) return SECTORS[2];
+            return SECTORS[3];
+        }
+
+        function getCodingMultiplier() {
+            if (state.mode !== 'advanced') return 1.0;
+            if (state.fecMode === 'parity') return 1.35;
+            if (state.fecMode === 'repeat') return 1.75;
+            return 1.0;
+        }
+
+        function getEffectiveWordErrorProb() {
+            let fecRescue = 0;
+            if (state.mode === 'advanced') {
+                if (state.fecMode === 'parity') fecRescue = 0.60;
+                else if (state.fecMode === 'repeat') fecRescue = 0.85;
+            }
+            return state.currentBer * (1 - fecRescue);
+        }
+
+        function estimateTierSurvivalPct(tierNum) {
+            const pWordErr = getEffectiveWordErrorProb();
+            const pWordClean = 1 - pWordErr;
+            if (tierNum === 1) {
+                // 2 words, 0 errors allowed
+                return Math.round(Math.pow(pWordClean, 2) * 100);
+            } else if (tierNum === 2) {
+                // 5 words, clean lock on 0 errors
+                return Math.round(Math.pow(pWordClean, 5) * 100);
+            } else {
+                // 8 words, shortcut succeeds on 0 or 1 error
+                const p0 = Math.pow(pWordClean, 8);
+                const p1 = 8 * pWordErr * Math.pow(pWordClean, 7);
+                return Math.round(Math.min(0.99, p0 + p1) * 100);
+            }
+        }
+
+        function getPointAlongHallway(distMeters) {
+            const clamped = Math.max(0, Math.min(100, distMeters)) / 100;
+            const totalSegments = HALLWAY_PATH.length - 1;
+            const exactSeg = clamped * totalSegments;
+            const segIdx = Math.min(totalSegments - 1, Math.floor(exactSeg));
+            const t = exactSeg - segIdx;
+            const p0 = HALLWAY_PATH[segIdx];
+            const p1 = HALLWAY_PATH[segIdx + 1];
+            return {
+                x: p0.x + (p1.x - p0.x) * t,
+                y: p0.y + (p1.y - p0.y) * t
+            };
+        }
+
+        // 3-Layer Stochastic RF Noise Engine
+        function stepStochasticChannel(dt) {
+            const sec = getActiveSector();
+
+            // Layer 2: Multipath Rayleigh Fading
+            state.rayleighPhase += dt * 2.05;
+            const rayleighDb = Math.sin(state.rayleighPhase) * sec.fadingDepth + Math.cos(state.rayleighPhase * 0.6) * 2.2;
+
+            // Layer 1: Path Loss & Wall Attenuation (-3.8 dB per concrete wall) + AWGN jitter
+            const wallLossDb = sec.walls * 3.8;
+            const distLossDb = state.leoDist * 0.14;
+            let txPowerDb = 0;
+            if (state.mode === 'advanced') {
+                if (state.txPowerWatts === 5.0) txPowerDb = 6.5;
+                else if (state.txPowerWatts === 0.5) txPowerDb = -4.5;
+            }
+            const gaussianJitter = (Math.random() - 0.5) * 2.2;
+            state.currentSigDb = -26 - wallLossDb - distLossDb + txPowerDb + rayleighDb + gaussianJitter;
+
+            // Layer 3: Poisson Impulse Bursts (with 0.5s pre-burst capacitor crackle warning)
+            const sectorBurstBoost = sec.id >= 3 ? 1.35 : 1.0;
+            if (state.burstLeft > 0) {
+                state.burstLeft = Math.max(0, state.burstLeft - dt);
+                state.currentNoiseDb = -30 + (Math.random() * 9);
+            } else if (state.preBurstLeft > 0) {
+                state.preBurstLeft = Math.max(0, state.preBurstLeft - dt);
+                state.currentNoiseDb = state.condition.noiseBase + 14 + Math.random() * 5;
+                if (state.preBurstLeft <= 0) {
+                    state.burstLeft = 0.42 + Math.random() * 0.45;
+                }
+            } else {
+                const sectorNoiseFloor = sec.id === 4 ? state.condition.noiseBase + 4 : state.condition.noiseBase;
+                state.currentNoiseDb = sectorNoiseFloor + (Math.random() - 0.5) * 5;
+                if (Math.random() < state.condition.burstRate * sectorBurstBoost * dt) {
+                    state.preBurstLeft = 0.50;
+                }
+            }
+
+            state.currentSnrDb = state.currentSigDb - state.currentNoiseDb;
+            const rawBer = 1 / (1 + Math.exp((state.currentSnrDb - 6.5) * 0.36));
+            state.currentBer = Math.max(0.01, Math.min(0.94, rawBer));
+
+            state.scopeSamples.push({
+                sig: state.currentSigDb,
+                noise: state.currentNoiseDb,
+                warn: state.preBurstLeft > 0,
+                burst: state.burstLeft > 0
+            });
+            if (state.scopeSamples.length > 140) {
+                state.scopeSamples.shift();
+            }
+
+            // Update Fixed-Width Single-Line Spectrum Header Readouts
+            const snrEl = document.getElementById('scope-snr-readout');
+            const berEl = document.getElementById('scope-ber-readout');
+            const pillEl = document.getElementById('scope-state-pill');
+
+            const sign = state.currentSnrDb >= 0 ? '+' : '';
+            snrEl.textContent = `${sign}${state.currentSnrDb.toFixed(1)}dB`;
+            snrEl.className = state.currentSnrDb >= 12 ? 'font-bold text-emerald-300 ml-1' : (state.currentSnrDb >= 6 ? 'font-bold text-amber-300 ml-1' : 'font-bold text-rose-400 ml-1');
+
+            const berPct = Math.round(state.currentBer * 100);
+            berEl.textContent = `${berPct}%`;
+            berEl.className = berPct <= 14 ? 'font-bold text-emerald-300 ml-1' : (berPct <= 35 ? 'font-bold text-amber-300 ml-1' : 'font-bold text-rose-400 ml-1');
+
+            if (state.burstLeft > 0) {
+                pillEl.textContent = '⚡ BURST';
+                pillEl.className = 'w-[74px] text-center font-arcade text-[9px] font-black py-0.5 rounded bg-rose-500 text-white shrink-0';
+            } else if (state.preBurstLeft > 0) {
+                pillEl.textContent = '⚡ WARN';
+                pillEl.className = 'w-[74px] text-center font-arcade text-[9px] font-black py-0.5 rounded bg-amber-400 text-slate-950 shrink-0';
+            } else if (rayleighDb > 3.2) {
+                pillEl.textContent = '🌊 PEAK';
+                pillEl.className = 'w-[74px] text-center font-arcade text-[9px] font-black py-0.5 rounded bg-emerald-500/25 text-emerald-300 border border-emerald-400/40 shrink-0';
+            } else if (rayleighDb < -3.2) {
+                pillEl.textContent = 'FADE';
+                pillEl.className = 'w-[74px] text-center font-arcade text-[9px] font-black py-0.5 rounded bg-sky-500/25 text-sky-300 border border-sky-400/40 shrink-0';
+            } else {
+                pillEl.textContent = 'CLEAR';
+                pillEl.className = 'w-[74px] text-center font-arcade text-[9px] font-black py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 shrink-0';
+            }
+
+            // Update Live Estimated Packet Survival % Badges on the 3 Tier Cards
+            [1, 2, 3].forEach(tNum => {
+                const surv = estimateTierSurvivalPct(tNum);
+                const badge = document.getElementById(`t${tNum}-survival-badge`);
+                if (badge) {
+                    badge.textContent = `${surv}% Est. Clean`;
+                    badge.className = surv >= 75
+                        ? 'font-mono-tech text-[10px] font-extrabold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/40'
+                        : (surv >= 45
+                            ? 'font-mono-tech text-[10px] font-extrabold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-400/40'
+                            : 'font-mono-tech text-[10px] font-extrabold px-2 py-0.5 rounded bg-rose-500/25 text-rose-300 border border-rose-400/40');
+                }
+            });
+        }
+
+        function syncModeCardsOnStartModal() {
+            const stdCard = document.getElementById('select-std-card');
+            const advCard = document.getElementById('select-adv-card');
+            const stdPill = document.getElementById('std-card-pill');
+            const advPill = document.getElementById('adv-card-pill');
+
+            if (state.mode === 'standard') {
+                stdCard.className = 'p-3 rounded-2xl bg-emerald-500/20 border-2 border-emerald-400 transition cursor-pointer text-left';
+                advCard.className = 'p-3 rounded-2xl bg-slate-900/80 border-2 border-white/15 hover:border-amber-400/60 transition cursor-pointer text-left';
+                stdPill.textContent = 'SELECTED';
+                stdPill.className = 'text-[9px] font-arcade font-bold px-2 py-0.5 rounded bg-emerald-400 text-slate-950';
+                advPill.textContent = 'SELECT';
+                advPill.className = 'text-[9px] font-arcade font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-400';
+            } else {
+                stdCard.className = 'p-3 rounded-2xl bg-slate-900/80 border-2 border-white/15 hover:border-emerald-400/60 transition cursor-pointer text-left';
+                advCard.className = 'p-3 rounded-2xl bg-amber-500/20 border-2 border-amber-400 transition cursor-pointer text-left';
+                stdPill.textContent = 'SELECT';
+                stdPill.className = 'text-[9px] font-arcade font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-400';
+                advPill.textContent = 'SELECTED';
+                advPill.className = 'text-[9px] font-arcade font-bold px-2 py-0.5 rounded bg-amber-400 text-slate-950';
+            }
+        }
+
+        function syncAllUI() {
+            const sec = getActiveSector();
+            const mult = getCodingMultiplier();
+            const gap = Math.max(0, Math.round(state.leoDist - state.principalDist));
+
+            document.getElementById('hud-leo-dist').textContent = `${Math.min(100, Math.round(state.leoDist))}m / 100m`;
+            const gapEl = document.getElementById('hud-principal-gap');
+            gapEl.textContent = `${gap}m Behind`;
+            gapEl.className = `font-arcade text-xs sm:text-sm font-black ${gap <= 15 ? 'text-rose-400 animate-pulse' : 'text-rose-300'}`;
+
+            document.getElementById('hud-score').textContent = state.score.toLocaleString();
+            document.getElementById('hud-weather-text').textContent = state.condition.name;
+            document.getElementById('hud-battery').textContent = `${state.battery}%`;
+
+            // Top Window Distance Progress Bar & Telemetry
+            document.getElementById('track-principal-pos').textContent = `🚨${Math.round(state.principalDist)}m`;
+            document.getElementById('track-leo-pos').textContent = `🏃${Math.round(state.leoDist)}m`;
+            document.getElementById('track-lead-dist').textContent = `Lead:+${gap}m`;
+
+            const leoPct = Math.max(2, Math.min(100, state.leoDist));
+            const prinPct = Math.max(0, Math.min(100, state.principalDist));
+            document.getElementById('bar-leo-fill').style.width = `${leoPct}%`;
+            document.getElementById('bar-principal-fill').style.width = `${prinPct}%`;
+
+            document.getElementById('map-sector-name').textContent = sec.name;
+            document.getElementById('map-rf-obstruction').textContent = `${sec.walls} Wall${sec.walls > 1 ? 's' : ''} (-${(sec.walls * 3.8).toFixed(1)}dB)`;
+            document.getElementById('map-emi-source').textContent = sec.emiLabel;
+            document.getElementById('comms-sitrep-text').textContent = sec.sitrep;
+
+            // Update the 3 Horizontal Carousel Tier Cards
+            [1, 2, 3].forEach(tNum => {
+                const tData = sec.tiers[tNum];
+                const effAir = (tData.airTime * mult).toFixed(1);
+                document.getElementById(`t${tNum}-airtime-badge`).textContent = `${effAir}s • ${tData.words.length} Words`;
+                document.getElementById(`t${tNum}-message-preview`).textContent = `"${tData.words.join(' ')}"`;
+            });
+
+            // Advanced Mode UI
+            const advBar = document.getElementById('advanced-controls-bar');
+            const battWrap = document.getElementById('hud-battery-wrap');
+            const modeBtn = document.getElementById('hud-mode-toggle-btn');
+
+            if (state.mode === 'advanced') {
+                advBar.classList.remove('hidden');
+                battWrap.classList.remove('hidden');
+                battWrap.classList.add('flex');
+                modeBtn.textContent = 'ADV RF';
+                const scanEl = document.getElementById('adv-scanner-status');
+                if (state.txPowerWatts === 5.0 && gap <= 32) {
+                    scanEl.textContent = '🚨 Scanner: ALERT (+5m)';
+                    scanEl.className = 'text-[10px] font-mono-tech text-rose-400 font-bold ml-auto shrink-0 px-2 py-0.5 rounded bg-rose-950/60 border border-rose-400/40';
+                } else if (state.txPowerWatts === 5.0) {
+                    scanEl.textContent = '⚠️ Scanner: HIGH';
+                    scanEl.className = 'text-[10px] font-mono-tech text-amber-300 font-bold ml-auto shrink-0 px-2 py-0.5 rounded bg-slate-950 border border-amber-400/30';
+                } else {
+                    scanEl.textContent = 'Scanner: SAFE';
+                    scanEl.className = 'text-[10px] font-mono-tech text-emerald-300 font-bold ml-auto shrink-0 px-2 py-0.5 rounded bg-slate-950 border border-white/10';
+                }
+            } else {
+                advBar.classList.add('hidden');
+                battWrap.classList.add('hidden');
+                battWrap.classList.remove('flex');
+                modeBtn.textContent = 'STD';
+            }
+
+            if (state.phase === 'playing') {
+                document.getElementById('ptt-button-text').textContent = `PUSH TO TALK — TRANSMIT TIER ${state.selectedTier} [SPACE]`;
+            }
+
+            syncModeCardsOnStartModal();
+        }
+
+        function selectTier(tierNum, smoothScroll = true) {
+            if (state.phase === 'transmitting') return;
+            state.selectedTier = tierNum;
+
+            const carousel = document.getElementById('tier-carousel');
+            [1, 2, 3].forEach(n => {
+                const slide = document.getElementById(`slide-tier-${n}`);
+                const tab = document.getElementById(`tab-t${n}-btn`);
+                if (n === tierNum) {
+                    slide.classList.add('active-tier');
+                    tab.className = 'px-2.5 py-0.5 rounded-lg font-arcade text-[10px] font-bold bg-cyan-500/30 text-cyan-200 border border-cyan-400 transition cursor-pointer';
+                    if (carousel && smoothScroll) {
+                        const targetLeft = slide.offsetLeft - carousel.offsetLeft - (carousel.clientWidth - slide.clientWidth) / 2;
+                        carousel.scrollTo({ left: Math.max(0, targetLeft), behavior: 'smooth' });
+                    }
+                } else {
+                    slide.classList.remove('active-tier');
+                    tab.className = 'px-2.5 py-0.5 rounded-lg font-arcade text-[10px] font-bold bg-slate-800 text-slate-300 border border-white/10 transition cursor-pointer';
+                }
+            });
+            syncAllUI();
+        }
+
+        // Sync active tab when user swipes horizontal carousel
+        const tierCarouselEl = document.getElementById('tier-carousel');
+        let scrollDebounce = null;
+        tierCarouselEl.addEventListener('scroll', () => {
+            if (scrollDebounce) clearTimeout(scrollDebounce);
+            scrollDebounce = setTimeout(() => {
+                if (tierCarouselEl.clientWidth <= 0) return;
+                const centerPoint = tierCarouselEl.scrollLeft + tierCarouselEl.clientWidth / 2;
+                let closestTier = state.selectedTier;
+                let minDist = Infinity;
+                [1, 2, 3].forEach(n => {
+                    const slide = document.getElementById(`slide-tier-${n}`);
+                    if (slide) {
+                        const slideCenter = slide.offsetLeft - tierCarouselEl.offsetLeft + slide.clientWidth / 2;
+                        const d = Math.abs(centerPoint - slideCenter);
+                        if (d < minDist) {
+                            minDist = d;
+                            closestTier = n;
+                        }
+                    }
+                });
+                if (closestTier !== state.selectedTier && state.phase !== 'transmitting') {
+                    selectTier(closestTier, false);
+                }
+            }, 90);
+        });
+
+        document.getElementById('tab-t1-btn').addEventListener('click', () => selectTier(1, true));
+        document.getElementById('tab-t2-btn').addEventListener('click', () => selectTier(2, true));
+        document.getElementById('tab-t3-btn').addEventListener('click', () => selectTier(3, true));
+
+        document.getElementById('carousel-prev-btn').addEventListener('click', () => {
+            selectTier(Math.max(1, state.selectedTier - 1), true);
+        });
+        document.getElementById('carousel-next-btn').addEventListener('click', () => {
+            selectTier(Math.min(3, state.selectedTier + 1), true);
+        });
+
+        [1, 2, 3].forEach(n => {
+            document.getElementById(`slide-tier-${n}`).addEventListener('click', () => selectTier(n, true));
+        });
+
+        // Scale Preset & Fine-Tune Listeners (Start Modal + Top HUD)
+        document.querySelectorAll('.scale-preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                setScalePreset(btn.getAttribute('data-scale'));
+            });
+        });
+        document.getElementById('start-scale-minus').addEventListener('click', () => nudgeScale(-0.04));
+        document.getElementById('start-scale-plus').addEventListener('click', () => nudgeScale(0.04));
+        document.getElementById('hud-scale-down-btn').addEventListener('click', () => nudgeScale(-0.03));
+        document.getElementById('hud-scale-up-btn').addEventListener('click', () => nudgeScale(0.03));
+        document.getElementById('hud-scale-auto-btn').addEventListener('click', () => setScalePreset('auto'));
+
+        // Advanced RF Controls
+        document.querySelectorAll('.tx-power-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (state.phase === 'transmitting') return;
+                state.txPowerWatts = Number(btn.getAttribute('data-power'));
+                document.querySelectorAll('.tx-power-btn').forEach(b => {
+                    const active = Number(b.getAttribute('data-power')) === state.txPowerWatts;
+                    b.className = active
+                        ? 'tx-power-btn px-2.5 py-1 rounded-lg bg-amber-500/30 text-[11px] font-arcade font-bold text-amber-200 border border-amber-400 cursor-pointer'
+                        : 'tx-power-btn px-2.5 py-1 rounded-lg bg-slate-800 text-[11px] font-arcade font-bold text-slate-300 border border-white/10 cursor-pointer';
+                });
+                syncAllUI();
+            });
+        });
+
+        document.querySelectorAll('.fec-mode-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (state.phase === 'transmitting') return;
+                state.fecMode = btn.getAttribute('data-fec');
+                document.querySelectorAll('.fec-mode-btn').forEach(b => {
+                    const active = b.getAttribute('data-fec') === state.fecMode;
+                    b.className = active
+                        ? 'fec-mode-btn px-2.5 py-1 rounded-lg bg-cyan-500/30 text-[11px] font-arcade font-bold text-cyan-200 border border-cyan-400 cursor-pointer'
+                        : 'fec-mode-btn px-2.5 py-1 rounded-lg bg-slate-800 text-[11px] font-arcade font-bold text-slate-300 border border-white/10 cursor-pointer';
+                });
+                syncAllUI();
+            });
+        });
+
+        // Live Word-by-Word Packet Transmission
+        function startPacketTransmission() {
+            if (state.phase !== 'playing') return;
+            synth.init();
+            synth.playSquelch();
+
+            if (state.mode === 'advanced') {
+                const battDrain = state.txPowerWatts === 5.0 ? 16 : (state.txPowerWatts === 2.0 ? 9 : 4);
+                if (state.battery < battDrain) {
+                    state.txPowerWatts = 0.5;
+                }
+                state.battery = Math.max(0, state.battery - battDrain);
+            }
+
+            state.phase = 'transmitting';
+            state.wordMarkers = [];
+            const sec = getActiveSector();
+            const tierObj = sec.tiers[state.selectedTier];
+            const mult = getCodingMultiplier();
+            const totalAirTime = tierObj.airTime * mult;
+            state.totalAirTimeSec += totalAirTime;
+
+            const pttBtn = document.getElementById('ptt-button');
+            pttBtn.classList.add('ptt-transmitting');
+            document.getElementById('ptt-button-text').textContent = `TRANSMITTING TIER ${state.selectedTier} (${totalAirTime.toFixed(1)}s)...`;
+
+            const streamBar = document.getElementById('live-packet-bar');
+            streamBar.innerHTML = '';
+
+            const words = tierObj.words;
+            const stepMs = Math.max(180, Math.round((totalAirTime * 1000) / words.length));
+            let idx = 0;
+            let packetCorruptedCount = 0;
+            let packetFecSavedCount = 0;
+            const receivedWords = [];
+
+            const timer = setInterval(() => {
+                if (idx >= words.length) {
+                    clearInterval(timer);
+                    resolvePacketOutcome(tierObj, receivedWords, packetCorruptedCount, packetFecSavedCount);
+                    return;
+                }
+
+                const word = words[idx];
+                state.totalWordsSent++;
+                state.snrAccumulator += state.currentSnrDb;
+                state.snrSamplesCount++;
+
+                const errRoll = Math.random();
+                let wordState = 'clean';
+                let outWord = word;
+
+                if (errRoll < state.currentBer) {
+                    let fecRescueChance = 0;
+                    if (state.mode === 'advanced') {
+                        if (state.fecMode === 'parity') fecRescueChance = 0.60;
+                        else if (state.fecMode === 'repeat') fecRescueChance = 0.85;
+                    }
+                    if (Math.random() < fecRescueChance) {
+                        wordState = 'fec';
+                        outWord = `${word}[FEC]`;
+                        packetFecSavedCount++;
+                        state.fecSavesCount++;
+                        state.cleanWordsDelivered++;
+                        synth.playWordTone('fec');
+                    } else {
+                        wordState = 'corrupt';
+                        packetCorruptedCount++;
+                        state.corruptedWordsCount++;
+                        const glitches = ['[ksssh!]', '[STATIC]', '[ERR!]', '[bzzzt!]'];
+                        outWord = glitches[Math.floor(Math.random() * glitches.length)];
+                        synth.playWordTone('corrupt');
+                    }
+                } else {
+                    state.cleanWordsDelivered++;
+                    synth.playWordTone('clean');
+                }
+
+                receivedWords.push(outWord);
+                state.wordMarkers.push({
+                    sampleIndex: state.scopeSamples.length - 1,
+                    status: wordState
+                });
+
+                const chip = document.createElement('span');
+                chip.className = wordState === 'clean'
+                    ? 'px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 font-bold text-[11px] shrink-0'
+                    : (wordState === 'fec'
+                        ? 'px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 font-bold text-[11px] shrink-0'
+                        : 'px-2 py-0.5 rounded bg-rose-500/25 text-rose-300 border border-rose-400/40 font-bold text-[11px] shrink-0');
+                chip.textContent = `[${outWord}]`;
+                streamBar.appendChild(chip);
+                streamBar.scrollLeft = streamBar.scrollWidth;
+
+                idx++;
+            }, stepMs);
+        }
+
+        function resolvePacketOutcome(tierObj, receivedWords, corruptedCount, fecSavedCount) {
+            synth.playSquelch();
+            const pttBtn = document.getElementById('ptt-button');
+            pttBtn.classList.remove('ptt-transmitting');
+
+            state.turns++;
+            const tierNum = state.selectedTier;
+            let distDelta = 0;
+            let principalStride = 14;
+            let ptsEarned = 0;
+            let pillLabel = '';
+            let pillClass = '';
+            let heardQuote = `"${receivedWords.join(' ')}"`;
+            let actionSummary = '';
+
+            if (state.mode === 'advanced' && state.fecMode === 'repeat') {
+                principalStride += 3;
+            }
+            if (state.mode === 'advanced' && state.txPowerWatts === 5.0 && (state.leoDist - state.principalDist) <= 32) {
+                principalStride += 5;
+            }
+
+            if (tierNum === 1) {
+                if (corruptedCount >= 1) {
+                    distDelta = 0;
+                    ptsEarned = 0;
+                    pillLabel = '100% Packet Loss';
+                    pillClass = 'text-[10px] font-mono-tech font-extrabold px-2.5 py-0.5 rounded-md bg-rose-500/25 text-rose-300 border border-rose-400/40 shrink-0';
+                    actionSummary = '1 bit error wrecked 100% of the short message! Leo froze in place (+0m).';
+                } else if (Math.random() < tierObj.ambiguity) {
+                    distDelta = 5;
+                    ptsEarned = 45;
+                    principalStride += 2;
+                    pillLabel = 'Ambiguity Guess (+5m)';
+                    pillClass = 'text-[10px] font-mono-tech font-extrabold px-2.5 py-0.5 rounded-md bg-amber-500/25 text-amber-300 border border-amber-400/40 shrink-0';
+                    actionSummary = tierObj.ambigText;
+                } else {
+                    distDelta = tierObj.progress;
+                    ptsEarned = tierObj.points;
+                    pillLabel = 'Brevity Clear (+13m)';
+                    pillClass = 'text-[10px] font-mono-tech font-extrabold px-2.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 shrink-0';
+                    actionSummary = `${tierObj.cleanText} (Principal marches +14m/turn!)`;
+                }
+            } else if (tierNum === 2) {
+                if (corruptedCount === 0) {
+                    distDelta = tierObj.progress;
+                    ptsEarned = tierObj.points + (fecSavedCount * 40);
+                    pillLabel = 'Tactical Lock (+26m)';
+                    pillClass = 'text-[10px] font-mono-tech font-extrabold px-2.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 shrink-0';
+                    actionSummary = tierObj.cleanText;
+                } else if (corruptedCount === 1) {
+                    distDelta = 14;
+                    ptsEarned = 140;
+                    pillLabel = 'Fallback Guess (+14m)';
+                    pillClass = 'text-[10px] font-mono-tech font-extrabold px-2.5 py-0.5 rounded-md bg-amber-500/25 text-amber-300 border border-amber-400/40 shrink-0';
+                    actionSummary = '1 keyword dropped out! Leo fell back to a cautious guess (+14m).';
+                } else {
+                    distDelta = 3;
+                    ptsEarned = 25;
+                    pillLabel = 'Garbled Route (+3m)';
+                    pillClass = 'text-[10px] font-mono-tech font-extrabold px-2.5 py-0.5 rounded-md bg-rose-500/25 text-rose-300 border border-rose-400/40 shrink-0';
+                    actionSummary = 'Heavy static corruption! Leo barely crept forward (+3m).';
+                }
+            } else {
+                if (corruptedCount <= 1) {
+                    distDelta = tierObj.progress;
+                    ptsEarned = tierObj.points + (fecSavedCount * 60);
+                    principalStride -= 4;
+                    pillLabel = 'Shortcut Jackpot (+44m)';
+                    pillClass = 'text-[10px] font-mono-tech font-extrabold px-2.5 py-0.5 rounded-md bg-emerald-500/25 text-emerald-300 border border-emerald-400/40 shrink-0';
+                    actionSummary = tierObj.cleanText;
+                } else if (corruptedCount === 2) {
+                    distDelta = 16;
+                    ptsEarned = 190;
+                    pillLabel = 'Shortcut Missed (+16m)';
+                    pillClass = 'text-[10px] font-mono-tech font-extrabold px-2.5 py-0.5 rounded-md bg-amber-500/25 text-amber-300 border border-amber-400/40 shrink-0';
+                    actionSummary = 'Static ate the shortcut code! Leo took the main hallway instead (+16m).';
+                } else {
+                    distDelta = -6;
+                    ptsEarned = 0;
+                    principalStride += 3;
+                    heardQuote = tierObj.bitFlipHeard;
+                    pillLabel = 'Bit-Flip Disaster (-6m)';
+                    pillClass = 'text-[10px] font-mono-tech font-extrabold px-2.5 py-0.5 rounded-md bg-rose-500 text-white shrink-0';
+                    actionSummary = tierObj.bitFlipAction;
+                }
+            }
+
+            state.leoDist = Math.max(0, state.leoDist + distDelta);
+            state.principalDist += principalStride;
+            state.score += ptsEarned;
+
+            document.getElementById('leo-outcome-pill').textContent = pillLabel;
+            document.getElementById('leo-outcome-pill').className = pillClass;
+            document.getElementById('leo-transcript-text').textContent = `Heard: ${heardQuote}`;
+            document.getElementById('leo-action-result').textContent = actionSummary;
+
+            if (state.leoDist >= 100) {
+                state.leoDist = 100;
+                finishMission(true);
+            } else if (state.principalDist >= state.leoDist) {
+                finishMission(false);
+            } else {
+                state.phase = 'playing';
+                syncAllUI();
+            }
+        }
+
+        function finishMission(won) {
+            state.phase = 'results';
+            state.missionWon = won;
+            state.safetyLockLeft = 1.5;
+            synth.playEndFanfare(won);
+
+            const leadBonus = won ? Math.max(0, Math.round((state.leoDist - state.principalDist) * 25)) : 0;
+            state.score += leadBonus;
+
+            const newBtn = document.getElementById('res-new-mission-btn');
+            const retryBtn = document.getElementById('res-retry-btn');
+            newBtn.disabled = true;
+            retryBtn.disabled = true;
+            document.getElementById('res-new-mission-label').textContent = '🔒 1.5s';
+            document.getElementById('res-retry-label').textContent = '🔒 RETRY';
+
+            const avgSnr = state.snrSamplesCount > 0 ? (state.snrAccumulator / state.snrSamplesCount) : 12.0;
+            const actualBerPct = state.totalWordsSent > 0 ? ((state.corruptedWordsCount / state.totalWordsSent) * 100) : 0;
+            const efficiencyPct = state.totalWordsSent > 0 ? Math.round((state.cleanWordsDelivered / state.totalWordsSent) * 100) : 100;
+            const netBps = state.totalAirTimeSec > 0 ? Math.round((state.cleanWordsDelivered * 32) / state.totalAirTimeSec) : 0;
+            const finalGap = Math.max(0, Math.round(state.leoDist - state.principalDist));
+
+            const rankEl = document.getElementById('res-rank-badge');
+            const headEl = document.getElementById('res-headline');
+            const descEl = document.getElementById('res-summary-desc');
+
+            if (won) {
+                headEl.textContent = 'LEO ESCAPED OUT THE WEST DOORS!';
+                descEl.textContent = `Escaped in ${state.turns} transmissions with a +${finalGap}m lead (+${leadBonus} lead bonus pts)!`;
+                if (state.score >= 2200 && actualBerPct <= 15) {
+                    rankEl.textContent = '🏆 S-RANK SHANNON MASTER';
+                    rankEl.className = 'px-2.5 py-0.5 rounded-lg font-arcade text-[11px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-400/40';
+                } else if (state.score >= 1400) {
+                    rankEl.textContent = '⚡ A-RANK SPECTRUM ACE';
+                    rankEl.className = 'px-2.5 py-0.5 rounded-lg font-arcade text-[11px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/40';
+                } else {
+                    rankEl.textContent = '📻 B-RANK SIGNAL SPOTTER';
+                    rankEl.className = 'px-2.5 py-0.5 rounded-lg font-arcade text-[11px] font-black bg-amber-500/20 text-amber-300 border border-amber-400/40';
+                }
+            } else {
+                headEl.textContent = 'BUSTED BY THE PRINCIPAL!';
+                descEl.textContent = `The Principal caught up to Leo at ${Math.round(state.leoDist)}m! Balance Tier 2/3 speed against static spikes.`;
+                rankEl.textContent = '🚨 DETENTION (SIGNAL LOST)';
+                rankEl.className = 'px-2.5 py-0.5 rounded-lg font-arcade text-[11px] font-black bg-rose-500/25 text-rose-300 border border-rose-400/40';
+            }
+
+            document.getElementById('res-final-score').textContent = state.score.toLocaleString();
+            document.getElementById('res-turns-used').textContent = `${state.turns} Transmissions`;
+            document.getElementById('res-throughput').textContent = `${netBps} bps`;
+            document.getElementById('res-words-ratio').textContent = `${efficiencyPct}% Efficiency (${state.cleanWordsDelivered}/${state.totalWordsSent})`;
+            document.getElementById('res-ber-actual').textContent = `${actualBerPct.toFixed(1)}%`;
+            document.getElementById('res-avg-snr').textContent = `Avg SNR: ${avgSnr >= 0 ? '+' : ''}${avgSnr.toFixed(1)} dB`;
+            document.getElementById('res-lead-or-fec').textContent = won ? `+${finalGap}m Lead` : `${Math.round(state.leoDist)}m Reached`;
+            document.getElementById('res-fec-saves').textContent = `${state.fecSavesCount} FEC Saves`;
+
+            populateShareToolbar(rankEl.textContent, netBps, efficiencyPct);
+            document.getElementById('results-modal').classList.remove('hidden');
+        }
+
+        function getGameShareUrl() {
+            const href = window.location.href || '';
+            if (href.startsWith('http://') || href.startsWith('https://')) return href;
+            return 'https://signal-ops-escape.netlify.app';
+        }
+
+        let currentSharePayloadText = '';
+
+        function populateShareToolbar(rankText, netBps, efficiencyPct) {
+            const url = getGameShareUrl();
+            currentSharePayloadText = [
+                `📻 Signal Ops: Noisy Channel Escape`,
+                `🏅 Rank: ${rankText}`,
+                `🎯 Final Score: ${state.score.toLocaleString()} pts (${state.mode === 'advanced' ? 'Advanced RF' : 'Standard'} Mode)`,
+                `⚡ Net Throughput: ${netBps} bps | Channel Efficiency: ${efficiencyPct}%`,
+                `Play here: ${url}`
+            ].join('\n');
+
+            const encBody = encodeURIComponent(currentSharePayloadText);
+            const encSubj = encodeURIComponent('My Signal Ops: Noisy Channel Escape Score!');
+            document.getElementById('res-share-sms').href = `sms:?&body=${encBody}`;
+            document.getElementById('res-share-email').href = `mailto:?subject=${encSubj}&body=${encBody}`;
+        }
+
+        function copyStatsToClipboard() {
+            if (!currentSharePayloadText) return;
+            const area = document.createElement('textarea');
+            area.value = currentSharePayloadText;
+            area.style.position = 'fixed';
+            area.style.left = '-9999px';
+            document.body.appendChild(area);
+            area.select();
+            try {
+                document.execCommand('copy');
+            } catch (e) {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(currentSharePayloadText).catch(() => {});
+                }
+            }
+            document.body.removeChild(area);
+
+            const toast = document.getElementById('res-share-toast');
+            const lbl = document.getElementById('res-copy-btn-label');
+            toast.classList.remove('hidden');
+            lbl.textContent = '✓ COPIED';
+            setTimeout(() => {
+                toast.classList.add('hidden');
+                lbl.textContent = '📋 COPY';
+            }, 2400);
+        }
+
+        document.getElementById('res-share-copy-btn').addEventListener('click', copyStatsToClipboard);
+        document.getElementById('res-share-native-btn').addEventListener('click', async () => {
+            if (navigator.share && currentSharePayloadText) {
+                try {
+                    await navigator.share({
+                        title: 'Signal Ops: Noisy Channel Escape',
+                        text: currentSharePayloadText
+                    });
+                    return;
+                } catch (e) {}
+            }
+            copyStatsToClipboard();
+        });
+
+        function setGameMode(newMode) {
+            state.mode = newMode;
+            syncAllUI();
+            applyViewportScale();
+        }
+
+        function launchMission() {
+            synth.init();
+            synth.playSquelch();
+            state.condition = RUN_CONDITIONS[Math.floor(Math.random() * RUN_CONDITIONS.length)];
+            document.getElementById('start-weather-badge').textContent = `⚡ Forecast: ${state.condition.name}`;
+
+            state.leoDist = 0;
+            state.principalDist = -28;
+            state.score = 0;
+            state.battery = 100;
+            state.turns = 0;
+            state.totalWordsSent = 0;
+            state.cleanWordsDelivered = 0;
+            state.corruptedWordsCount = 0;
+            state.fecSavesCount = 0;
+            state.totalAirTimeSec = 0;
+            state.snrAccumulator = 0;
+            state.snrSamplesCount = 0;
+            state.preBurstLeft = 0;
+            state.burstLeft = 0;
+            state.wordMarkers = [];
+            state.phase = 'playing';
+
+            document.getElementById('start-modal').classList.add('hidden');
+            document.getElementById('results-modal').classList.add('hidden');
+
+            document.getElementById('leo-outcome-pill').textContent = 'Channel Ready';
+            document.getElementById('leo-outcome-pill').className = 'text-[10px] font-mono-tech font-extrabold px-2.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 shrink-0';
+            document.getElementById('leo-transcript-text').textContent = 'Leo: "Got my phone back from the office! Waiting for your first radio call!"';
+            document.getElementById('leo-action-result').textContent = `Condition: ${state.condition.name}. Swipe/pick Tier 1–3 below and press Push-To-Talk!`;
+            document.getElementById('live-packet-bar').innerHTML = '<span class="text-slate-400 italic text-[11px]">Packet Stream Ready — select Tier 1, 2, or 3 below and press Push-To-Talk...</span>';
+
+            applyViewportScale();
+            selectTier(2, true);
+            syncAllUI();
+        }
+
+        // Start Modal & Top Bar Listeners
+        document.getElementById('select-std-card').addEventListener('click', () => setGameMode('standard'));
+        document.getElementById('select-adv-card').addEventListener('click', () => setGameMode('advanced'));
+        document.getElementById('test-squelch-btn').addEventListener('click', () => synth.playSquelchPreview());
+        document.getElementById('start-mission-main-btn').addEventListener('click', () => launchMission());
+
+        document.getElementById('hud-mode-toggle-btn').addEventListener('click', () => {
+            if (state.phase === 'transmitting') return;
+            setGameMode(state.mode === 'standard' ? 'advanced' : 'standard');
+        });
+
+        document.getElementById('hud-mute-btn').addEventListener('click', () => {
+            synth.muted = !synth.muted;
+            document.getElementById('hud-mute-btn').textContent = synth.muted ? '🔇' : '🔊';
+        });
+
+        document.getElementById('hud-menu-btn').addEventListener('click', () => {
+            state.phase = 'setup';
+            document.getElementById('results-modal').classList.add('hidden');
+            document.getElementById('start-modal').classList.remove('hidden');
+            applyViewportScale();
+        });
+
+        document.getElementById('res-new-mission-btn').addEventListener('click', () => {
+            if (state.safetyLockLeft > 0) return;
+            state.phase = 'setup';
+            document.getElementById('results-modal').classList.add('hidden');
+            document.getElementById('start-modal').classList.remove('hidden');
+            applyViewportScale();
+        });
+
+        document.getElementById('res-retry-btn').addEventListener('click', () => {
+            if (state.safetyLockLeft > 0) return;
+            launchMission();
+        });
+
+        document.getElementById('ptt-button').addEventListener('click', startPacketTransmission);
+
+        window.addEventListener('keydown', (e) => {
+            if (e.repeat) return;
+            if (e.code === 'Space') {
+                if (state.phase === 'playing') {
+                    e.preventDefault();
+                    startPacketTransmission();
+                }
+            } else if (e.code === 'Digit1' || e.code === 'ArrowLeft') {
+                if (state.phase === 'playing') selectTier(e.code === 'Digit1' ? 1 : Math.max(1, state.selectedTier - 1), true);
+            } else if (e.code === 'Digit2') {
+                if (state.phase === 'playing') selectTier(2, true);
+            } else if (e.code === 'Digit3' || e.code === 'ArrowRight') {
+                if (state.phase === 'playing') selectTier(e.code === 'Digit3' ? 3 : Math.min(3, state.selectedTier + 1), true);
+            }
+        });
+
+        // High-Contrast Pill Label Helper for Compact Blueprint Map
+        function drawPillBadge(ctx, text, cx, cy, fontPx, textColor, bgColor, borderColor, dpr) {
+            ctx.save();
+            ctx.font = `800 ${Math.round(fontPx * dpr)}px "JetBrains Mono", monospace`;
+            const textMetrics = ctx.measureText(text);
+            const padX = 6 * dpr;
+            const padY = 3 * dpr;
+            const bw = textMetrics.width + padX * 2;
+            const bh = fontPx * dpr + padY * 2;
+            const rx = cx - bw / 2;
+            const ry = cy - bh / 2;
+            const rad = 5 * dpr;
+
+            ctx.fillStyle = bgColor;
+            ctx.beginPath();
+            ctx.moveTo(rx + rad, ry);
+            ctx.lineTo(rx + bw - rad, ry);
+            ctx.quadraticCurveTo(rx + bw, ry, rx + bw, ry + rad);
+            ctx.lineTo(rx + bw, ry + bh - rad);
+            ctx.quadraticCurveTo(rx + bw, ry + bh, rx + bw - rad, ry + bh);
+            ctx.lineTo(rx + rad, ry + bh);
+            ctx.quadraticCurveTo(rx, ry + bh, rx, ry + bh - rad);
+            ctx.lineTo(rx, ry + rad);
+            ctx.quadraticCurveTo(rx, ry, rx + rad, ry);
+            ctx.closePath();
+            ctx.fill();
+
+            if (borderColor) {
+                ctx.strokeStyle = borderColor;
+                ctx.lineWidth = 1.3 * dpr;
+                ctx.stroke();
+            }
+
+            ctx.fillStyle = textColor;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, cx, cy + 0.5 * dpr);
+            ctx.restore();
+        }
+
+        // Draw Top Window: Panoramic Multi-Hallway School Blueprint with Large Readable Labels
+        function renderBlueprintMap(now) {
+            const w = mapCanvas.width;
+            const h = mapCanvas.height;
+            if (w === 0 || h === 0) return;
+            const dpr = window.devicePixelRatio || 1;
+
+            mCtx.fillStyle = '#040814';
+            mCtx.fillRect(0, 0, w, h);
+
+            // Subtle Blueprint Grid
+            mCtx.strokeStyle = 'rgba(56, 189, 248, 0.08)';
+            mCtx.lineWidth = 1;
+            const step = 24 * dpr;
+            for (let x = 0; x < w; x += step) {
+                mCtx.beginPath(); mCtx.moveTo(x, 0); mCtx.lineTo(x, h); mCtx.stroke();
+            }
+            for (let y = 0; y < h; y += step) {
+                mCtx.beginPath(); mCtx.moveTo(0, y); mCtx.lineTo(w, y); mCtx.stroke();
+            }
+
+            // Highlight Active Sector Zone Background
+            const activeId = getActiveSector().id;
+            const secStartX = ((activeId - 1) * 0.25) * w;
+            mCtx.fillStyle = 'rgba(56, 189, 248, 0.06)';
+            mCtx.fillRect(secStartX, 0, 0.25 * w, h);
+
+            // Multi-Hallway Corridors
+            mCtx.strokeStyle = '#1e293b';
+            mCtx.lineWidth = 14 * dpr;
+            mCtx.lineCap = 'round';
+            mCtx.lineJoin = 'round';
+            mCtx.beginPath();
+            HALLWAY_PATH.forEach((pt, idx) => {
+                if (idx === 0) mCtx.moveTo(pt.x * w, pt.y * h);
+                else mCtx.lineTo(pt.x * w, pt.y * h);
+            });
+            mCtx.stroke();
+
+            // Centerline along Hallway Path
+            mCtx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
+            mCtx.lineWidth = 1.8 * dpr;
+            mCtx.setLineDash([4 * dpr, 4 * dpr]);
+            mCtx.beginPath();
+            HALLWAY_PATH.forEach((pt, idx) => {
+                if (idx === 0) mCtx.moveTo(pt.x * w, pt.y * h);
+                else mCtx.lineTo(pt.x * w, pt.y * h);
+            });
+            mCtx.stroke();
+            mCtx.setLineDash([]);
+
+            // Concrete Partition Walls (-3.8dB each) at Sector Boundaries
+            const wallXPositions = [0.25, 0.50, 0.75];
+            wallXPositions.forEach((wx) => {
+                mCtx.strokeStyle = 'rgba(251, 191, 36, 0.55)';
+                mCtx.lineWidth = 3 * dpr;
+                mCtx.beginPath();
+                mCtx.moveTo(wx * w, 0.06 * h);
+                mCtx.lineTo(wx * w, 0.94 * h);
+                mCtx.stroke();
+                drawPillBadge(mCtx, '-3.8dB', wx * w, h * 0.85, 10, '#fde68a', 'rgba(15, 23, 42, 0.92)', 'rgba(251, 191, 36, 0.55)', dpr);
+            });
+
+            // Large High-Contrast Sector Pill Headers Across Top of Map
+            const sectorHeaders = [
+                { x: 0.13, label: 'OFFICE 0-25m', id: 1 },
+                { x: 0.375, label: 'LOCKERS 25-50m', id: 2 },
+                { x: 0.625, label: 'CAFETERIA 50-75m', id: 3 },
+                { x: 0.84, label: 'CHEM LAB 75-100m', id: 4 }
+            ];
+            sectorHeaders.forEach(sh => {
+                const isAct = sh.id === activeId;
+                drawPillBadge(
+                    mCtx,
+                    sh.label,
+                    sh.x * w,
+                    h * 0.18,
+                    11.5,
+                    isAct ? '#ffffff' : '#cbd5e1',
+                    isAct ? 'rgba(14, 116, 144, 0.92)' : 'rgba(15, 23, 42, 0.90)',
+                    isAct ? '#38bdf8' : 'rgba(148, 163, 184, 0.4)',
+                    dpr
+                );
+            });
+
+            // EXIT 100m Badge at Right End
+            drawPillBadge(mCtx, 'EXIT 100m', 0.94 * w, h * 0.75, 11.5, '#6ee7b7', 'rgba(6, 78, 59, 0.94)', '#34d399', dpr);
+
+            // Spotter TX Antenna at Bottom-Left Outside School
+            const txX = 0.03 * w;
+            const txY = 0.84 * h;
+            const leoPt = getPointAlongHallway(state.leoDist);
+            const leoX = leoPt.x * w;
+            const leoY = leoPt.y * h;
+
+            // Animated Concentric Radio Waves Radiating from Spotter Antenna
+            const waveColor = state.burstLeft > 0 ? 'rgba(239, 68, 68, 0.6)' : (state.preBurstLeft > 0 ? 'rgba(245, 158, 11, 0.6)' : 'rgba(52, 211, 153, 0.55)');
+            mCtx.strokeStyle = waveColor;
+            mCtx.lineWidth = 1.6 * dpr;
+            for (let r = 0; r < 3; r++) {
+                const rad = (((now * 0.04) + r * 16) % 48) * dpr;
+                mCtx.beginPath();
+                mCtx.arc(txX, txY, rad, -Math.PI * 0.55, 0.15);
+                mCtx.stroke();
+            }
+
+            // Direct RF Ray Line from Spotter to Leo
+            mCtx.strokeStyle = waveColor;
+            mCtx.lineWidth = (state.phase === 'transmitting' ? 2.8 : 1.7) * dpr;
+            mCtx.setLineDash([4 * dpr, 4 * dpr]);
+            mCtx.beginPath();
+            mCtx.moveTo(txX, txY);
+            mCtx.lineTo(leoX, leoY);
+            mCtx.stroke();
+            mCtx.setLineDash([]);
+
+            // Spotter TX Node
+            mCtx.fillStyle = '#fbbf24';
+            mCtx.beginPath();
+            mCtx.arc(txX, txY, 4.5 * dpr, 0, Math.PI * 2);
+            mCtx.fill();
+
+            // Principal Blip + Patrol Radar Cone + High-Contrast Pill Label
+            const prinEffectiveDist = Math.max(0, state.principalDist);
+            const prinPt = getPointAlongHallway(prinEffectiveDist);
+            const prinAheadPt = getPointAlongHallway(Math.min(100, prinEffectiveDist + 8));
+            const prinX = prinPt.x * w;
+            const prinY = prinPt.y * h;
+            const angle = Math.atan2((prinAheadPt.y - prinPt.y) * h, (prinAheadPt.x - prinPt.x) * w);
+
+            mCtx.save();
+            mCtx.fillStyle = 'rgba(239, 68, 68, 0.26)';
+            mCtx.beginPath();
+            mCtx.moveTo(prinX, prinY);
+            mCtx.arc(prinX, prinY, 22 * dpr, angle - 0.45, angle + 0.45);
+            mCtx.closePath();
+            mCtx.fill();
+            mCtx.restore();
+
+            mCtx.fillStyle = '#ef4444';
+            mCtx.beginPath();
+            mCtx.arc(prinX, prinY, 5.5 * dpr, 0, Math.PI * 2);
+            mCtx.fill();
+
+            const prinLabelX = Math.max(0.08 * w, Math.min(0.90 * w, prinX));
+            const prinLabelY = Math.min(0.84 * h, prinY + 15 * dpr);
+            drawPillBadge(mCtx, `PRIN ${Math.round(state.principalDist)}m`, prinLabelX, prinLabelY, 11, '#fecaca', 'rgba(127, 29, 29, 0.94)', '#f87171', dpr);
+
+            // Leo Blip (Glowing Cyan Dot) + High-Contrast Pill Label
+            mCtx.save();
+            mCtx.fillStyle = '#38bdf8';
+            mCtx.shadowColor = '#38bdf8';
+            mCtx.shadowBlur = 12;
+            mCtx.beginPath();
+            mCtx.arc(leoX, leoY, 6 * dpr, 0, Math.PI * 2);
+            mCtx.fill();
+            mCtx.restore();
+
+            const leoLabelX = Math.max(0.08 * w, Math.min(0.90 * w, leoX));
+            const leoLabelY = Math.max(0.36 * h, leoY - 15 * dpr);
+            drawPillBadge(mCtx, `LEO ${Math.round(state.leoDist)}m`, leoLabelX, leoLabelY, 11.5, '#e0f2fe', 'rgba(3, 105, 161, 0.96)', '#38bdf8', dpr);
+        }
+
+        // Draw Bottom Window: 3-Layer Stochastic RF Oscilloscope + Word Markers
+        function renderOscilloscope() {
+            const w = scopeCanvas.width;
+            const h = scopeCanvas.height;
+            if (w === 0 || h === 0) return;
+            const dpr = window.devicePixelRatio || 1;
+
+            sCtx.fillStyle = '#030712';
+            sCtx.fillRect(0, 0, w, h);
+
+            sCtx.strokeStyle = 'rgba(56, 189, 248, 0.08)';
+            sCtx.lineWidth = 1;
+            for (let x = 0; x < w; x += 28 * dpr) {
+                sCtx.beginPath(); sCtx.moveTo(x, 0); sCtx.lineTo(x, h); sCtx.stroke();
+            }
+            for (let y = 0; y < h; y += 20 * dpr) {
+                sCtx.beginPath(); sCtx.moveTo(0, y); sCtx.lineTo(w, y); sCtx.stroke();
+            }
+
+            if (state.scopeSamples.length < 2) return;
+
+            const stepX = w / (state.scopeSamples.length - 1);
+            const dbToY = (db) => {
+                const norm = (db + 90) / 70;
+                const clamped = Math.max(0.06, Math.min(0.94, norm));
+                return h * (1 - clamped);
+            };
+
+            // Red Noise Floor + Impulse Spikes
+            sCtx.fillStyle = 'rgba(239, 68, 68, 0.16)';
+            sCtx.beginPath();
+            sCtx.moveTo(0, h);
+            state.scopeSamples.forEach((s, i) => {
+                sCtx.lineTo(i * stepX, dbToY(s.noise));
+            });
+            sCtx.lineTo(w, h);
+            sCtx.closePath();
+            sCtx.fill();
+
+            sCtx.strokeStyle = 'rgba(248, 113, 113, 0.78)';
+            sCtx.lineWidth = 1.5 * dpr;
+            sCtx.beginPath();
+            state.scopeSamples.forEach((s, i) => {
+                const x = i * stepX;
+                const y = dbToY(s.noise);
+                if (i === 0) sCtx.moveTo(x, y);
+                else sCtx.lineTo(x, y);
+            });
+            sCtx.stroke();
+
+            // Carrier Signal Wave
+            const traceColor = state.burstLeft > 0 ? '#ef4444' : (state.preBurstLeft > 0 ? '#fbbf24' : '#34d399');
+            sCtx.save();
+            sCtx.strokeStyle = traceColor;
+            sCtx.lineWidth = 2.3 * dpr;
+            sCtx.shadowColor = traceColor;
+            sCtx.shadowBlur = 8;
+            sCtx.beginPath();
+            state.scopeSamples.forEach((s, i) => {
+                const x = i * stepX;
+                const y = dbToY(s.sig);
+                if (i === 0) sCtx.moveTo(x, y);
+                else sCtx.lineTo(x, y);
+            });
+            sCtx.stroke();
+            sCtx.restore();
+
+            // Word Transmission Markers on Scope
+            state.wordMarkers.forEach(mk => {
+                const idx = Math.max(0, Math.min(state.scopeSamples.length - 1, mk.sampleIndex));
+                const sample = state.scopeSamples[idx];
+                if (!sample) return;
+                const x = idx * stepX;
+                const y = dbToY(sample.sig);
+                sCtx.fillStyle = mk.status === 'clean' ? '#34d399' : (mk.status === 'fec' ? '#38bdf8' : '#ef4444');
+                sCtx.beginPath();
+                sCtx.arc(x, y, 3.5 * dpr, 0, Math.PI * 2);
+                sCtx.fill();
+            });
+        }
+
+        let prevTime = performance.now();
+        function animateLoop(now) {
+            const dt = Math.min(0.05, (now - prevTime) / 1000);
+            prevTime = now;
+
+            if (state.phase === 'playing' || state.phase === 'transmitting' || state.phase === 'setup') {
+                stepStochasticChannel(dt);
+            }
+
+            if (state.phase === 'results' && state.safetyLockLeft > 0) {
+                state.safetyLockLeft = Math.max(0, state.safetyLockLeft - dt);
+                const newBtn = document.getElementById('res-new-mission-btn');
+                const retryBtn = document.getElementById('res-retry-btn');
+                const newLbl = document.getElementById('res-new-mission-label');
+                const retryLbl = document.getElementById('res-retry-label');
+                if (state.safetyLockLeft <= 0) {
+                    newBtn.disabled = false;
+                    retryBtn.disabled = false;
+                    newLbl.textContent = '← NEW MISSION / DISMISS';
+                    retryLbl.textContent = '↻ RETRY';
+                } else {
+                    newLbl.textContent = `🔒 ${state.safetyLockLeft.toFixed(1)}s`;
+                }
+            }
+
+            renderBlueprintMap(now);
+            renderOscilloscope();
+
+            requestAnimationFrame(animateLoop);
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            try {
+                const savedMode = localStorage.getItem('signalOps_scaleMode');
+                const savedVal = parseFloat(localStorage.getItem('signalOps_manualScale'));
+                if (savedMode === 'manual' && !isNaN(savedVal)) {
+                    state.scaleMode = 'manual';
+                    state.manualScale = Math.max(0.50, Math.min(1.00, savedVal));
+                }
+            } catch (e) {}
+
+            for (let i = 0; i < 100; i++) {
+                stepStochasticChannel(0.03);
+            }
+            applyViewportScale();
+            syncAllUI();
+            requestAnimationFrame(animateLoop);
+        });
+    </script>
+</body>
+</html>
