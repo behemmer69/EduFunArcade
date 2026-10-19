@@ -722,15 +722,15 @@
             POWER_GAIN_DB: {
                 '0.5': 0.0,
                 '2.0': 3.0,
-                '5.0': 5.5
+                '5.0': 5.0
             },
             BROWNOUT_PENALTY_DB: -5.0,
 
             // Forward Error Coding Gain (dB) and Air-Time Multipliers
             CODING_MODES: {
                 raw:    { gainDb: 0.0, airMult: 1.00, rescueProb: 0.00 },
-                repeat: { gainDb: 3.2, airMult: 1.60, rescueProb: 0.78 },
-                parity: { gainDb: 4.8, airMult: 1.35, rescueProb: 0.65 }
+                repeat: { gainDb: 5.0, airMult: 1.70, rescueProb: 0.78 },
+                parity: { gainDb: 2.5, airMult: 1.25, rescueProb: 0.45 }
             },
 
             // Principal Pursuit & 5.0W Scanner Intercept Settings
