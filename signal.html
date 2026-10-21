@@ -103,6 +103,28 @@
         .timer-critical {
             animation: timer-urgent 0.45s ease-in-out infinite;
         }
+        /* Interactive Tutorial Spotlight & Pulse Effects */
+        @keyframes tutorial-ring-pulse {
+            0%, 100% {
+                box-shadow: 0 0 0 3px #fbbf24, 0 0 24px rgba(251, 191, 36, 0.85), inset 0 0 12px rgba(251, 191, 36, 0.25);
+            }
+            50% {
+                box-shadow: 0 0 0 5px #38bdf8, 0 0 36px rgba(56, 189, 248, 0.95), inset 0 0 16px rgba(56, 189, 248, 0.35);
+            }
+        }
+        .tutorial-spotlight {
+            position: relative !important;
+            z-index: 35 !important;
+            animation: tutorial-ring-pulse 1.3s ease-in-out infinite !important;
+            border-color: #fbbf24 !important;
+            opacity: 1 !important;
+            filter: none !important;
+        }
+        .tutorial-dim-others .tut-region:not(.tutorial-spotlight) {
+            opacity: 0.28;
+            filter: grayscale(35%);
+            transition: opacity 0.25s ease, filter 0.25s ease;
+        }
     </style>
 </head>
 <body>
@@ -111,7 +133,7 @@
     <div id="scale-wrapper" style="width: 100vw; height: 100dvh; transform: scale(1);">
 
         <!-- TOP TELEMETRY, TURN TIMER & LIVE SCALE CONTROL BAR -->
-        <header class="w-full px-2.5 py-1.5 sm:px-4 sm:py-1.5 glass-panel border-b border-white/10 z-20 shrink-0 flex items-center justify-between gap-2 whitespace-nowrap overflow-x-auto no-scrollbar">
+        <header id="top-info-banner" class="tut-region w-full px-2.5 py-1.5 sm:px-4 sm:py-1.5 glass-panel border-b border-white/10 z-20 shrink-0 flex items-center justify-between gap-2 whitespace-nowrap overflow-x-auto no-scrollbar">
             <!-- Left: Title, Turn, Leo Distance, Principal Gap, Score -->
             <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
                 <div class="hidden sm:flex items-center gap-1 px-2 py-1 rounded-xl bg-cyan-500/15 border border-cyan-400/30">
@@ -142,7 +164,7 @@
                 <span id="hud-timer-readout" class="font-mono-tech text-xs sm:text-sm font-extrabold text-white w-[46px] text-right">10.0s</span>
             </div>
 
-            <!-- Right: Battery (Advanced Mode) + Live Zoom Control + Mode + Mute + Menu -->
+            <!-- Right: Battery (Advanced Mode) + Live Zoom Control + Mode + Mute + Tutorial + Menu -->
             <div class="flex items-center gap-1.5 shrink-0">
                 <!-- Battery Indicator (Advanced Mode) -->
                 <div id="hud-battery-wrap" class="hidden items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-900/95 border border-amber-500/45">
@@ -163,6 +185,9 @@
                 <button id="hud-mode-toggle-btn" type="button" title="Switch Standard / Advanced RF Mode" class="px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 border border-cyan-500/30 text-[10px] font-arcade font-bold text-cyan-200 transition cursor-pointer">
                     STD
                 </button>
+                <button id="hud-tutorial-btn" type="button" title="Launch Interactive Tutorial" class="px-2 py-1 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-[10px] font-arcade font-bold text-amber-200 cursor-pointer">
+                    📘 HELP
+                </button>
                 <button id="hud-mute-btn" type="button" title="Toggle Radio Audio" class="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-white/15 text-xs cursor-pointer">
                     🔊
                 </button>
@@ -178,7 +203,7 @@
             <!-- ========================================================================= -->
             <!-- TOP WINDOW: COMPACT PANORAMIC SCHOOL BLUEPRINT (<= 26%-28% SCREEN HEIGHT) -->
             <!-- ========================================================================= -->
-            <section id="top-blueprint-window" class="w-full glass-panel rounded-2xl p-2 flex flex-col justify-between border border-cyan-500/30 h-[26%] max-h-[28%] min-h-[112px] shrink-0 overflow-hidden">
+            <section id="top-blueprint-window" class="tut-region w-full glass-panel rounded-2xl p-2 flex flex-col justify-between border border-cyan-500/30 h-[26%] max-h-[28%] min-h-[112px] shrink-0 overflow-hidden">
                 
                 <!-- Single-Line Map Header + Integrated 0m–100m Hallway Progress Bar -->
                 <div class="h-6 w-full flex items-center justify-between gap-2 whitespace-nowrap overflow-hidden shrink-0 mb-1">
@@ -244,7 +269,7 @@
                 </div>
 
                 <!-- 1. EXPANDED 2-ROW COMMS DIALOGUE PANEL (Sitrep + Last Transmission Outcome) -->
-                <div class="w-full bg-slate-950/95 rounded-xl px-3 py-2 border border-cyan-500/30 flex flex-col justify-between gap-1.5 shrink-0 shadow-inner">
+                <div id="comms-dialogue-panel" class="tut-region w-full bg-slate-950/95 rounded-xl px-3 py-2 border border-cyan-500/30 flex flex-col justify-between gap-1.5 shrink-0 shadow-inner">
                     <!-- Row 1: Leo's Current Hallway Sitrep & Obstacle Ahead -->
                     <div class="flex items-center justify-between gap-2 whitespace-nowrap overflow-hidden">
                         <div class="flex items-center gap-2 min-w-0">
@@ -272,7 +297,7 @@
                 </div>
 
                 <!-- 2. ZERO-SHIFT SPECTRUM ANALYZER + LIVE WORD STREAM -->
-                <div class="w-full shrink-0">
+                <div id="rf-scope-panel" class="tut-region w-full shrink-0 rounded-xl">
                     <!-- Strict 28px (h-7) Single-Line Spectrum Header (Never wraps or shifts) -->
                     <div class="h-7 w-full flex items-center justify-between gap-2 whitespace-nowrap overflow-hidden bg-slate-950 px-2.5 rounded-t-xl border border-b-0 border-cyan-500/40">
                         <div class="flex items-center gap-1.5 min-w-0">
@@ -280,8 +305,8 @@
                             <span id="scope-state-pill" class="w-[74px] text-center font-arcade text-[9px] font-black py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 shrink-0">
                                 CLEAR
                             </span>
-                            <span class="hidden sm:inline text-[10px] text-slate-400 truncate">
-                                Green = Carrier Signal • Red = Noise Floor &amp; Spikes
+                            <span id="hud-forecast-tag" class="inline-block text-[10px] text-amber-300 font-semibold truncate">
+                                ⚡ Forecast: Clear Night RF
                             </span>
                         </div>
                         <div class="flex items-center gap-2 font-mono-tech text-[11px] shrink-0">
@@ -302,7 +327,7 @@
                 </div>
 
                 <!-- 3. ROOMY SINGLE-ROW ADVANCED RF CONTROLS BAR (Shown in Advanced RF Mode) -->
-                <div id="advanced-controls-bar" class="hidden bg-slate-900/95 rounded-xl px-3 py-1.5 border border-amber-500/45 shrink-0">
+                <div id="advanced-controls-bar" class="tut-region hidden bg-slate-900/95 rounded-xl px-3 py-1.5 border border-amber-500/45 shrink-0">
                     <div class="flex flex-wrap items-center justify-between gap-2 whitespace-nowrap overflow-x-auto no-scrollbar">
                         <!-- TX Power Selector (Labels populated dynamically from GAME_CONFIG.BATTERY_DRAIN) -->
                         <div class="flex items-center gap-1.5 shrink-0">
@@ -314,7 +339,7 @@
                                 2.0W <span id="power-sub-2.0" class="font-mono-tech text-[9px] text-amber-100">(-24% bat, +3.0dB)</span>
                             </button>
                             <button id="power-btn-5.0" type="button" data-power="5.0" class="tx-power-btn px-2.5 py-1 rounded-lg bg-slate-800 text-[11px] font-arcade font-bold text-slate-300 border border-white/10 cursor-pointer">
-                                5.0W <span id="power-sub-5.0" class="font-mono-tech text-[9px] text-emerald-300">(-44% bat, +5.5dB)</span>
+                                5.0W <span id="power-sub-5.0" class="font-mono-tech text-[9px] text-emerald-300">(-44% bat, +5.0dB)</span>
                             </button>
                         </div>
 
@@ -324,13 +349,13 @@
                         <div class="flex items-center gap-1.5 shrink-0">
                             <span class="text-[10px] uppercase text-cyan-300 font-arcade font-bold mr-0.5">🛡️ CODING:</span>
                             <button type="button" data-fec="raw" class="fec-mode-btn px-2.5 py-1 rounded-lg bg-cyan-500/30 text-[11px] font-arcade font-bold text-cyan-200 border border-cyan-400 cursor-pointer">
-                                1x RAW <span class="font-mono-tech text-[9px] text-cyan-100">(1.0x time)</span>
+                                1x RAW <span id="coding-sub-raw" class="font-mono-tech text-[9px] text-cyan-100">(1.0x time)</span>
                             </button>
                             <button type="button" data-fec="repeat" class="fec-mode-btn px-2.5 py-1 rounded-lg bg-slate-800 text-[11px] font-arcade font-bold text-slate-300 border border-white/10 cursor-pointer">
-                                2x REPEAT <span class="font-mono-tech text-[9px] text-emerald-300">(+3.2dB, 1.6x)</span>
+                                2x REPEAT <span id="coding-sub-repeat" class="font-mono-tech text-[9px] text-emerald-300">(+5.0dB, 1.7x)</span>
                             </button>
                             <button type="button" data-fec="parity" class="fec-mode-btn px-2.5 py-1 rounded-lg bg-slate-800 text-[11px] font-arcade font-bold text-slate-300 border border-white/10 cursor-pointer">
-                                PARITY FEC <span class="font-mono-tech text-[9px] text-cyan-300">(+4.8dB, 1.35x)</span>
+                                PARITY FEC <span id="coding-sub-parity" class="font-mono-tech text-[9px] text-cyan-300">(+2.5dB, 1.25x)</span>
                             </button>
                         </div>
 
@@ -342,7 +367,7 @@
                 </div>
 
                 <!-- 4. EXPANDED HORIZONTAL SNAP CAROUSEL FOR MESSAGE COMPLEXITY TIERS -->
-                <div class="shrink-0 flex flex-col justify-center">
+                <div id="message-options-section" class="tut-region shrink-0 flex flex-col justify-center rounded-xl p-1">
                     <!-- Prominent 2-Line Capable Instruction Header + Quick-Select Tabs below/beside -->
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 mb-1.5 px-1">
                         <div class="font-arcade text-sm sm:text-base font-black text-amber-300 tracking-wide leading-tight drop-shadow">
@@ -421,13 +446,51 @@
                 <button
                     id="ptt-button"
                     type="button"
-                    class="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-gradient-to-r from-rose-600 via-red-500 to-orange-500 hover:from-rose-500 hover:to-orange-400 active:scale-[0.99] transition text-white font-arcade font-black text-xs sm:text-sm tracking-wider shadow-xl shadow-rose-600/30 border border-rose-300/50 flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+                    class="tut-region w-full py-2.5 sm:py-3 px-4 rounded-xl bg-gradient-to-r from-rose-600 via-red-500 to-orange-500 hover:from-rose-500 hover:to-orange-400 active:scale-[0.99] transition text-white font-arcade font-black text-xs sm:text-sm tracking-wider shadow-xl shadow-rose-600/30 border border-rose-300/50 flex items-center justify-center gap-2 shrink-0 cursor-pointer"
                 >
                     <span class="w-2.5 h-2.5 rounded-full bg-white animate-ping"></span>
                     <span id="ptt-button-text">PUSH TO TALK — TRANSMIT TIER 2 [10.0s]</span>
                 </button>
             </section>
         </main>
+
+        <!-- INTERACTIVE TUTORIAL FLOATING GUIDE CARD (Auto-positions top or bottom so it never blocks highlighted UI) -->
+        <div id="tutorial-card-wrap" class="hidden fixed left-1/2 -translate-x-1/2 z-40 w-[94%] max-w-2xl pointer-events-auto transition-all duration-300" style="bottom: 12px;">
+            <div class="glass-panel rounded-2xl p-3 sm:p-4 border-2 border-amber-400 shadow-2xl bg-slate-950/95">
+                <div class="flex items-center justify-between gap-2 mb-1">
+                    <div class="flex items-center gap-2">
+                        <span id="tut-step-badge" class="px-2.5 py-0.5 rounded-lg bg-amber-400 text-slate-950 font-arcade text-[10px] font-black tracking-wider">
+                            STEP 1 OF 12
+                        </span>
+                        <span id="tut-phase-tag" class="text-[10px] font-mono-tech font-bold text-cyan-300 uppercase tracking-wider">
+                            Screen Walkthrough
+                        </span>
+                    </div>
+                    <button id="tut-exit-btn" type="button" class="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-arcade text-[10px] font-bold border border-white/15 cursor-pointer">
+                        SKIP / EXIT ✕
+                    </button>
+                </div>
+
+                <h3 id="tut-title" class="font-arcade text-sm sm:text-base font-black text-white tracking-wide mt-0.5">
+                    1. Top Telemetry, TX Clock &amp; Info Banner
+                </h3>
+                <p id="tut-body" class="text-xs sm:text-sm text-slate-200 mt-1 leading-relaxed">
+                    Tracks your mission vitals: current Turn, Leo's distance toward the 100m Exit, Principal gap, Score, and zoom/mode controls. In Timed Mode, the ⏱️ TX Clock gives you a 30s orientation prep at mission start and 10.0s each round to transmit before Leo freezes!
+                </p>
+
+                <div class="flex items-center justify-between gap-2 mt-2.5 pt-2 border-t border-white/10">
+                    <button id="tut-prev-btn" type="button" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-arcade text-[10px] font-bold border border-white/15 cursor-pointer disabled:opacity-40 disabled:pointer-events-none">
+                        ← BACK
+                    </button>
+                    <div id="tut-action-hint" class="text-[11px] font-mono-tech font-bold text-amber-300 text-center truncate">
+                        Click NEXT to continue
+                    </div>
+                    <button id="tut-next-btn" type="button" class="px-4 py-1.5 rounded-xl bg-gradient-to-r from-amber-400 to-cyan-400 hover:from-amber-300 hover:to-cyan-300 text-slate-950 font-arcade text-[11px] font-black tracking-wider shadow-lg cursor-pointer">
+                        NEXT →
+                    </button>
+                </div>
+            </div>
+        </div>
 
         <!-- START MODAL (Mission Briefing, Mode Selector, Practice Mode Toggle, Screen Scale Bar & Squelch Test) -->
         <div id="start-modal" class="fixed inset-0 z-30 flex items-center justify-center p-2.5 sm:p-4 bg-slate-950/88 backdrop-blur-md overflow-y-auto">
@@ -525,21 +588,28 @@
                         <button type="button" data-scale="0.85" class="scale-preset-btn py-1.5 rounded-xl font-mono-tech text-[10px] font-bold bg-slate-800 text-slate-300 border border-white/10 cursor-pointer">85%</button>
                         <button type="button" data-scale="0.75" class="scale-preset-btn py-1.5 rounded-xl font-mono-tech text-[10px] font-bold bg-slate-800 text-slate-300 border border-white/10 cursor-pointer">75%</button>
                         <button type="button" data-scale="0.66" class="scale-preset-btn py-1.5 rounded-xl font-mono-tech text-[10px] font-bold bg-slate-800 text-slate-300 border border-white/10 cursor-pointer">66%</button>
-                        <div class="flex items-center gap-1">
-                            <button type="button" id="start-scale-minus" class="flex-1 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 font-bold text-xs text-cyan-300 border border-white/10 cursor-pointer">−</button>
-                            <button type="button" id="start-scale-plus" class="flex-1 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 font-bold text-xs text-cyan-300 border border-white/10 cursor-pointer">+</button>
+                        <div class="flex gap-1">
+                            <button id="start-scale-minus" type="button" title="Zoom Out" class="flex-1 py-1.5 rounded-xl font-mono-tech text-xs font-bold bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-white/10 cursor-pointer">−</button>
+                            <button id="start-scale-plus" type="button" title="Zoom In" class="flex-1 py-1.5 rounded-xl font-mono-tech text-xs font-bold bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-white/10 cursor-pointer">+</button>
                         </div>
                     </div>
                 </div>
 
-                <!-- Action Row: Test Radio Squelch + START MISSION Button -->
+                <!-- Action Row: Test Radio Squelch + Tutorial + START MISSION (Start Mission is Primary & Larger) -->
                 <div class="flex flex-col sm:flex-row items-stretch gap-2 mt-2.5">
                     <button
                         id="test-squelch-btn"
                         type="button"
-                        class="py-2.5 px-4 rounded-2xl bg-slate-800 hover:bg-slate-700 active:scale-95 transition border border-amber-400/60 text-amber-300 font-arcade font-bold text-xs flex items-center justify-center gap-1.5 sm:w-48 cursor-pointer"
+                        class="py-2.5 px-3 rounded-2xl bg-slate-800 hover:bg-slate-700 active:scale-95 transition border border-amber-400/60 text-amber-300 font-arcade font-bold text-[11px] flex items-center justify-center gap-1.5 sm:w-36 cursor-pointer"
                     >
-                        <span>🔊 TEST RADIO SQUELCH</span>
+                        <span>🔊 SQUELCH</span>
+                    </button>
+                    <button
+                        id="start-tutorial-btn"
+                        type="button"
+                        class="py-2.5 px-3 rounded-2xl bg-amber-500/20 hover:bg-amber-500/30 active:scale-95 transition border border-amber-400 text-amber-200 font-arcade font-bold text-[11px] flex items-center justify-center gap-1.5 sm:w-40 cursor-pointer shadow-md"
+                    >
+                        <span>📘 TUTORIAL</span>
                     </button>
                     <button
                         id="start-mission-main-btn"
@@ -645,32 +715,7 @@
     <script>
         /**
          * ============================================================================
-         * CENTRALIZED TWEAKABLE GAME CONFIGURATION (EDIT THESE VALUES ANYTIME)
-         * ============================================================================
-         * 1. ORIENTATION_COUNTDOWN_SECONDS:
-         *    In Timed Mode, gives players a 30-second countdown at the start of a mission
-         *    to read the screen and inspect the layout before the 10-second turn clock begins.
-         *    Players can dismiss it early or press Push-To-Talk immediately.
-         *
-         * 2. TURN_TIMER_SECONDS:
-         *    Controls how many seconds the player has each round to pick a message tier
-         *    and press Push-To-Talk when Timed Mode is active (disabled in Practice Mode).
-         *
-         * 3. BATTERY_DRAIN:
-         *    Defined in ONLY THIS ONE PLACE. Controls the battery percentage drained per
-         *    transmission in Advanced RF Mode for 0.5W, 2.0W, and 5.0W.
-         *    Both the UI button labels and gameplay drain logic read directly from here.
-         *
-         * 4. TIER1_AMBIGUITY_RATE:
-         *    Probability (0.35 = 35%) that a 100% clean Tier 1 Brevity message still
-         *    results in an ambiguous hallway guess by Leo. Updates the Tier 1 card badge.
-         *
-         * 5. RF_FORECAST_PROFILES:
-         *    Defines the random atmospheric/building RF noise conditions selected each run:
-         *    - name: Display title shown on the Start Screen and Comms Console.
-         *    - snrOffset: dB shift applied to the channel (negative values raise the noise floor).
-         *    - burstRate: Poisson arrival probability per second for high-energy static spikes.
-         *    - fadingSpeed: Multiplier for how fast Multipath Rayleigh fading peaks/nulls oscillate.
+         * CENTRALIZED TWEAKABLE GAME CONFIGURATION
          * ============================================================================
          */
         const GAME_CONFIG = {
@@ -923,22 +968,44 @@
                 } catch (e) {}
             }
             playSquelchPreview() {
+                this.muted = false;
+                const muteBtn = document.getElementById('hud-mute-btn');
+                if (muteBtn) muteBtn.textContent = '🔊';
                 this.init();
                 try {
                     if (!this.ctx) return;
                     const now = this.ctx.currentTime;
+
                     const osc = this.ctx.createOscillator();
                     const g = this.ctx.createGain();
-                    osc.type = 'sine';
+                    osc.type = 'triangle';
                     osc.frequency.setValueAtTime(1046.5, now);
-                    osc.frequency.setValueAtTime(1318.5, now + 0.08);
-                    g.gain.setValueAtTime(0.16, now);
-                    g.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+                    osc.frequency.setValueAtTime(1396.9, now + 0.09);
+                    g.gain.setValueAtTime(0.28, now);
+                    g.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
                     osc.connect(g);
                     g.connect(this.ctx.destination);
                     osc.start(now);
-                    osc.stop(now + 0.19);
-                    setTimeout(() => this.playSquelch(), 180);
+                    osc.stop(now + 0.23);
+
+                    const len = Math.floor(this.ctx.sampleRate * 0.14);
+                    const buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
+                    const data = buf.getChannelData(0);
+                    for (let i = 0; i < len; i++) {
+                        data[i] = (Math.random() * 2 - 1) * 0.85;
+                    }
+                    const src = this.ctx.createBufferSource();
+                    src.buffer = buf;
+                    const filter = this.ctx.createBiquadFilter();
+                    filter.type = 'bandpass';
+                    filter.frequency.setValueAtTime(1750, now + 0.22);
+                    const nGain = this.ctx.createGain();
+                    nGain.gain.setValueAtTime(0.26, now + 0.22);
+                    nGain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+                    src.connect(filter);
+                    filter.connect(nGain);
+                    nGain.connect(this.ctx.destination);
+                    src.start(now + 0.22);
                 } catch (e) {}
             }
             playSquelch() {
@@ -1042,7 +1109,7 @@
         const state = {
             mode: 'standard',       // 'standard' | 'advanced'
             practiceMode: false,    // false = Timed (GAME_CONFIG.TURN_TIMER_SECONDS), true = No Timer
-            phase: 'setup',         // 'setup' | 'playing' | 'transmitting' | 'results'
+            phase: 'setup',         // 'setup' | 'playing' | 'transmitting' | 'results' | 'tutorial'
             scaleMode: 'auto',      // 'auto' | 'manual'
             manualScale: 0.75,
             appliedScale: 1.0,
@@ -1075,13 +1142,131 @@
             scopeSamples: [],
             wordMarkers: [],
             safetyLockLeft: 0,
-            missionWon: false
+            missionWon: false,
+            tutorialStep: 0,
+            tutorialTxRunning: false,
+            tutorialSavedMode: 'standard'
         };
 
         /**
-         * Populate TX Power Button Labels & Tier 1 Ambiguity Directly from GAME_CONFIG
-         * so changing GAME_CONFIG automatically updates all UI text.
+         * ============================================================================
+         * STEP-BY-STEP INTERACTIVE TUTORIAL DEFINITIONS
+         * ============================================================================
          */
+        const TUTORIAL_STEPS = [
+            {
+                id: 'info_banner',
+                phaseTag: 'Part 1: Screen Walkthrough',
+                title: '1. Top Telemetry, TX Clock & Info Banner',
+                body: 'This top bar tracks your mission vitals: the current Turn, Leo\'s progress toward the 100m West Exit, how close the Principal is behind him, your Score, and screen zoom/mode controls. In Timed Mode, the ⏱️ TX Clock gives you a 30s orientation countdown at mission start and 10.0 seconds each round to transmit—if it hits 0.0s, Leo freezes while the Principal marches closer!',
+                targetId: 'top-info-banner',
+                cardPos: 'bottom',
+                hint: 'Click NEXT to inspect the School Blueprint Map'
+            },
+            {
+                id: 'map',
+                phaseTag: 'Part 1: Screen Walkthrough',
+                title: '2. School Blueprint & Propagation Map',
+                body: 'Shows Leo (cyan blip) escaping from 0m to 100m across 4 school sectors while the Principal (red radar cone) chases him. Each concrete wall between your antenna and Leo attenuates your radio signal by -3.8 dB!',
+                targetId: 'top-blueprint-window',
+                cardPos: 'bottom',
+                hint: 'Click NEXT to inspect the Sitrep & Comms panel'
+            },
+            {
+                id: 'sitrep',
+                phaseTag: 'Part 1: Screen Walkthrough',
+                title: '3. Sitrep & Walkie-Talkie Dialogue',
+                body: 'Row 1 (📡 SITREP) tells you the exact obstacles and shortcut codes ahead of Leo right now. Row 2 shows what Leo actually HEARD over the static on your last transmission and how he reacted.',
+                targetId: 'comms-dialogue-panel',
+                cardPos: 'bottom',
+                hint: 'Click NEXT to inspect the RF Spectrum Analyzer'
+            },
+            {
+                id: 'scope',
+                phaseTag: 'Part 1: Screen Walkthrough',
+                title: '4. Live RF Spectrum Analyzer (Scope)',
+                body: 'Green is your Carrier Signal; Red is the Noise Floor & Static Bursts. Also displays the active RF Forecast weather profile! Watch SNR and BER, and transmit when the Green wave swells high.',
+                targetId: 'rf-scope-panel',
+                cardPos: 'bottom',
+                hint: 'Click NEXT to inspect the Advanced TX Options'
+            },
+            {
+                id: 'tx_options',
+                phaseTag: 'Part 1: Screen Walkthrough',
+                title: '5. TX Power & Error Coding Options (Advanced Mode)',
+                body: 'In Advanced RF Mode, this bar unlocks TX Power (0.5W saves battery; 5.0W boosts SNR by +5.0dB but drains 44% battery and risks a Scanner Alert) and Error Coding (2x Repeat & Parity FEC salvage words hit by static).',
+                targetId: 'advanced-controls-bar',
+                cardPos: 'top',
+                forceShowAdv: true,
+                hint: 'Click NEXT to inspect the Message Complexity Tiers'
+            },
+            {
+                id: 'message_options',
+                phaseTag: 'Part 1: Screen Walkthrough',
+                title: '6. Message Complexity Tiers (T1, T2, T3)',
+                body: 'Every turn, choose your risk vs. reward: Tier 1 (Brevity) is fast (0.9s, +13m) but has a 35% ambiguity guess risk. Tier 2 (Tactical) moves +26m safely with 0% ambiguity. Tier 3 (Sitrep) unlocks a +44m shortcut, but static spikes can cause a comedic bit-flip setback (-6m)!',
+                targetId: 'message-options-section',
+                cardPos: 'top',
+                hint: 'Click NEXT to inspect the Push-To-Talk button'
+            },
+            {
+                id: 'ptt_explain',
+                phaseTag: 'Part 1: Screen Walkthrough',
+                title: '7. Push-To-Talk (PTT) Transmit Button',
+                body: 'Once you\'ve picked your Message Tier and watched the RF Scope for a clean signal window, press PUSH TO TALK (or Spacebar) to stream your packet across the noisy hallway channel.',
+                targetId: 'ptt-button',
+                cardPos: 'top',
+                hint: 'Click NEXT to try a live Guided Practice Round!'
+            },
+            {
+                id: 'round_select_tier',
+                phaseTag: 'Part 2: Guided Round Walkthrough',
+                title: '8. Practice Round: Select a Message Tier',
+                body: 'Let\'s play a round! Click on the T1, T2, or T3 tabs (or swipe the cards below) to highlight the message you want to send—such as TIER 2: TACTICAL ROUTE ("LEFT CORNER DUCK BLUE LOCKER")—then click NEXT.',
+                targetId: 'message-options-section',
+                cardPos: 'top',
+                hint: 'Select Tier 1, 2, or 3 below, then click NEXT →'
+            },
+            {
+                id: 'round_press_ptt',
+                phaseTag: 'Part 2: Guided Round Walkthrough',
+                title: '9. Practice Round: Press Push-To-Talk!',
+                body: 'Your message is queued! Now click the flashing red PUSH TO TALK button below (or click TRANSMIT NOW) to send your voice packet across the radio channel.',
+                targetId: 'ptt-button',
+                cardPos: 'top',
+                nextLabel: 'TRANSMIT NOW 📡',
+                hint: 'Click the red PUSH TO TALK button below!'
+            },
+            {
+                id: 'round_live_tx',
+                phaseTag: 'Part 2: Guided Round Walkthrough',
+                title: '10. Real-Time Message Transmission Display',
+                body: 'Watch the Packet Stream Bar under the scope! Each word transmits one-by-one in real time while dots appear on the oscilloscope wave. Green chips arrive cleanly; if static hits, FEC can rescue them or static scrambles them!',
+                targetId: 'rf-scope-panel',
+                cardPos: 'bottom',
+                hint: 'Watch the words stream across, then click NEXT →'
+            },
+            {
+                id: 'round_sitrep_update',
+                phaseTag: 'Part 2: Guided Round Walkthrough',
+                title: '11. Sitrep & Comms Outcome Update',
+                body: 'Look at the Comms Panel now: Row 2 shows the exact transcript Leo HEARD and confirms he slipped past the blue locker (+26m)! Row 1 (📡 SITREP) has automatically updated to describe his new location in Sector 2.',
+                targetId: 'comms-dialogue-panel',
+                cardPos: 'bottom',
+                hint: 'Click NEXT to see how the Blueprint Map updated →'
+            },
+            {
+                id: 'round_map_update',
+                phaseTag: 'Part 2: Guided Round Walkthrough',
+                title: '12. Blueprint Map & Hallway Progress Update',
+                body: 'Check the Map & Progress Bar: Leo\'s cyan blip jumped from 0m to 26m (crossing Wall 1 into Sector 2: Steel Lockers, now -7.6dB wall loss), while the Principal marched +14m closer (from -28m to -14m). Reach 100m before he catches you!',
+                targetId: 'top-blueprint-window',
+                cardPos: 'bottom',
+                nextLabel: 'START REAL MISSION 🚀',
+                hint: 'Tutorial Complete! Click START REAL MISSION to play!'
+            }
+        ];
+
         function syncConfigLabelsToDOM() {
             const d05 = GAME_CONFIG.BATTERY_DRAIN['0.5'];
             const d20 = GAME_CONFIG.BATTERY_DRAIN['2.0'];
@@ -1095,6 +1280,16 @@
             document.getElementById('power-sub-2.0').textContent = `(-${d20}% bat, +${g20.toFixed(1)}dB)`;
             document.getElementById('power-sub-5.0').textContent = `(-${d50}% bat, +${g50.toFixed(1)}dB)`;
 
+            const cRaw = GAME_CONFIG.CODING_MODES.raw;
+            const cRep = GAME_CONFIG.CODING_MODES.repeat;
+            const cPar = GAME_CONFIG.CODING_MODES.parity;
+            const elRaw = document.getElementById('coding-sub-raw');
+            const elRep = document.getElementById('coding-sub-repeat');
+            const elPar = document.getElementById('coding-sub-parity');
+            if (elRaw) elRaw.textContent = `(${cRaw.airMult.toFixed(1)}x time)`;
+            if (elRep) elRep.textContent = `(+${cRep.gainDb.toFixed(1)}dB, ${cRep.airMult.toFixed(1)}x)`;
+            if (elPar) elPar.textContent = `(+${cPar.gainDb.toFixed(1)}dB, ${cPar.airMult.toFixed(2)}x)`;
+
             document.getElementById('timed-btn-label').textContent = `⏱️ TIMED MODE (${GAME_CONFIG.TURN_TIMER_SECONDS.toFixed(1)}s + ${GAME_CONFIG.ORIENTATION_COUNTDOWN_SECONDS.toFixed(0)}s PREP)`;
 
             const ambigPct = Math.round(GAME_CONFIG.TIER1_AMBIGUITY_RATE * 100);
@@ -1104,9 +1299,6 @@
             }
         }
 
-        /**
-         * Enforce Battery Availability & Automatic Wattage Downshift in Advanced Mode
-         */
         function enforceBatteryPowerLimits() {
             if (state.mode !== 'advanced') {
                 state.brownoutActive = false;
@@ -1129,9 +1321,6 @@
             }
         }
 
-        /**
-         * SMART VIEWPORT AUTO-SCALE & MANUAL ZOOM ENGINE
-         */
         function computeAutoScaleFactor() {
             const vw = window.innerWidth || 800;
             const vh = window.innerHeight || 600;
@@ -1178,21 +1367,6 @@
                     ? `AUTO FIT (${pctText} in ${state.mode === 'advanced' ? 'ADV' : 'STD'})`
                     : `MANUAL (${pctText})`;
             }
-
-            document.querySelectorAll('.scale-preset-btn').forEach(btn => {
-                const val = btn.getAttribute('data-scale');
-                const isActive = (val === 'auto' && state.scaleMode === 'auto') ||
-                    (val !== 'auto' && state.scaleMode === 'manual' && Math.abs(Number(val) - state.manualScale) < 0.015);
-                if (val === 'auto') {
-                    btn.className = isActive
-                        ? 'scale-preset-btn col-span-2 py-1.5 rounded-xl font-arcade text-[10px] font-bold bg-cyan-500/30 text-cyan-200 border border-cyan-400 cursor-pointer'
-                        : 'scale-preset-btn col-span-2 py-1.5 rounded-xl font-arcade text-[10px] font-bold bg-slate-800 text-slate-300 border border-white/10 cursor-pointer';
-                } else {
-                    btn.className = isActive
-                        ? 'scale-preset-btn py-1.5 rounded-xl font-mono-tech text-[10px] font-bold bg-cyan-500/30 text-cyan-200 border border-cyan-400 cursor-pointer'
-                        : 'scale-preset-btn py-1.5 rounded-xl font-mono-tech text-[10px] font-bold bg-slate-800 text-slate-300 border border-white/10 cursor-pointer';
-                }
-            });
 
             try {
                 localStorage.setItem('signalOps_scaleMode', state.scaleMode);
@@ -1278,16 +1452,13 @@
             };
         }
 
-        // 3-Layer Stochastic RF Noise Engine
         function stepStochasticChannel(dt) {
             const sec = getActiveSector();
 
-            // Layer 2: Multipath Rayleigh Fading (oscillation speed controlled by GAME_CONFIG.RF_FORECAST_PROFILES)
             const fadeSpeed = state.condition.fadingSpeed || 2.05;
             state.rayleighPhase += dt * fadeSpeed;
             const rayleighDb = Math.sin(state.rayleighPhase) * sec.fadingDepth + Math.cos(state.rayleighPhase * 0.6) * 2.2;
 
-            // Layer 1: Path Loss & Wall Attenuation (-3.8 dB per concrete wall) + TX Power / Coding Gain
             const wallLossDb = sec.walls * 3.8;
             const distLossDb = state.leoDist * 0.14;
             let txPowerDb = 0;
@@ -1301,7 +1472,6 @@
             const gaussianJitter = (Math.random() - 0.5) * 2.2;
             state.currentSigDb = -26 - wallLossDb - distLossDb + txPowerDb + codingGainDb + rayleighDb + gaussianJitter;
 
-            // Layer 3: Poisson Impulse Bursts (with 0.5s pre-burst capacitor crackle warning)
             const baseNoiseFloor = -73 - (state.condition.snrOffset || 0);
             const sectorBurstBoost = sec.id >= 3 ? 1.35 : 1.0;
             if (state.burstLeft > 0) {
@@ -1335,10 +1505,14 @@
                 state.scopeSamples.shift();
             }
 
-            // Update Fixed-Width Single-Line Spectrum Header Readouts
             const snrEl = document.getElementById('scope-snr-readout');
             const berEl = document.getElementById('scope-ber-readout');
             const pillEl = document.getElementById('scope-state-pill');
+            const forecastEl = document.getElementById('hud-forecast-tag');
+
+            if (forecastEl && state.condition) {
+                forecastEl.textContent = `⚡ Forecast: ${state.condition.name}`;
+            }
 
             const sign = state.currentSnrDb >= 0 ? '+' : '';
             snrEl.textContent = `${sign}${state.currentSnrDb.toFixed(1)}dB`;
@@ -1365,7 +1539,6 @@
                 pillEl.className = 'w-[74px] text-center font-arcade text-[9px] font-black py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 shrink-0';
             }
 
-            // Update Live Estimated Packet Survival % Badges on the 3 Tier Cards
             [1, 2, 3].forEach(tNum => {
                 const surv = estimateTierSurvivalPct(tNum);
                 const badge = document.getElementById(`t${tNum}-survival-badge`);
@@ -1402,7 +1575,6 @@
                 advPill.className = 'text-[9px] font-arcade font-bold px-2 py-0.5 rounded bg-amber-400 text-slate-950';
             }
 
-            // Practice Mode vs Timed Mode Toggle UI
             const timedBtn = document.getElementById('toggle-timed-btn');
             const pracBtn = document.getElementById('toggle-practice-btn');
             const timerStatus = document.getElementById('start-timer-status');
@@ -1450,7 +1622,6 @@
                 return;
             }
 
-            // If 30s Orientation Countdown is active in Timed Mode
             if (state.phase === 'playing' && state.orientationLeft > 0) {
                 const oStr = `${Math.max(0, state.orientationLeft).toFixed(1)}s`;
                 if (orientBanner) orientBanner.classList.remove('hidden');
@@ -1509,7 +1680,6 @@
             battEl.textContent = state.brownoutActive ? `${state.battery}% (LOW)` : `${state.battery}%`;
             battEl.className = state.battery <= 24 ? 'font-arcade text-[11px] font-black text-rose-400 animate-pulse' : 'font-arcade text-[11px] font-black text-amber-200';
 
-            // Top Window Distance Progress Bar & Telemetry
             document.getElementById('track-principal-pos').textContent = `🚨${Math.round(state.principalDist)}m`;
             document.getElementById('track-leo-pos').textContent = `🏃${Math.round(state.leoDist)}m`;
             document.getElementById('track-lead-dist').textContent = `Lead:+${gap}m`;
@@ -1524,7 +1694,6 @@
             document.getElementById('map-emi-source').textContent = sec.emiLabel;
             document.getElementById('comms-sitrep-text').textContent = sec.sitrep;
 
-            // Update the 3 Horizontal Carousel Tier Cards
             [1, 2, 3].forEach(tNum => {
                 const tData = sec.tiers[tNum];
                 const effAir = (tData.airTime * mult).toFixed(1);
@@ -1532,16 +1701,17 @@
                 document.getElementById(`t${tNum}-message-preview`).textContent = `"${tData.words.join(' ')}"`;
             });
 
-            // Advanced Mode UI & Power Button Lockout States
             const advBar = document.getElementById('advanced-controls-bar');
             const battWrap = document.getElementById('hud-battery-wrap');
             const modeBtn = document.getElementById('hud-mode-toggle-btn');
+            const currentTutStep = state.phase === 'tutorial' ? TUTORIAL_STEPS[state.tutorialStep] : null;
+            const showAdvanced = state.mode === 'advanced' || (currentTutStep && currentTutStep.forceShowAdv);
 
-            if (state.mode === 'advanced') {
+            if (showAdvanced) {
                 advBar.classList.remove('hidden');
                 battWrap.classList.remove('hidden');
                 battWrap.classList.add('flex');
-                modeBtn.textContent = 'ADV RF';
+                modeBtn.textContent = state.mode === 'advanced' ? 'ADV RF' : 'STD (TUT)';
 
                 ['0.5', '2.0', '5.0'].forEach(pKey => {
                     const btn = document.getElementById(`power-btn-${pKey}`);
@@ -1586,6 +1756,228 @@
             syncStartModalButtons();
         }
 
+        function clearTutorialHighlights() {
+            document.getElementById('scale-wrapper').classList.remove('tutorial-dim-others');
+            document.querySelectorAll('.tut-region').forEach(el => {
+                el.classList.remove('tutorial-spotlight');
+            });
+        }
+
+        function startTutorial() {
+            synth.init();
+            synth.playSquelch();
+            state.tutorialSavedMode = state.mode;
+            state.phase = 'tutorial';
+            state.tutorialStep = 0;
+            state.tutorialTxRunning = false;
+
+            state.condition = GAME_CONFIG.RF_FORECAST_PROFILES[0];
+            state.leoDist = 0;
+            state.principalDist = -28;
+            state.score = 0;
+            state.battery = 100;
+            state.turns = 0;
+            state.selectedTier = 2;
+            state.txPowerKey = '2.0';
+            state.fecMode = 'raw';
+            state.orientationLeft = 0;
+            state.turnTimeLeft = GAME_CONFIG.TURN_TIMER_SECONDS;
+            state.wordMarkers = [];
+
+            document.getElementById('start-modal').classList.add('hidden');
+            document.getElementById('results-modal').classList.add('hidden');
+            document.getElementById('orientation-banner').classList.add('hidden');
+
+            document.getElementById('leo-outcome-pill').textContent = 'Channel Ready';
+            document.getElementById('leo-outcome-pill').className = 'text-[10px] font-mono-tech font-extrabold px-2.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 shrink-0';
+            document.getElementById('leo-transcript-text').textContent = 'Leo: "Got my phone back from the office! Waiting for your first radio call!"';
+            document.getElementById('leo-action-result').textContent = 'Tutorial Mode: Follow the highlighted steps to learn the console.';
+            document.getElementById('live-packet-bar').innerHTML = '<span class="text-slate-400 italic text-[11px]">Packet Stream Ready — select Tier 1, 2, or 3 below and press Push-To-Talk...</span>';
+
+            selectTier(2, true);
+            renderTutorialStep();
+        }
+
+        function renderTutorialStep() {
+            if (state.phase !== 'tutorial') return;
+            const step = TUTORIAL_STEPS[state.tutorialStep];
+            if (!step) return;
+
+            syncAllUI();
+            applyViewportScale();
+
+            clearTutorialHighlights();
+            const wrapper = document.getElementById('scale-wrapper');
+            wrapper.classList.add('tutorial-dim-others');
+
+            const targetEl = document.getElementById(step.targetId);
+            if (targetEl) {
+                targetEl.classList.add('tutorial-spotlight');
+            }
+
+            const cardWrap = document.getElementById('tutorial-card-wrap');
+            cardWrap.classList.remove('hidden');
+            if (step.cardPos === 'top') {
+                cardWrap.style.top = '48px';
+                cardWrap.style.bottom = 'auto';
+            } else {
+                cardWrap.style.bottom = '10px';
+                cardWrap.style.top = 'auto';
+            }
+
+            document.getElementById('tut-step-badge').textContent = `STEP ${state.tutorialStep + 1} OF ${TUTORIAL_STEPS.length}`;
+            document.getElementById('tut-phase-tag').textContent = step.phaseTag;
+            document.getElementById('tut-title').textContent = step.title;
+            document.getElementById('tut-body').textContent = step.body;
+            document.getElementById('tut-action-hint').textContent = step.hint || 'Click NEXT to continue';
+
+            const prevBtn = document.getElementById('tut-prev-btn');
+            const nextBtn = document.getElementById('tut-next-btn');
+            prevBtn.disabled = state.tutorialStep === 0 || state.tutorialTxRunning;
+            nextBtn.disabled = state.tutorialTxRunning;
+            nextBtn.textContent = step.nextLabel || 'NEXT →';
+        }
+
+        function triggerTutorialSimulatedTransmission() {
+            if (state.tutorialTxRunning) return;
+            state.tutorialTxRunning = true;
+
+            const liveTxIdx = TUTORIAL_STEPS.findIndex(s => s.id === 'round_live_tx');
+            state.tutorialStep = liveTxIdx !== -1 ? liveTxIdx : 9;
+            renderTutorialStep();
+
+            synth.init();
+            synth.playSquelch();
+
+            const sec = SECTORS[0];
+            const tierObj = sec.tiers[state.selectedTier] || sec.tiers[2];
+            const words = tierObj.words;
+
+            const pttBtn = document.getElementById('ptt-button');
+            pttBtn.classList.add('ptt-transmitting');
+            document.getElementById('ptt-button-text').textContent = `TRANSMITTING TIER ${state.selectedTier} (LIVE DEMO)...`;
+
+            const streamBar = document.getElementById('live-packet-bar');
+            streamBar.innerHTML = '';
+            state.wordMarkers = [];
+
+            const nextBtn = document.getElementById('tut-next-btn');
+            const hintEl = document.getElementById('tut-action-hint');
+            nextBtn.disabled = true;
+            nextBtn.textContent = 'TRANSMITTING...';
+            hintEl.textContent = '📡 Streaming words live across the RF channel...';
+
+            let idx = 0;
+            const stepMs = 340;
+            const timer = setInterval(() => {
+                if (idx >= words.length) {
+                    clearInterval(timer);
+                    synth.playSquelch();
+                    pttBtn.classList.remove('ptt-transmitting');
+                    document.getElementById('ptt-button-text').textContent = `TRANSMISSION COMPLETE — CLICK NEXT`;
+                    state.tutorialTxRunning = false;
+                    nextBtn.disabled = false;
+                    nextBtn.textContent = 'NEXT: SEE SITREP UPDATE →';
+                    hintEl.textContent = '✓ All words delivered! Click NEXT to see the Sitrep update';
+                    return;
+                }
+
+                const w = words[idx];
+                synth.playWordTone('clean');
+                state.wordMarkers.push({
+                    sampleIndex: state.scopeSamples.length - 1,
+                    status: 'clean'
+                });
+
+                const chip = document.createElement('span');
+                chip.className = 'px-2 py-0.5 rounded bg-emerald-500/25 text-emerald-300 border border-emerald-400/40 font-bold text-[11px] shrink-0';
+                chip.textContent = `[${w}]`;
+                streamBar.appendChild(chip);
+                streamBar.scrollLeft = streamBar.scrollWidth;
+                idx++;
+            }, stepMs);
+        }
+
+        function applyTutorialPostRoundSitrep() {
+            const sec = SECTORS[0];
+            const tierObj = sec.tiers[state.selectedTier] || sec.tiers[2];
+            const moveDist = tierObj.progress;
+            document.getElementById('leo-outcome-pill').textContent = `Clean Lock (+${moveDist}m)`;
+            document.getElementById('leo-outcome-pill').className = 'text-[10px] font-mono-tech font-extrabold px-2.5 py-0.5 rounded-md bg-emerald-500/25 text-emerald-300 border border-emerald-400/40 shrink-0';
+            document.getElementById('leo-transcript-text').textContent = `Heard: "${tierObj.words.join(' ')}"`;
+            document.getElementById('leo-action-result').textContent = tierObj.cleanText;
+            document.getElementById('comms-sitrep-text').textContent = SECTORS[1].sitrep;
+        }
+
+        function applyTutorialPostRoundMap() {
+            const sec = SECTORS[0];
+            const tierObj = sec.tiers[state.selectedTier] || sec.tiers[2];
+            state.turns = 1;
+            state.leoDist = tierObj.progress;
+            state.principalDist = -28 + GAME_CONFIG.PRINCIPAL_BASE_SPEED_M;
+            state.score = tierObj.points;
+            syncAllUI();
+        }
+
+        function nextTutorialStep() {
+            if (state.phase !== 'tutorial' || state.tutorialTxRunning) return;
+            synth.init();
+
+            const current = TUTORIAL_STEPS[state.tutorialStep];
+            if (!current) return;
+
+            if (current.id === 'round_press_ptt') {
+                triggerTutorialSimulatedTransmission();
+                return;
+            }
+
+            if (current.id === 'round_live_tx') {
+                applyTutorialPostRoundSitrep();
+            }
+
+            if (current.id === 'round_sitrep_update') {
+                applyTutorialPostRoundMap();
+            }
+
+            if (state.tutorialStep >= TUTORIAL_STEPS.length - 1) {
+                endTutorial(true);
+                return;
+            }
+
+            state.tutorialStep++;
+            renderTutorialStep();
+        }
+
+        function prevTutorialStep() {
+            if (state.phase !== 'tutorial' || state.tutorialTxRunning || state.tutorialStep <= 0) return;
+            const sitrepIdx = TUTORIAL_STEPS.findIndex(s => s.id === 'round_sitrep_update');
+            if (sitrepIdx !== -1 && state.tutorialStep >= sitrepIdx) {
+                state.turns = 0;
+                state.leoDist = 0;
+                state.principalDist = -28;
+                state.score = 0;
+                document.getElementById('comms-sitrep-text').textContent = SECTORS[0].sitrep;
+            }
+            state.tutorialStep--;
+            renderTutorialStep();
+        }
+
+        function endTutorial(startMissionImmediately = false) {
+            clearTutorialHighlights();
+            document.getElementById('tutorial-card-wrap').classList.add('hidden');
+            state.mode = state.tutorialSavedMode || 'standard';
+            state.tutorialTxRunning = false;
+
+            if (startMissionImmediately) {
+                launchMission();
+            } else {
+                state.phase = 'setup';
+                document.getElementById('start-modal').classList.remove('hidden');
+                syncAllUI();
+                applyViewportScale();
+            }
+        }
+
         function selectTier(tierNum, smoothScroll = true) {
             if (state.phase === 'transmitting') return;
             state.selectedTier = tierNum;
@@ -1609,7 +2001,6 @@
             syncAllUI();
         }
 
-        // Sync active tab when user swipes horizontal carousel
         const tierCarouselEl = document.getElementById('tier-carousel');
         let scrollDebounce = null;
         tierCarouselEl.addEventListener('scroll', () => {
@@ -1651,7 +2042,6 @@
             document.getElementById(`slide-tier-${n}`).addEventListener('click', () => selectTier(n, true));
         });
 
-        // Scale Preset & Fine-Tune Listeners
         document.querySelectorAll('.scale-preset-btn').forEach(btn => {
             btn.addEventListener('click', () => setScalePreset(btn.getAttribute('data-scale')));
         });
@@ -1661,7 +2051,6 @@
         document.getElementById('hud-scale-up-btn').addEventListener('click', () => nudgeScale(0.03));
         document.getElementById('hud-scale-auto-btn').addEventListener('click', () => setScalePreset('auto'));
 
-        // Advanced RF Controls Listeners
         document.querySelectorAll('.tx-power-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 if (state.phase === 'transmitting') return;
@@ -1687,9 +2076,6 @@
             });
         });
 
-        /**
-         * Handle 10-Second Turn Decision Timeout (When Timed Mode is active and clock hits 0.0s)
-         */
         function handleTurnTimeout() {
             if (state.phase !== 'playing') return;
             synth.init();
@@ -1715,10 +2101,8 @@
             }
         }
 
-        // Live Word-by-Word Packet Transmission
         function startPacketTransmission() {
             if (state.phase !== 'playing') return;
-            // Automatically dismiss the 30-second orientation countdown if player transmits early
             if (state.orientationLeft > 0) {
                 dismissOrientationCountdown();
             }
@@ -1729,7 +2113,6 @@
             const transmittedPowerKey = state.txPowerKey;
             const wasBrownout = state.brownoutActive;
 
-            // Deduct battery using centralized GAME_CONFIG.BATTERY_DRAIN
             if (state.mode === 'advanced') {
                 const drainAmount = wasBrownout ? state.battery : (GAME_CONFIG.BATTERY_DRAIN[transmittedPowerKey] || 12);
                 state.battery = Math.max(0, state.battery - drainAmount);
@@ -2002,6 +2385,7 @@
             currentSharePayloadText = [
                 `📻 Signal Ops: Noisy Channel Escape`,
                 `🏅 Rank: ${rankText}`,
+                `⚡ RF Forecast: ${state.condition ? state.condition.name : 'Clear Night RF'}`,
                 `🎯 Final Score: ${state.score.toLocaleString()} pts (${state.mode === 'advanced' ? 'Advanced RF' : 'Standard'}${state.practiceMode ? ' • Practice' : ''})`,
                 `⚡ Net Throughput: ${netBps} bps | Channel Efficiency: ${efficiencyPct}%`,
                 `Play here: ${url}`
@@ -2109,7 +2493,6 @@
             syncAllUI();
         }
 
-        // Start Modal & Top Bar Listeners
         document.getElementById('skip-orientation-btn').addEventListener('click', () => {
             synth.init();
             synth.playSquelch();
@@ -2119,7 +2502,23 @@
         document.getElementById('select-adv-card').addEventListener('click', () => setGameMode('advanced'));
         document.getElementById('toggle-timed-btn').addEventListener('click', () => setPracticeMode(false));
         document.getElementById('toggle-practice-btn').addEventListener('click', () => setPracticeMode(true));
-        document.getElementById('test-squelch-btn').addEventListener('click', () => synth.playSquelchPreview());
+        document.getElementById('start-tutorial-btn').addEventListener('click', () => startTutorial());
+        document.getElementById('hud-tutorial-btn').addEventListener('click', () => startTutorial());
+        document.getElementById('tut-next-btn').addEventListener('click', () => nextTutorialStep());
+        document.getElementById('tut-prev-btn').addEventListener('click', () => prevTutorialStep());
+        document.getElementById('tut-exit-btn').addEventListener('click', () => endTutorial(false));
+        document.getElementById('test-squelch-btn').addEventListener('click', () => {
+            synth.playSquelchPreview();
+            const sqBtn = document.getElementById('test-squelch-btn');
+            if (sqBtn) {
+                sqBtn.innerHTML = '<span>📡 5x5!</span>';
+                sqBtn.classList.add('bg-amber-500/30', 'border-amber-300', 'text-amber-100');
+                setTimeout(() => {
+                    sqBtn.innerHTML = '<span>🔊 SQUELCH</span>';
+                    sqBtn.classList.remove('bg-amber-500/30', 'border-amber-300', 'text-amber-100');
+                }, 1200);
+            }
+        });
         document.getElementById('start-mission-main-btn').addEventListener('click', () => launchMission());
 
         document.getElementById('hud-mode-toggle-btn').addEventListener('click', () => {
@@ -2133,6 +2532,10 @@
         });
 
         document.getElementById('hud-menu-btn').addEventListener('click', () => {
+            if (state.phase === 'tutorial') {
+                endTutorial(false);
+                return;
+            }
             state.phase = 'setup';
             document.getElementById('results-modal').classList.add('hidden');
             document.getElementById('start-modal').classList.remove('hidden');
@@ -2152,7 +2555,16 @@
             launchMission();
         });
 
-        document.getElementById('ptt-button').addEventListener('click', startPacketTransmission);
+        document.getElementById('ptt-button').addEventListener('click', () => {
+            if (state.phase === 'tutorial') {
+                const curStep = TUTORIAL_STEPS[state.tutorialStep];
+                if (curStep && (curStep.id === 'round_press_ptt' || curStep.id === 'round_select_tier')) {
+                    triggerTutorialSimulatedTransmission();
+                }
+                return;
+            }
+            startPacketTransmission();
+        });
 
         window.addEventListener('keydown', (e) => {
             if (e.repeat) return;
@@ -2170,7 +2582,6 @@
             }
         });
 
-        // High-Contrast Pill Label Helper for Compact Blueprint Map
         function drawPillBadge(ctx, text, cx, cy, fontPx, textColor, bgColor, borderColor, dpr) {
             ctx.save();
             ctx.font = `800 ${Math.round(fontPx * dpr)}px "JetBrains Mono", monospace`;
@@ -2210,7 +2621,6 @@
             ctx.restore();
         }
 
-        // Draw Top Window: Panoramic Multi-Hallway School Blueprint with Large Readable Labels
         function renderBlueprintMap(now) {
             const w = mapCanvas.width;
             const h = mapCanvas.height;
@@ -2220,7 +2630,6 @@
             mCtx.fillStyle = '#040814';
             mCtx.fillRect(0, 0, w, h);
 
-            // Subtle Blueprint Grid
             mCtx.strokeStyle = 'rgba(56, 189, 248, 0.08)';
             mCtx.lineWidth = 1;
             const step = 24 * dpr;
@@ -2231,13 +2640,11 @@
                 mCtx.beginPath(); mCtx.moveTo(0, y); mCtx.lineTo(w, y); mCtx.stroke();
             }
 
-            // Highlight Active Sector Zone Background
             const activeId = getActiveSector().id;
             const secStartX = ((activeId - 1) * 0.25) * w;
             mCtx.fillStyle = 'rgba(56, 189, 248, 0.06)';
             mCtx.fillRect(secStartX, 0, 0.25 * w, h);
 
-            // Multi-Hallway Corridors
             mCtx.strokeStyle = '#1e293b';
             mCtx.lineWidth = 14 * dpr;
             mCtx.lineCap = 'round';
@@ -2249,7 +2656,6 @@
             });
             mCtx.stroke();
 
-            // Centerline along Hallway Path
             mCtx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
             mCtx.lineWidth = 1.8 * dpr;
             mCtx.setLineDash([4 * dpr, 4 * dpr]);
@@ -2261,7 +2667,6 @@
             mCtx.stroke();
             mCtx.setLineDash([]);
 
-            // Concrete Partition Walls (-3.8dB each) at Sector Boundaries
             const wallXPositions = [0.25, 0.50, 0.75];
             wallXPositions.forEach((wx) => {
                 mCtx.strokeStyle = 'rgba(251, 191, 36, 0.55)';
@@ -2273,7 +2678,6 @@
                 drawPillBadge(mCtx, '-3.8dB', wx * w, h * 0.85, 10, '#fde68a', 'rgba(15, 23, 42, 0.92)', 'rgba(251, 191, 36, 0.55)', dpr);
             });
 
-            // Large High-Contrast Sector Pill Headers Across Top of Map
             const sectorHeaders = [
                 { x: 0.13, label: 'OFFICE 0-25m', id: 1 },
                 { x: 0.375, label: 'LOCKERS 25-50m', id: 2 },
@@ -2295,17 +2699,14 @@
                 );
             });
 
-            // EXIT 100m Badge at Right End
             drawPillBadge(mCtx, 'EXIT 100m', 0.94 * w, h * 0.75, 11.5, '#6ee7b7', 'rgba(6, 78, 59, 0.94)', '#34d399', dpr);
 
-            // Spotter TX Antenna at Bottom-Left Outside School
             const txX = 0.03 * w;
             const txY = 0.84 * h;
             const leoPt = getPointAlongHallway(state.leoDist);
             const leoX = leoPt.x * w;
             const leoY = leoPt.y * h;
 
-            // Animated Concentric Radio Waves Radiating from Spotter Antenna
             const waveColor = state.burstLeft > 0 ? 'rgba(239, 68, 68, 0.6)' : (state.preBurstLeft > 0 ? 'rgba(245, 158, 11, 0.6)' : 'rgba(52, 211, 153, 0.55)');
             mCtx.strokeStyle = waveColor;
             mCtx.lineWidth = 1.6 * dpr;
@@ -2316,7 +2717,6 @@
                 mCtx.stroke();
             }
 
-            // Direct RF Ray Line from Spotter to Leo
             mCtx.strokeStyle = waveColor;
             mCtx.lineWidth = (state.phase === 'transmitting' ? 2.8 : 1.7) * dpr;
             mCtx.setLineDash([4 * dpr, 4 * dpr]);
@@ -2326,13 +2726,11 @@
             mCtx.stroke();
             mCtx.setLineDash([]);
 
-            // Spotter TX Node
             mCtx.fillStyle = '#fbbf24';
             mCtx.beginPath();
             mCtx.arc(txX, txY, 4.5 * dpr, 0, Math.PI * 2);
             mCtx.fill();
 
-            // Principal Blip + Patrol Radar Cone + 38m Scanner Ring + High-Contrast Pill Label
             const prinEffectiveDist = Math.max(0, state.principalDist);
             const prinPt = getPointAlongHallway(prinEffectiveDist);
             const prinAheadPt = getPointAlongHallway(Math.min(100, prinEffectiveDist + 8));
@@ -2369,7 +2767,6 @@
             const prinLabelY = Math.min(0.84 * h, prinY + 15 * dpr);
             drawPillBadge(mCtx, `PRIN ${Math.round(state.principalDist)}m`, prinLabelX, prinLabelY, 11, '#fecaca', 'rgba(127, 29, 29, 0.94)', '#f87171', dpr);
 
-            // Leo Blip (Glowing Cyan Dot) + High-Contrast Pill Label
             mCtx.save();
             mCtx.fillStyle = '#38bdf8';
             mCtx.shadowColor = '#38bdf8';
@@ -2384,7 +2781,6 @@
             drawPillBadge(mCtx, `LEO ${Math.round(state.leoDist)}m`, leoLabelX, leoLabelY, 11.5, '#e0f2fe', 'rgba(3, 105, 161, 0.96)', '#38bdf8', dpr);
         }
 
-        // Draw Bottom Window: 3-Layer Stochastic RF Oscilloscope + Word Markers
         function renderOscilloscope() {
             const w = scopeCanvas.width;
             const h = scopeCanvas.height;
@@ -2412,7 +2808,6 @@
                 return h * (1 - clamped);
             };
 
-            // Red Noise Floor + Impulse Spikes
             sCtx.fillStyle = 'rgba(239, 68, 68, 0.16)';
             sCtx.beginPath();
             sCtx.moveTo(0, h);
@@ -2434,7 +2829,6 @@
             });
             sCtx.stroke();
 
-            // Carrier Signal Wave
             const traceColor = state.burstLeft > 0 ? '#ef4444' : (state.preBurstLeft > 0 ? '#fbbf24' : '#34d399');
             sCtx.save();
             sCtx.strokeStyle = traceColor;
@@ -2451,7 +2845,6 @@
             sCtx.stroke();
             sCtx.restore();
 
-            // Word Transmission Markers on Scope
             state.wordMarkers.forEach(mk => {
                 const idx = Math.max(0, Math.min(state.scopeSamples.length - 1, mk.sampleIndex));
                 const sample = state.scopeSamples[idx];
@@ -2473,7 +2866,6 @@
 
             stepStochasticChannel(dt);
 
-            // Step 30s Orientation Countdown OR 10s Per-Round Decision Timer in Timed Mode
             if (state.phase === 'playing' && !state.practiceMode) {
                 if (state.orientationLeft > 0) {
                     state.orientationLeft -= dt;
@@ -2493,7 +2885,6 @@
                 }
             }
 
-            // Step 1.5s Safety Lock on Results Modal Top-Left Buttons
             if (state.phase === 'results' && state.safetyLockLeft > 0) {
                 state.safetyLockLeft = Math.max(0, state.safetyLockLeft - dt);
                 const newBtn = document.getElementById('res-new-mission-btn');
