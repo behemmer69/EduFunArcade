@@ -1,0 +1,2060 @@
+<!--
+  ==============================================================================
+  THERMAL RUNAWAY: BIT ERROR LAB
+  Copyright (c) 2026 Barry Hemmerdinger. All Rights Reserved.
+  
+  PROPRIETARY AND CONFIDENTIAL SOFTWARE NOTICE:
+  This HTML5 application, including its source code, user interface design,
+  educational simulations, game mechanics, Economy/BER progression curves,
+  visual layouts, and audio-visual assets, is the sole intellectual property
+  of Barry Hemmerdinger. Unauthorized copying, redistribution, reverse
+  engineering, modification, or commercial use of any portion of this work
+  without express written permission from the copyright holder is strictly
+  prohibited under applicable copyright and intellectual property laws.
+  ==============================================================================
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="author" content="Barry Hemmerdinger">
+<meta name="copyright" content="Copyright © 2026 Barry Hemmerdinger. All Rights Reserved.">
+<title>Thermal Runaway: Bit Error Lab</title>
+<style>
+  :root {
+    --bg: #0a0e14;
+    --panel: #121822;
+    --panel-border: #233044;
+    --text: #e2e8f0;
+    --muted: #8b9bb4;
+    --green: #10b981;
+    --cyan: #06b6d4;
+    --amber: #f59e0b;
+    --red: #ef4444;
+    --gold: #eab308;
+  }
+
+  * {
+    box-sizing: border-box;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    margin: 0;
+    padding: 8px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, -apple-system, monospace;
+    display: flex;
+    justify-content: center;
+    min-height: 100vh;
+  }
+
+  .app-container {
+    width: 100%;
+    max-width: 720px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header & Mode Switch */
+  .top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .brand {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .brand h1 {
+    margin: 0;
+    font-size: 1.02rem;
+    letter-spacing: 0.5px;
+    color: var(--cyan);
+    text-transform: uppercase;
+  }
+
+  .brand span {
+    font-size: 0.7rem;
+    color: var(--muted);
+  }
+
+  .mode-controls {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .mode-btn {
+    background: #1a2332;
+    color: var(--muted);
+    border: 1px solid var(--panel-border);
+    padding: 5px 10px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: all 0.15s;
+  }
+
+  .mode-btn:hover {
+    border-color: var(--cyan);
+    color: #fff;
+  }
+
+  .mode-btn:active {
+    transform: scale(0.96);
+  }
+
+  .mode-btn.active {
+    background: #0d3b49;
+    color: #fff;
+    border-color: var(--cyan);
+    box-shadow: 0 0 8px rgba(6, 182, 212, 0.35);
+  }
+
+  .mode-btn.tut-active {
+    background: rgba(234, 179, 8, 0.18);
+    color: var(--gold);
+    border-color: var(--gold);
+    box-shadow: 0 0 8px rgba(234, 179, 8, 0.35);
+  }
+
+  /* Interactive Tutorial Coach Panel & Spotlight */
+  .tutorial-panel {
+    display: none;
+    background: linear-gradient(135deg, #161f2e, #0f1724);
+    border: 1.5px solid var(--gold);
+    border-radius: 8px;
+    padding: 8px 12px;
+    box-shadow: 0 0 14px rgba(234, 179, 8, 0.22);
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .tutorial-panel.open {
+    display: flex;
+  }
+
+  .tut-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .tut-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .tut-badge {
+    background: rgba(234, 179, 8, 0.2);
+    color: var(--gold);
+    border: 1px solid var(--gold);
+    font-family: monospace;
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+
+  .tut-title {
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  .tut-body {
+    font-size: 0.76rem;
+    color: var(--text);
+    line-height: 1.38;
+  }
+
+  .tut-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-top: 2px;
+  }
+
+  .tut-prompt {
+    font-size: 0.69rem;
+    font-family: monospace;
+    color: var(--cyan);
+  }
+
+  .tut-nav {
+    display: flex;
+    gap: 5px;
+  }
+
+  .tut-btn {
+    background: #1d283a;
+    color: var(--text);
+    border: 1px solid #334663;
+    border-radius: 5px;
+    padding: 4px 10px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .tut-btn:hover:not(:disabled) {
+    border-color: var(--gold);
+    color: #fff;
+  }
+
+  .tut-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  .tut-btn.primary {
+    background: rgba(234, 179, 8, 0.2);
+    border-color: var(--gold);
+    color: var(--gold);
+  }
+
+  .tutorial-spotlight {
+    outline: 2px solid var(--gold) !important;
+    box-shadow: 0 0 16px rgba(234, 179, 8, 0.55) !important;
+    position: relative;
+    z-index: 20;
+    border-radius: 8px;
+    transition: outline 0.2s, box-shadow 0.2s;
+  }
+
+  /* HUD Telemetry Strip */
+  .hud-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+  }
+
+  .hud-card {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 8px;
+    padding: 6px 8px;
+    text-align: center;
+  }
+
+  .hud-label {
+    font-size: 0.66rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .hud-val {
+    font-size: 1.12rem;
+    font-weight: 700;
+    margin-top: 2px;
+    font-family: monospace;
+  }
+
+  .hud-sub {
+    font-size: 0.66rem;
+    color: var(--muted);
+    margin-top: 1px;
+    font-family: monospace;
+  }
+
+  /* Message Progress Bar ("HelloWorld") */
+  .message-board {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 8px;
+    padding: 7px 10px;
+  }
+
+  .msg-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-bottom: 5px;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .char-slots {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 4px;
+  }
+
+  .char-slot {
+    background: #0b1018;
+    border: 1px solid #1e293b;
+    border-radius: 6px;
+    padding: 4px 2px;
+    text-align: center;
+    position: relative;
+    transition: all 0.2s;
+  }
+
+  .char-slot.current {
+    border-color: var(--cyan);
+    box-shadow: 0 0 8px rgba(6, 182, 212, 0.35);
+    background: #102131;
+  }
+
+  .char-slot.success {
+    border-color: var(--green);
+    background: rgba(16, 185, 129, 0.12);
+  }
+
+  .char-slot.corrupted {
+    border-color: var(--red);
+    background: rgba(239, 68, 68, 0.18);
+  }
+
+  .slot-target {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--muted);
+    font-family: monospace;
+  }
+
+  .slot-rx {
+    font-size: 1.05rem;
+    font-weight: 700;
+    font-family: monospace;
+    margin-top: 1px;
+  }
+
+  /* Oscilloscope & Bit Flight Visualizer */
+  .scope-panel {
+    background: #070b10;
+    border: 1px solid var(--panel-border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    position: relative;
+  }
+
+  .scope-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.72rem;
+    margin-bottom: 5px;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .status-alert {
+    color: var(--amber);
+    font-family: monospace;
+    font-size: 0.72rem;
+  }
+
+  canvas#scopeCanvas {
+    width: 100%;
+    height: 54px;
+    display: block;
+    background: #05080c;
+    border-radius: 4px;
+    border: 1px solid #172234;
+    margin-bottom: 6px;
+  }
+
+  /* Simplified Binary Inspector Strip */
+  .ascii-inspector {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #0b111b;
+    border: 1px solid #1c293d;
+    border-radius: 6px;
+    padding: 4px 10px;
+    margin-bottom: 7px;
+    font-family: monospace;
+    font-size: 0.75rem;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  /* Bit Slots */
+  .bit-stream-row {
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+    flex-wrap: wrap;
+    min-height: 48px;
+    align-items: center;
+    padding: 2px;
+  }
+
+  .bit-box {
+    width: 42px;
+    height: 46px;
+    background: #0f1724;
+    border: 1px solid #26354d;
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: monospace;
+    transition: transform 0.15s, background 0.15s, border-color 0.15s, opacity 0.15s;
+  }
+
+  .bit-box.queued {
+    opacity: 0.55;
+  }
+
+  .bit-box.data-bit {
+    border-bottom: 3px solid var(--green);
+  }
+
+  .bit-box.check-bit {
+    border-bottom: 3px solid var(--cyan);
+    background: #0c1926;
+  }
+
+  .bit-box.transmitting {
+    opacity: 1;
+    border-color: var(--cyan);
+    background: #103247;
+    transform: translateY(-4px) scale(1.04);
+    box-shadow: 0 0 12px rgba(6, 182, 212, 0.55);
+  }
+
+  .bit-box.clean-sent {
+    opacity: 1;
+    border-color: var(--green);
+    background: rgba(16, 185, 129, 0.14);
+  }
+
+  .bit-box.flipped {
+    opacity: 1;
+    background: rgba(239, 68, 68, 0.28);
+    border-color: var(--red);
+    transform: translateY(-3px);
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.45);
+  }
+
+  .bit-box.healed {
+    opacity: 1;
+    background: rgba(234, 179, 8, 0.28);
+    border-color: var(--gold);
+    box-shadow: 0 0 10px rgba(234, 179, 8, 0.45);
+  }
+
+  .bit-val {
+    font-size: 1.02rem;
+    font-weight: 700;
+  }
+
+  .bit-tag {
+    font-size: 0.56rem;
+    color: var(--muted);
+  }
+
+  /* Live Result Banner */
+  .verdict-banner {
+    margin-top: 7px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    background: #101722;
+    border-left: 4px solid var(--cyan);
+    font-size: 0.77rem;
+    font-family: monospace;
+    min-height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  /* Slim Horizontal Coding Slider Deck */
+  .deck-panel {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 8px;
+    padding: 8px 10px;
+  }
+
+  .deck-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+    font-size: 0.7rem;
+    color: var(--muted);
+  }
+
+  .coding-slider-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+
+  .slider-nav-btn {
+    background: #182232;
+    color: var(--cyan);
+    border: 1px solid var(--panel-border);
+    border-radius: 6px;
+    width: 32px;
+    height: 36px;
+    font-size: 1.15rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.15s;
+  }
+
+  .slider-nav-btn:hover:not(:disabled) {
+    border-color: var(--cyan);
+    background: #122b3d;
+  }
+
+  .slider-nav-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  .slider-viewport {
+    position: relative;
+    flex: 1;
+    overflow: hidden;
+    background: #090d14;
+    border: 1px solid #1c283a;
+    border-radius: 7px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+  }
+
+  /* Subtle center highlight frame */
+  .slider-viewport::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    bottom: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 190px;
+    border-radius: 5px;
+    border: 1px solid rgba(6, 182, 212, 0.35);
+    pointer-events: none;
+  }
+
+  .slider-track {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: transform;
+  }
+
+  .code-pill {
+    width: 184px;
+    height: 30px;
+    flex-shrink: 0;
+    background: #111927;
+    border: 1px solid #243249;
+    border-radius: 5px;
+    padding: 0 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    opacity: 0.55;
+    transform: scale(0.94);
+    transition: all 0.2s;
+  }
+
+  .code-pill.selected {
+    opacity: 1;
+    transform: scale(1);
+    background: #102a3f;
+    border-color: var(--cyan);
+    box-shadow: 0 0 10px rgba(6, 182, 212, 0.3);
+  }
+
+  .pill-name {
+    font-size: 0.76rem;
+    font-weight: 700;
+    color: #fff;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+
+  .pill-cost {
+    font-family: monospace;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--gold);
+    background: rgba(234, 179, 8, 0.14);
+    padding: 1px 5px;
+    border-radius: 4px;
+    pointer-events: none;
+  }
+
+  /* Selected Coding Details Box under the Slider */
+  .selected-code-info {
+    background: #0b1018;
+    border: 1px solid #1d2a3d;
+    border-radius: 6px;
+    padding: 5px 10px;
+    margin-bottom: 8px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .info-desc {
+    font-size: 0.72rem;
+    color: var(--text);
+  }
+
+  .info-odds {
+    font-size: 0.69rem;
+    font-family: monospace;
+    color: var(--cyan);
+  }
+
+  /* Action Bar */
+  .action-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  .tx-btn {
+    flex: 1;
+    background: linear-gradient(135deg, #059669, #10b981);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 10px;
+    font-size: 0.92rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    touch-action: manipulation;
+    text-transform: uppercase;
+    transition: opacity 0.15s, transform 0.1s;
+  }
+
+  .tx-btn:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+
+  .tx-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .abort-btn {
+    background: #3f1d28;
+    color: #fca5a5;
+    border: 1px solid var(--red);
+    border-radius: 8px;
+    padding: 0 14px;
+    font-size: 0.76rem;
+    font-weight: 700;
+    cursor: pointer;
+    touch-action: manipulation;
+    display: none;
+  }
+
+  /* Copyright Footer */
+  .copyright-footer {
+    text-align: center;
+    font-size: 0.68rem;
+    color: var(--muted);
+    padding: 4px 0 2px;
+    letter-spacing: 0.3px;
+    opacity: 0.8;
+  }
+
+  /* End Game Modal Overlay */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(5, 8, 14, 0.88);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    padding: 16px;
+    z-index: 100;
+  }
+
+  .modal-backdrop.open {
+    display: flex;
+  }
+
+  .modal-card {
+    background: var(--panel);
+    border: 1px solid var(--cyan);
+    border-radius: 12px;
+    max-width: 450px;
+    width: 100%;
+    padding: 18px;
+    text-align: center;
+    box-shadow: 0 0 25px rgba(6, 182, 212, 0.3);
+  }
+
+  .modal-card h2 {
+    margin: 0 0 6px;
+    color: var(--cyan);
+  }
+
+  .stat-list {
+    text-align: left;
+    background: #0b1018;
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin: 12px 0;
+    font-family: monospace;
+    font-size: 0.81rem;
+    line-height: 1.65;
+  }
+
+  .modal-actions {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .share-btn {
+    flex: 1;
+    background: #13283c;
+    color: var(--cyan);
+    border: 1px solid var(--cyan);
+    border-radius: 8px;
+    padding: 10px;
+    font-size: 0.86rem;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    cursor: pointer;
+    touch-action: manipulation;
+    text-transform: uppercase;
+    transition: all 0.15s;
+  }
+
+  .share-btn:hover {
+    background: #17344e;
+    color: #fff;
+  }
+
+  .share-btn:active {
+    transform: scale(0.98);
+  }
+
+  .share-status {
+    min-height: 16px;
+    margin-top: 6px;
+    font-size: 0.72rem;
+    font-family: monospace;
+    color: var(--green);
+  }
+
+  .modal-copyright {
+    margin-top: 8px;
+    font-size: 0.66rem;
+    color: var(--muted);
+    opacity: 0.8;
+  }
+
+  @media (max-width: 520px) {
+    .hud-strip {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .bit-box {
+      width: 35px;
+      height: 42px;
+    }
+    .code-pill {
+      width: 164px;
+    }
+    .slider-viewport::after {
+      width: 170px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="app-container">
+  <!-- Header & Mode Selector -->
+  <div class="top-bar" id="topBar">
+    <div class="brand">
+      <h1>Thermal Runaway: Bit Error Lab</h1>
+      <span id="modeSubtitle">Standard Mode: Max 4% BER • Auto Power-Boost on Retry (-1% BER)</span>
+    </div>
+    <div class="mode-controls">
+      <button type="button" class="mode-btn active" id="btnStandard">Standard</button>
+      <button type="button" class="mode-btn" id="btnAdvanced">Advanced</button>
+      <button type="button" class="mode-btn" id="btnTutorial" title="Interactive Tutorial">🎓 Tutorial</button>
+      <button type="button" class="mode-btn" id="btnReset" title="Restart Game">↻ Reset</button>
+    </div>
+  </div>
+
+  <!-- Interactive Tutorial Coach Panel (Signal Ops Style) -->
+  <div class="tutorial-panel" id="tutorialPanel">
+    <div class="tut-header">
+      <div class="tut-title-wrap">
+        <span class="tut-badge" id="tutStepBadge">Step 1 / 10</span>
+        <span class="tut-title" id="tutTitle">Mission Overview</span>
+      </div>
+      <button type="button" class="tut-btn" id="btnTutExit" title="Close Tutorial">✕ Exit</button>
+    </div>
+    <div class="tut-body" id="tutText"></div>
+    <div class="tut-footer">
+      <span class="tut-prompt" id="tutPrompt">Use Next › to continue</span>
+      <div class="tut-nav">
+        <button type="button" class="tut-btn" id="btnTutPrev">‹ Prev</button>
+        <button type="button" class="tut-btn primary" id="btnTutNext">Next ›</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Telemetry HUD -->
+  <div class="hud-strip" id="hudStrip">
+    <div class="hud-card">
+      <div class="hud-label">Round / Target</div>
+      <div class="hud-val" id="hudRound">1 / 10 ('H')</div>
+      <div class="hud-sub" id="hudTargetBits">01001000</div>
+    </div>
+    <div class="hud-card">
+      <div class="hud-label">Coins (Power)</div>
+      <div class="hud-val" id="hudCoins" style="color: var(--gold);">100</div>
+      <div class="hud-sub" id="hudRewardSub">+20/Char • Bonus: +50</div>
+    </div>
+    <div class="hud-card">
+      <div class="hud-label">Core Temp</div>
+      <div class="hud-val" id="hudTemp" style="color: var(--green);">35°C</div>
+      <div class="hud-sub" id="hudTempNote">Coolant Nominal</div>
+    </div>
+    <div class="hud-card">
+      <div class="hud-label">Channel BER</div>
+      <div class="hud-val" id="hudBer" style="color: var(--cyan);">1.0%</div>
+      <div class="hud-sub" id="hudBerMod">Base Noise Floor</div>
+    </div>
+  </div>
+
+  <!-- 10-Letter Progress Display -->
+  <div class="message-board" id="messageBoard">
+    <div class="msg-header">
+      <span>TRANSMISSION BUFFER</span>
+      <span id="msgAccuracy">Clean: 0/0 • Bonus: +50</span>
+    </div>
+    <div class="char-slots" id="charSlots"></div>
+  </div>
+
+  <!-- Oscilloscope & Bit Stream Visualizer -->
+  <div class="scope-panel" id="scopePanel">
+    <div class="scope-top">
+      <span style="color: var(--muted); font-family: monospace;">RF CHANNEL OSCILLOSCOPE</span>
+      <span class="status-alert" id="thermalFlavor">Coolant nominal. Clean channel.</span>
+    </div>
+    <canvas id="scopeCanvas" width="680" height="54"></canvas>
+
+    <!-- Simplified 8-Bit Binary Readout -->
+    <div class="ascii-inspector">
+      <span id="txBitsReadout">TX BITS: <b>01001000</b></span>
+      <span id="rxBitsReadout" style="color: var(--cyan);">RX BITS: --------</span>
+    </div>
+
+    <div class="bit-stream-row" id="bitStreamRow"></div>
+
+    <div class="verdict-banner" id="verdictBanner">
+      <span id="verdictText">Select an encoding mode below and press TRANSMIT.</span>
+      <span id="retryCounter" style="color: var(--amber);"></span>
+    </div>
+  </div>
+
+  <!-- Compact Horizontal Coding Slider + Centered Info Box -->
+  <div class="deck-panel" id="deckPanel">
+    <div class="deck-header">
+      <span id="costRuleHeader">ERROR CODING (1 Coin = 1 Bit)</span>
+      <span id="sliderPosIndicator" style="color: var(--cyan); font-family: monospace;">1 / 2</span>
+    </div>
+
+    <div class="coding-slider-bar">
+      <button type="button" class="slider-nav-btn" id="btnPrevCode" title="Previous Coding Mode">‹</button>
+      <div class="slider-viewport" id="sliderViewport">
+        <div class="slider-track" id="codingSliderTrack"></div>
+      </div>
+      <button type="button" class="slider-nav-btn" id="btnNextCode" title="Next Coding Mode">›</button>
+    </div>
+
+    <div class="selected-code-info">
+      <div class="info-desc" id="selectedCodeDesc">Catches ODD bit errors (1, 3, 5) & auto-retransmits. Fooled by EVEN errors (2, 4)!</div>
+      <div class="info-odds" id="selectedCodeOdds">Pass: 91.4% | Retry: 8.3% | Silent Err: 0.3%</div>
+    </div>
+
+    <div class="action-row">
+      <button type="button" class="tx-btn" id="btnTransmit">⚡ Transmit 'H' (9 Coins)</button>
+      <button type="button" class="abort-btn" id="btnAbort">Abort Retries</button>
+    </div>
+  </div>
+
+  <div class="copyright-footer">© 2026 Barry Hemmerdinger • All Rights Reserved</div>
+</div>
+
+<!-- End Game Summary Modal -->
+<div class="modal-backdrop" id="endModal">
+  <div class="modal-card">
+    <h2 id="modalTitle">TRANSMISSION COMPLETE</h2>
+    <div id="modalSubtitle" style="color: var(--muted); font-size: 0.85rem;"></div>
+    <div class="stat-list" id="modalStats"></div>
+    <div class="modal-actions">
+      <button type="button" class="share-btn" id="btnShareTelemetry">📤 Share Telemetry</button>
+      <button type="button" class="tx-btn" id="btnPlayAgain" style="flex: 1;">↻ Play Again</button>
+    </div>
+    <div class="share-status" id="shareStatus"></div>
+    <div class="modal-copyright">© 2026 Barry Hemmerdinger • All Rights Reserved</div>
+  </div>
+</div>
+
+<script>
+/**
+ * ============================================================================
+ * THERMAL RUNAWAY: BIT ERROR LAB
+ * Copyright (c) 2026 Barry Hemmerdinger. All Rights Reserved.
+ *
+ * PROPRIETARY SOFTWARE & GAME MECHANICS PROTECTION NOTICE:
+ * All source code, algorithms, binomial error-coding models, thermal BER
+ * progression curves, FSK oscilloscope visualizations, and interactive UI
+ * workflows contained herein are the copyrighted intellectual property of
+ * Barry Hemmerdinger. Unauthorized reproduction, distribution, adaptation,
+ * or commercial exploitation is strictly prohibited.
+ * ============================================================================
+ */
+
+/* ============================================================================
+   GAME ECONOMY, TIMING & TUTORIAL CONSTANTS (Tweak any values directly!)
+   ============================================================================ */
+const STARTING_COINS = 100;
+const COST_PER_BIT = 1;
+const LETTER_REWARD = 20;
+const MAX_END_BONUS = 50;
+const BONUS_PENALTY_PER_ERROR = 10;
+const BIT_TRANSMIT_DELAY_MS = 1000;
+
+// Single-Source BER Curves
+const STANDARD_BER_CURVE = [1, 1.5, 2, 2, 2.5, 3, 3, 3.5, 4, 4];
+const ADVANCED_BER_CURVE = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
+const STD_MAX_BER = Math.max(...STANDARD_BER_CURVE);
+const ADV_MAX_BER = Math.max(...ADVANCED_BER_CURVE);
+
+const GAME_CONFIG = {
+  TARGET_WORD: "HelloWorld",             // 10 rounds, 1 letter per round
+  STARTING_COINS: STARTING_COINS,        // Initial player coin balance
+  COST_PER_BIT: COST_PER_BIT,            // Coin cost per bit transmitted (data, check, and retries)
+  LETTER_REWARD: LETTER_REWARD,          // Coins awarded when a letter arrives cleanly
+  MAX_END_BONUS: MAX_END_BONUS,          // Maximum bonus coins at the end of Round 10
+  BONUS_PENALTY_PER_ERROR: BONUS_PENALTY_PER_ERROR, // Coins deducted from MAX_END_BONUS per corrupted letter
+  BIT_TRANSMIT_DELAY_MS: BIT_TRANSMIT_DELAY_MS,     // Slow-motion bit transmit time (1000ms = 1 second/bit)
+  START_IN_TUTORIAL: false,              // Set to true to launch Tutorial Mode automatically on load
+
+  // Interactive Tutorial Steps (Signal Ops Style)
+  TUTORIAL_STEPS: [
+    {
+      target: "#topBar",
+      title: "1. Mission Overview & Modes",
+      text: `Your deep-space transceiver is overheating! Transmit the 10-letter message 'HelloWorld' before your coin capacitor runs dry. Choose Standard (max ${STD_MAX_BER}% BER) or Advanced (up to ${ADV_MAX_BER}% BER).`,
+      prompt: "Click Next › to inspect your telemetry"
+    },
+    {
+      target: "#hudStrip",
+      title: "2. Coin Economy & Cost Per Bit",
+      text: `You start with ${STARTING_COINS} Coins. Every bit sent costs ${COST_PER_BIT} Coin, and each clean letter transmission awards +${LETTER_REWARD} Coins. Running out of coins mid-packet causes a transceiver brownout!`,
+      prompt: "Click Next › to view Thermal & BER scaling"
+    },
+    {
+      target: "#messageBoard",
+      title: "3. Thermal Runaway & Bonus",
+      text: `As Core Temp rises across all 10 letters, Channel BER climbs up to ${STD_MAX_BER}% in Standard Mode and up to ${ADV_MAX_BER}% in Advanced Mode. Completing all 10 rounds awards up to a +${MAX_END_BONUS} Coin Bonus (-${BONUS_PENALTY_PER_ERROR} per corrupted letter).`,
+      prompt: "Click Next › to check the RF Oscilloscope"
+    },
+    {
+      target: "#scopePanel",
+      title: "4. RF Oscilloscope & FSK Wave",
+      text: "Bits transmit in slow motion (1 bit/sec). '1' bits modulate a high-frequency green carrier wave and '0' bits modulate a low-frequency cyan wave. Red spikes indicate thermal bit flips!",
+      prompt: "Click Next › to inspect the packet bits"
+    },
+    {
+      target: "#bitStreamRow",
+      title: "5. Data Bits & Check Bits",
+      text: "Every letter is encoded into 8 binary data bits (D0–D7, green bar) plus optional error-coding check bits (cyan bar). Watch TX BITS and RX BITS above as each bit arrives.",
+      prompt: "Click Next › to explore Error Coding"
+    },
+    {
+      target: "#deckPanel",
+      title: "6. Error Coding Slider (Try It!)",
+      text: "Use the ‹ › buttons or click a pill in the slider to switch coding protocols. Notice how Pass, Retry, and Silent Error odds update below the slider!",
+      prompt: "⚡ ACTION: Change the coding option in the slider (or click Next ›)",
+      advanceOn: "selectCode"
+    },
+    {
+      target: "#deckPanel",
+      title: "7. Silent Errors vs. ARQ Retransmits",
+      text: "Raw Uncoded (8 Coins) has no check bits—any flip corrupts the letter silently! 1-Bit Parity (9 Coins) catches odd errors (1, 3) and auto-retransmits, but 2 simultaneous flips fool it!",
+      prompt: "Click Next › to learn about Advanced Coding"
+    },
+    {
+      target: "#deckPanel",
+      title: "8. Advanced Coding (CRC & FEC)",
+      text: "In Advanced Mode, 2-Bit Dual Check (10 Coins) catches 1- and 2-bit errors, while Hamming FEC (12 Coins) auto-heals 1-bit errors on the spot without paying for a retransmit!",
+      prompt: "Click Next › to prepare for launch"
+    },
+    {
+      target: "#btnTransmit",
+      title: "9. Launch First Packet (Try It!)",
+      text: "Ready to fire! Click TRANSMIT below to send 'H' (01001000) across the channel at 1 bit per second and watch each bit deduct 1 Coin.",
+      prompt: "⚡ ACTION: Click TRANSMIT below to launch 'H'",
+      advanceOn: "transmit"
+    },
+    {
+      target: "#messageBoard",
+      title: "10. Live Decoding & Next Rounds",
+      text: `Watch your bits arrive! Clean packets award +${LETTER_REWARD} Coins; detected errors trigger an automatic retransmit. Transmit the remaining letters or click Exit to play freely!`,
+      prompt: "Tutorial complete! Click ✕ Exit anytime"
+    }
+  ],
+
+  // Mode-specific BER & Thermal Curves
+  MODES: {
+    standard: {
+      name: "Standard Mode",
+      berCurve: STANDARD_BER_CURVE,
+      maxBer: STD_MAX_BER,
+      subtitle: `Standard Mode: Max ${STD_MAX_BER}% BER • Auto Power-Boost on Retry (-1% BER)`,
+      tempCurve: [35, 38, 42, 45, 49, 53, 56, 60, 65, 68],
+      flavors: [
+        "Coolant nominal. Clean channel.",
+        "Slight warm-up in RF stage.",
+        "Heatsink fan spinning up...",
+        "Thermal noise at 2.0%.",
+        "Warm amplifier. Watch single-bit flips!",
+        "Heatsink saturated at 3.0% BER.",
+        "Steady thermal noise floor.",
+        "High warm-up! Parity recommended.",
+        `Max Standard Temp reached (${STD_MAX_BER.toFixed(1)}% BER).`,
+        "Final packet! Keep parity active."
+      ],
+      retryBerDelta: -1.0, // Auto power-boost reduces BER by 1% per retry (min 0.5%)
+      minBerFloor: 0.5,
+      allowedCodes: ["raw", "parity1"]
+    },
+    advanced: {
+      name: "Advanced Mode",
+      berCurve: ADVANCED_BER_CURVE,
+      maxBer: ADV_MAX_BER,
+      subtitle: `Advanced Mode: Thermal Runaway up to ${ADV_MAX_BER}% BER • Retries add +0.5% Heat Penalty!`,
+      tempCurve: [35, 42, 50, 58, 67, 76, 85, 94, 103, 112],
+      flavors: [
+        "Coolant nominal. Clean channel.",
+        "Coolant pump pressure dropping...",
+        "Heatsink saturation detected.",
+        "Thermal agitation rising in RF stage.",
+        "WARNING: Solder joints softening.",
+        "High Johnson-Nyquist noise floor!",
+        "CRITICAL: Parity checks failing regularly.",
+        "Silicon junction nearing thermal limits!",
+        "DANGER: Heavy burst noise & bit-flips.",
+        `MELTDOWN IMMINENT (${ADV_MAX_BER.toFixed(1)}% Base BER). Final packet!`
+      ],
+      retryBerDelta: 0.5, // Thermal runaway adds +0.5% BER per retry
+      maxBerCap: 35.0,
+      allowedCodes: ["raw", "parity1", "crc2", "fec4"]
+    }
+  }
+};
+
+(function() {
+  const CODING_SCHEMES = {
+    raw: {
+      id: "raw",
+      shortName: "Raw Uncoded",
+      bits: 8,
+      checkBits: 0,
+      desc: "8 data bits, no check bits. Any bit flip corrupts the letter silently (0 reward)."
+    },
+    parity1: {
+      id: "parity1",
+      shortName: "1-Bit Parity",
+      bits: 9,
+      checkBits: 1,
+      desc: "Catches ODD bit errors (1, 3, 5) & auto-retransmits. Fooled by EVEN errors (2, 4)."
+    },
+    crc2: {
+      id: "crc2",
+      shortName: "2-Bit Dual Check",
+      bits: 10,
+      checkBits: 2,
+      desc: "Catches 1-bit & 2-bit errors & auto-retransmits. Only fooled by 3+ errors."
+    },
+    fec4: {
+      id: "fec4",
+      shortName: "Hamming FEC",
+      bits: 12,
+      checkBits: 4,
+      desc: "AUTO-HEALS 1-bit errors on the spot (no retransmit!). Retransmits on 2-bit errors."
+    }
+  };
+
+  const CONTROL_GLYPHS = [
+    "␀","☺","☻","♥","♦","♣","♠","•","◘","○","◙","♂","♀","♪","♫","☼",
+    "►","◄","↕","‼","¶","§","▬","↨","↑","↓","→","←","∟","↔","▲","▼"
+  ];
+
+  // Runtime State
+  let currentMode = "standard";
+  let roundIdx = 0;
+  let coins = GAME_CONFIG.STARTING_COINS;
+  let selectedCode = "parity1";
+  let retryCount = 0;
+  let accumulatedHeatBer = 0;
+  let isTransmitting = false;
+  let abortRequested = false;
+  let resultsLog = [];
+  let totalBitsSent = 0;
+  let totalRetransmits = 0;
+  let lastShareReport = "";
+
+  // Tutorial State
+  let tutorialActive = Boolean(GAME_CONFIG.START_IN_TUTORIAL);
+  let tutorialStepIdx = 0;
+
+  // Live Oscilloscope FSK Modulation State
+  let fskState = {
+    active: false,
+    bitVal: 0,
+    glitchBurstFrames: 0
+  };
+
+  // Web Audio Synthesizer
+  let audioCtx = null;
+  function playTone(freq, type = "sine", duration = 0.08, gainVal = 0.08) {
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === "suspended") audioCtx.resume();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      gain.gain.setValueAtTime(gainVal, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration);
+    } catch (e) {}
+  }
+
+  function charToBits(ch) {
+    return ch.charCodeAt(0).toString(2).padStart(8, "0").split("").map(Number);
+  }
+
+  function bitsToAsciiChar(bits8) {
+    const code = parseInt(bits8.slice(0, 8).join(""), 2);
+    if (code >= 32 && code <= 126) {
+      return String.fromCharCode(code);
+    }
+    if (code === 127) return "⌂";
+    if (code >= 0 && code < 32) return CONTROL_GLYPHS[code];
+    return String.fromCharCode(code);
+  }
+
+  function computeCheckBits(dataBits, schemeId) {
+    const scheme = CODING_SCHEMES[schemeId];
+    const ones = dataBits.reduce((a, b) => a + b, 0);
+    const checkBits = [];
+    if (scheme.checkBits >= 1) {
+      checkBits.push({ val: ones % 2, label: "P0" });
+    }
+    if (scheme.checkBits >= 2) {
+      checkBits.push({ val: (dataBits[0] ^ dataBits[2] ^ dataBits[4] ^ dataBits[6]), label: "C1" });
+    }
+    if (scheme.checkBits === 4) {
+      checkBits[0].label = "F0";
+      checkBits[1].label = "F1";
+      checkBits.push({ val: (dataBits[1] ^ dataBits[3] ^ dataBits[5] ^ dataBits[7]), label: "F2" });
+      checkBits.push({ val: (dataBits[0] ^ dataBits[1] ^ dataBits[4] ^ dataBits[5]), label: "F3" });
+    }
+    return checkBits;
+  }
+
+  function getEffectiveBer() {
+    const cfg = GAME_CONFIG.MODES[currentMode];
+    const base = cfg.berCurve[Math.min(roundIdx, GAME_CONFIG.TARGET_WORD.length - 1)];
+    if (currentMode === "standard") {
+      const boosted = base + (retryCount * cfg.retryBerDelta);
+      return Math.max(cfg.minBerFloor || 0.5, Number(boosted.toFixed(1)));
+    } else {
+      return Math.min(cfg.maxBerCap || 35, Number((base + accumulatedHeatBer).toFixed(1)));
+    }
+  }
+
+  function getEffectiveTemp() {
+    const cfg = GAME_CONFIG.MODES[currentMode];
+    const baseTemp = cfg.tempCurve[Math.min(roundIdx, GAME_CONFIG.TARGET_WORD.length - 1)];
+    return currentMode === "advanced" ? baseTemp + Math.round(accumulatedHeatBer * 2) : baseTemp;
+  }
+
+  function getProjectedBonus() {
+    const badLetters = resultsLog.filter((r) => !r.clean).length;
+    return Math.max(0, GAME_CONFIG.MAX_END_BONUS - (badLetters * GAME_CONFIG.BONUS_PENALTY_PER_ERROR));
+  }
+
+  function nCr(n, r) {
+    if (r < 0 || r > n) return 0;
+    let res = 1;
+    for (let i = 1; i <= r; i++) res = (res * (n - i + 1)) / i;
+    return res;
+  }
+
+  function calcSchemeOdds(schemeId, berPercent) {
+    const p = berPercent / 100;
+    const scheme = CODING_SCHEMES[schemeId];
+    const n = scheme.bits;
+    const probK = (k) => nCr(n, k) * Math.pow(p, k) * Math.pow(1 - p, n - k);
+
+    const p0 = probK(0);
+    const p1 = probK(1);
+    const p2 = probK(2);
+    const p3 = probK(3);
+    const p5 = probK(5);
+
+    let cleanOrHeal = 0;
+    let retransmit = 0;
+    let silentCorrupt = 0;
+
+    if (schemeId === "raw") {
+      cleanOrHeal = p0;
+      retransmit = 0;
+      silentCorrupt = 1 - p0;
+    } else if (schemeId === "parity1") {
+      cleanOrHeal = p0;
+      retransmit = p1 + p3 + p5;
+      silentCorrupt = Math.max(0, 1 - cleanOrHeal - retransmit);
+    } else if (schemeId === "crc2") {
+      cleanOrHeal = p0;
+      retransmit = p1 + p2;
+      silentCorrupt = Math.max(0, 1 - cleanOrHeal - retransmit);
+    } else if (schemeId === "fec4") {
+      cleanOrHeal = p0 + p1;
+      retransmit = p2;
+      silentCorrupt = Math.max(0, 1 - cleanOrHeal - retransmit);
+    }
+
+    return {
+      success: (cleanOrHeal * 100).toFixed(1),
+      retry: (retransmit * 100).toFixed(1),
+      corrupt: (silentCorrupt * 100).toFixed(1)
+    };
+  }
+
+  /* ==========================================================================
+     INTERACTIVE TUTORIAL ENGINE
+     ========================================================================== */
+  function clearTutorialSpotlights() {
+    document.querySelectorAll(".tutorial-spotlight").forEach((el) => {
+      el.classList.remove("tutorial-spotlight");
+    });
+  }
+
+  function renderTutorial() {
+    const panel = document.getElementById("tutorialPanel");
+    const btnTut = document.getElementById("btnTutorial");
+    btnTut.classList.toggle("tut-active", tutorialActive);
+    clearTutorialSpotlights();
+
+    if (!tutorialActive) {
+      panel.classList.remove("open");
+      return;
+    }
+
+    panel.classList.add("open");
+    const steps = GAME_CONFIG.TUTORIAL_STEPS;
+    tutorialStepIdx = Math.max(0, Math.min(steps.length - 1, tutorialStepIdx));
+    const step = steps[tutorialStepIdx];
+
+    document.getElementById("tutStepBadge").textContent = `Step ${tutorialStepIdx + 1} / ${steps.length}`;
+    document.getElementById("tutTitle").textContent = step.title;
+    document.getElementById("tutText").textContent = step.text;
+    document.getElementById("tutPrompt").textContent = step.prompt || "";
+
+    document.getElementById("btnTutPrev").disabled = tutorialStepIdx === 0;
+    document.getElementById("btnTutNext").textContent =
+      tutorialStepIdx === steps.length - 1 ? "Finish ✓" : "Next ›";
+
+    if (step.target) {
+      const targetEl = document.querySelector(step.target);
+      if (targetEl) {
+        targetEl.classList.add("tutorial-spotlight");
+      }
+    }
+  }
+
+  function toggleTutorial(forceState) {
+    playTone(680, "sine", 0.05, 0.05);
+    tutorialActive = typeof forceState === "boolean" ? forceState : !tutorialActive;
+    if (tutorialActive) {
+      tutorialStepIdx = 0;
+    }
+    renderTutorial();
+  }
+
+  function stepTutorial(delta) {
+    playTone(740, "sine", 0.04, 0.04);
+    const steps = GAME_CONFIG.TUTORIAL_STEPS;
+    if (tutorialStepIdx + delta >= steps.length) {
+      toggleTutorial(false);
+      return;
+    }
+    tutorialStepIdx = Math.max(0, tutorialStepIdx + delta);
+    renderTutorial();
+  }
+
+  function checkTutorialTrigger(actionType) {
+    if (!tutorialActive) return;
+    const step = GAME_CONFIG.TUTORIAL_STEPS[tutorialStepIdx];
+    if (step && step.advanceOn === actionType) {
+      tutorialStepIdx = Math.min(GAME_CONFIG.TUTORIAL_STEPS.length - 1, tutorialStepIdx + 1);
+      renderTutorial();
+    }
+  }
+
+  /* ==========================================================================
+     MODE & GAME STATE MANAGEMENT
+     ========================================================================== */
+  function switchMode(mode) {
+    if (isTransmitting) return;
+    playTone(660, "sine", 0.05, 0.05);
+    currentMode = mode;
+    document.getElementById("btnStandard").classList.toggle("active", mode === "standard");
+    document.getElementById("btnAdvanced").classList.toggle("active", mode === "advanced");
+    document.getElementById("modeSubtitle").textContent = GAME_CONFIG.MODES[mode].subtitle;
+    selectedCode = "parity1";
+    resetGame();
+  }
+
+  function resetGame() {
+    isTransmitting = false;
+    abortRequested = false;
+    fskState.active = false;
+    fskState.glitchBurstFrames = 0;
+    roundIdx = 0;
+    coins = GAME_CONFIG.STARTING_COINS;
+    retryCount = 0;
+    accumulatedHeatBer = 0;
+    resultsLog = [];
+    totalBitsSent = 0;
+    totalRetransmits = 0;
+    document.getElementById("endModal").classList.remove("open");
+    document.getElementById("btnAbort").style.display = "none";
+    document.getElementById("btnTransmit").disabled = false;
+
+    setVerdict("Select an encoding mode below and press TRANSMIT.", "var(--cyan)", "");
+    renderAll();
+    renderPacketBitsPreview();
+    renderTutorial();
+  }
+
+  function positionSliderTrack() {
+    const cfg = GAME_CONFIG.MODES[currentMode];
+    const activeIdx = Math.max(0, cfg.allowedCodes.indexOf(selectedCode));
+    const viewport = document.getElementById("sliderViewport");
+    const track = document.getElementById("codingSliderTrack");
+    const pills = track.querySelectorAll(".code-pill");
+    if (!pills.length || !viewport) return;
+
+    const pill = pills[activeIdx];
+    const viewportCenter = viewport.clientWidth / 2;
+    const pillCenter = pill.offsetLeft + (pill.offsetWidth / 2);
+    const offset = viewportCenter - pillCenter;
+    track.style.transform = `translateX(${offset}px)`;
+  }
+
+  function stepCodingSelection(delta) {
+    if (isTransmitting) return;
+    const allowed = GAME_CONFIG.MODES[currentMode].allowedCodes;
+    const idx = allowed.indexOf(selectedCode);
+    const nextIdx = Math.min(allowed.length - 1, Math.max(0, idx + delta));
+    if (nextIdx !== idx) {
+      playTone(720, "sine", 0.04, 0.04);
+      selectedCode = allowed[nextIdx];
+      renderAll();
+      renderPacketBitsPreview();
+      checkTutorialTrigger("selectCode");
+    }
+  }
+
+  function renderAll() {
+    const totalRounds = GAME_CONFIG.TARGET_WORD.length;
+    const cfg = GAME_CONFIG.MODES[currentMode];
+    const safeIdx = Math.min(roundIdx, totalRounds - 1);
+    const targetChar = GAME_CONFIG.TARGET_WORD[safeIdx];
+    const targetBits = charToBits(targetChar);
+    const ber = getEffectiveBer();
+    const temp = getEffectiveTemp();
+    const projectedBonus = getProjectedBonus();
+
+    document.getElementById("hudRound").textContent =
+      roundIdx < totalRounds ? `${roundIdx + 1} / ${totalRounds} ('${targetChar}')` : `${totalRounds} / ${totalRounds}`;
+    document.getElementById("hudTargetBits").textContent =
+      roundIdx < totalRounds ? targetBits.join("") : "--------";
+    document.getElementById("hudCoins").textContent = coins;
+    document.getElementById("hudRewardSub").textContent =
+      `+${GAME_CONFIG.LETTER_REWARD}/Char • Bonus: +${projectedBonus}`;
+
+    document.getElementById("hudTemp").textContent = `${temp}°C`;
+    document.getElementById("hudTemp").style.color =
+      temp < 55 ? "var(--green)" : temp < 80 ? "var(--amber)" : "var(--red)";
+    document.getElementById("hudTempNote").textContent =
+      temp < 55 ? "Coolant Nominal" : temp < 85 ? "Thermal Agitation" : "OVERHEATING!";
+
+    document.getElementById("hudBer").textContent = `${ber.toFixed(1)}%`;
+    if (currentMode === "standard" && retryCount > 0) {
+      document.getElementById("hudBerMod").textContent = `Auto-Boost (${retryCount * cfg.retryBerDelta}% BER)`;
+      document.getElementById("hudBerMod").style.color = "var(--green)";
+    } else if (currentMode === "advanced" && accumulatedHeatBer > 0) {
+      document.getElementById("hudBerMod").textContent = `+${accumulatedHeatBer.toFixed(1)}% Retry Heat`;
+      document.getElementById("hudBerMod").style.color = "var(--red)";
+    } else {
+      document.getElementById("hudBerMod").textContent = "Base Noise Floor";
+      document.getElementById("hudBerMod").style.color = "var(--muted)";
+    }
+
+    document.getElementById("thermalFlavor").textContent = cfg.flavors[safeIdx];
+    document.getElementById("txBitsReadout").innerHTML = `TX BITS: <b>${targetBits.join("")}</b>`;
+
+    // Render 10 Character Slots
+    const slotsContainer = document.getElementById("charSlots");
+    slotsContainer.innerHTML = "";
+    let cleanCount = 0;
+    for (let i = 0; i < totalRounds; i++) {
+      const slot = document.createElement("div");
+      slot.className = "char-slot";
+      const res = resultsLog[i];
+      if (i === roundIdx && roundIdx < totalRounds) slot.classList.add("current");
+      if (res) {
+        slot.classList.add(res.clean ? "success" : "corrupted");
+        if (res.clean) cleanCount++;
+      }
+      slot.innerHTML = `
+        <div class="slot-target">${GAME_CONFIG.TARGET_WORD[i]}</div>
+        <div class="slot-rx" style="color:${res ? (res.clean ? 'var(--green)' : 'var(--red)') : 'var(--muted)'}">
+          ${res ? res.received : "·"}
+        </div>
+      `;
+      slotsContainer.appendChild(slot);
+    }
+
+    document.getElementById("msgAccuracy").innerHTML =
+      `Clean: <b>${cleanCount}/${resultsLog.length}</b> • Bonus: <b style="color:var(--gold)">+${projectedBonus}</b>`;
+
+    // Render Horizontal Coding Slider Pills + Selected Info Box
+    const track = document.getElementById("codingSliderTrack");
+    track.innerHTML = "";
+    const allowed = cfg.allowedCodes;
+    const activeIdx = Math.max(0, allowed.indexOf(selectedCode));
+
+    allowed.forEach((codeId) => {
+      const scheme = CODING_SCHEMES[codeId];
+      const packetCost = scheme.bits * GAME_CONFIG.COST_PER_BIT;
+      const pill = document.createElement("button");
+      pill.type = "button";
+      pill.dataset.code = codeId;
+      pill.className = `code-pill ${selectedCode === codeId ? "selected" : ""}`;
+      pill.innerHTML = `
+        <span class="pill-name">${scheme.shortName}</span>
+        <span class="pill-cost">${packetCost}c (${scheme.bits}b)</span>
+      `;
+      track.appendChild(pill);
+    });
+
+    document.getElementById("btnPrevCode").disabled = isTransmitting || activeIdx <= 0;
+    document.getElementById("btnNextCode").disabled = isTransmitting || activeIdx >= allowed.length - 1;
+    document.getElementById("sliderPosIndicator").textContent = `${activeIdx + 1} / ${allowed.length}`;
+
+    const activeScheme = CODING_SCHEMES[selectedCode];
+    const activeCost = activeScheme.bits * GAME_CONFIG.COST_PER_BIT;
+    const activeOdds = calcSchemeOdds(selectedCode, ber);
+
+    document.getElementById("costRuleHeader").textContent =
+      `ERROR CODING (${GAME_CONFIG.COST_PER_BIT} Coin = 1 Bit)`;
+    document.getElementById("selectedCodeDesc").textContent = activeScheme.desc;
+    document.getElementById("selectedCodeOdds").innerHTML =
+      `Pass: <b>${activeOdds.success}%</b> &nbsp;|&nbsp; Retry: <b>${activeOdds.retry}%</b> &nbsp;|&nbsp; Silent Err: <b style="color:${Number(activeOdds.corrupt) > 5 ? 'var(--red)' : 'var(--cyan)'}">${activeOdds.corrupt}%</b>`;
+
+    const txBtn = document.getElementById("btnTransmit");
+    if (roundIdx < totalRounds) {
+      txBtn.textContent = `⚡ Transmit '${targetChar}' (${activeCost} Coins)`;
+    }
+
+    requestAnimationFrame(positionSliderTrack);
+  }
+
+  function renderPacketBitsPreview() {
+    const totalRounds = GAME_CONFIG.TARGET_WORD.length;
+    if (roundIdx >= totalRounds) return;
+
+    const targetChar = GAME_CONFIG.TARGET_WORD[roundIdx];
+    const dataBits = charToBits(targetChar);
+    const checkBits = computeCheckBits(dataBits, selectedCode);
+    const row = document.getElementById("bitStreamRow");
+    row.innerHTML = "";
+
+    dataBits.forEach((b, idx) => {
+      const box = document.createElement("div");
+      box.className = "bit-box data-bit";
+      box.innerHTML = `<span class="bit-val">${b}</span><span class="bit-tag">D${idx}</span>`;
+      row.appendChild(box);
+    });
+
+    checkBits.forEach((chk) => {
+      const box = document.createElement("div");
+      box.className = "bit-box check-bit";
+      box.innerHTML = `<span class="bit-val">${chk.val}</span><span class="bit-tag">${chk.label}</span>`;
+      row.appendChild(box);
+    });
+
+    document.getElementById("rxBitsReadout").style.color = "var(--cyan)";
+    document.getElementById("rxBitsReadout").innerHTML = `RX BITS: --------`;
+  }
+
+  function setVerdict(text, borderColor, retryInfo = "") {
+    const banner = document.getElementById("verdictBanner");
+    banner.style.borderLeftColor = borderColor;
+    document.getElementById("verdictText").textContent = text;
+    document.getElementById("retryCounter").textContent = retryInfo;
+  }
+
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+  async function startTransmission() {
+    const totalRounds = GAME_CONFIG.TARGET_WORD.length;
+    if (isTransmitting || roundIdx >= totalRounds) return;
+
+    const scheme = CODING_SCHEMES[selectedCode];
+
+    if (coins < GAME_CONFIG.COST_PER_BIT) {
+      endGame(false, "OUT OF COINS! CANNOT TRANSMIT.");
+      return;
+    }
+
+    checkTutorialTrigger("transmit");
+
+    isTransmitting = true;
+    abortRequested = false;
+    retryCount = 0;
+    document.getElementById("btnTransmit").disabled = true;
+    document.getElementById("btnAbort").style.display = "block";
+
+    let roundCoinsSpent = 0;
+    let attempts = 0;
+    const targetChar = GAME_CONFIG.TARGET_WORD[roundIdx];
+    const origDataBits = charToBits(targetChar);
+
+    while (true) {
+      attempts++;
+      renderAll();
+      renderPacketBitsPreview();
+
+      const boxes = Array.from(document.querySelectorAll("#bitStreamRow .bit-box"));
+      boxes.forEach((b) => b.classList.add("queued"));
+
+      const ber = getEffectiveBer();
+      setVerdict(
+        `Transmitting '${targetChar}' (${origDataBits.join("")}) @ ${ber.toFixed(1)}% BER...`,
+        "var(--cyan)",
+        `Try #${attempts}`
+      );
+
+      const rxDataBits = [...origDataBits];
+      const receivedStreamStrings = [];
+      let errorCount = 0;
+      const flippedBoxes = [];
+
+      // Transmit 1 bit every BIT_TRANSMIT_DELAY_MS (1 second per bit)
+      for (let i = 0; i < boxes.length; i++) {
+        if (abortRequested) break;
+
+        if (coins < GAME_CONFIG.COST_PER_BIT) {
+          fskState.active = false;
+          document.getElementById("btnAbort").style.display = "none";
+          isTransmitting = false;
+          endGame(false, `BANKRUPT WHILE TRANSMITTING BIT ${i + 1} OF '${targetChar}'!`);
+          return;
+        }
+
+        // Deduct coin for this bit
+        coins -= GAME_CONFIG.COST_PER_BIT;
+        roundCoinsSpent += GAME_CONFIG.COST_PER_BIT;
+        totalBitsSent++;
+        document.getElementById("hudCoins").textContent = coins;
+
+        const box = boxes[i];
+        box.classList.remove("queued");
+        box.classList.add("transmitting");
+
+        const intendedBit = Number(box.querySelector(".bit-val").textContent);
+
+        // Engage FSK modulation on oscilloscope and play FSK carrier tone
+        fskState.active = true;
+        fskState.bitVal = intendedBit;
+        playTone(intendedBit === 1 ? 880 : 480, "sine", 0.14, 0.06);
+
+        await sleep(GAME_CONFIG.BIT_TRANSMIT_DELAY_MS);
+
+        box.classList.remove("transmitting");
+
+        // Roll against current BER for this bit
+        const bitFlipped = (Math.random() * 100) < ber;
+        if (bitFlipped) {
+          errorCount++;
+          flippedBoxes.push({ box, index: i });
+          box.classList.add("flipped");
+          fskState.glitchBurstFrames = 14;
+          playTone(145, "sawtooth", 0.16, 0.12);
+
+          const valSpan = box.querySelector(".bit-val");
+          const mutatedBit = intendedBit === 1 ? 0 : 1;
+          valSpan.textContent = String(mutatedBit);
+
+          if (i < 8) {
+            rxDataBits[i] = mutatedBit;
+            receivedStreamStrings.push(String(mutatedBit));
+          }
+        } else {
+          box.classList.add("clean-sent");
+          playTone(1046, "triangle", 0.05, 0.04);
+          if (i < 8) {
+            receivedStreamStrings.push(String(intendedBit));
+          }
+        }
+
+        // Live update RX binary buffer as data bits arrive
+        if (i < 8) {
+          const partialBin = receivedStreamStrings.join("").padEnd(8, "-");
+          if (i === 7) {
+            const liveChar = bitsToAsciiChar(rxDataBits);
+            const isMatch = liveChar === targetChar;
+            document.getElementById("rxBitsReadout").style.color = isMatch ? "var(--green)" : "var(--red)";
+            document.getElementById("rxBitsReadout").innerHTML =
+              `RX BITS: <b>${rxDataBits.join("")}</b> ('${liveChar}')`;
+          } else {
+            document.getElementById("rxBitsReadout").innerHTML =
+              `RX BITS: <b>${partialBin}</b>`;
+          }
+        }
+      }
+
+      fskState.active = false;
+
+      if (abortRequested) {
+        const abortChar = bitsToAsciiChar(rxDataBits);
+        setVerdict(`Retries aborted! Letter '${targetChar}' skipped (+0 Coins).`, "var(--red)");
+        resultsLog.push({ target: targetChar, received: abortChar, clean: false, tries: attempts, coinsSpent: roundCoinsSpent });
+        break;
+      }
+
+      await sleep(280);
+
+      // CASE 1: Zero bit flips -> Clean Arrival!
+      if (errorCount === 0) {
+        coins += GAME_CONFIG.LETTER_REWARD;
+        playTone(1318, "triangle", 0.2, 0.1);
+        const netCoins = GAME_CONFIG.LETTER_REWARD - roundCoinsSpent;
+        setVerdict(
+          `ACK! '${targetChar}' received cleanly. +${GAME_CONFIG.LETTER_REWARD} Coins (Net ${netCoins >= 0 ? '+' : ''}${netCoins})`,
+          "var(--green)",
+          `Tries: ${attempts}`
+        );
+        resultsLog.push({ target: targetChar, received: targetChar, clean: true, tries: attempts, coinsSpent: roundCoinsSpent });
+        break;
+      }
+
+      // CASE 2: Hamming FEC Auto-Heals any 1-bit error without retransmission!
+      if (scheme.id === "fec4" && errorCount === 1) {
+        flippedBoxes.forEach(({ box, index }) => {
+          box.classList.remove("flipped");
+          box.classList.add("healed");
+          const valSpan = box.querySelector(".bit-val");
+          valSpan.textContent = valSpan.textContent === "1" ? "0" : "1";
+          if (index < 8) rxDataBits[index] = origDataBits[index];
+        });
+
+        document.getElementById("rxBitsReadout").style.color = "var(--gold)";
+        document.getElementById("rxBitsReadout").innerHTML =
+          `RX BITS: <b>${origDataBits.join("")}</b> ('${targetChar}' Healed)`;
+
+        coins += GAME_CONFIG.LETTER_REWARD;
+        playTone(1174, "triangle", 0.22, 0.11);
+        setVerdict(
+          `FEC AUTO-HEALED 1-bit flip! '${targetChar}' recovered! +${GAME_CONFIG.LETTER_REWARD} Coins`,
+          "var(--gold)",
+          `Saved Retry!`
+        );
+        resultsLog.push({ target: targetChar, received: targetChar, clean: true, tries: attempts, coinsSpent: roundCoinsSpent });
+        break;
+      }
+
+      // CASE 3: Check if error is detected (ARQ Retransmit) or fools the receiver (Silent Corruption)
+      let detected = false;
+      if (scheme.id === "raw") {
+        detected = false;
+      } else if (scheme.id === "parity1") {
+        detected = (errorCount % 2 === 1);
+      } else if (scheme.id === "crc2" || scheme.id === "fec4") {
+        detected = (errorCount <= 2);
+      }
+
+      if (!detected) {
+        // Ensure at least 1 data bit reflects the undetected error so the ASCII character visibly mutates
+        if (rxDataBits.join("") === origDataBits.join("")) {
+          rxDataBits[7] = rxDataBits[7] === 1 ? 0 : 1;
+          const d7Box = boxes[7];
+          d7Box.classList.add("flipped");
+          d7Box.querySelector(".bit-val").textContent = String(rxDataBits[7]);
+        }
+
+        const corruptedAsciiChar = bitsToAsciiChar(rxDataBits);
+
+        document.getElementById("rxBitsReadout").style.color = "var(--red)";
+        document.getElementById("rxBitsReadout").innerHTML =
+          `RX BITS: <b>${rxDataBits.join("")}</b> ('${corruptedAsciiChar}')`;
+
+        playTone(110, "sawtooth", 0.32, 0.14);
+        setVerdict(
+          `SILENT ERROR! ${errorCount} flip(s) fooled ${scheme.shortName} -> Received '${corruptedAsciiChar}' (${rxDataBits.join("")})`,
+          "var(--red)",
+          `-${GAME_CONFIG.BONUS_PENALTY_PER_ERROR} Bonus`
+        );
+        resultsLog.push({
+          target: targetChar,
+          received: corruptedAsciiChar,
+          clean: false,
+          tries: attempts,
+          coinsSpent: roundCoinsSpent
+        });
+        break;
+      }
+
+      // CASE 4: Error Detected -> NACK & Automatic ARQ Retransmit
+      totalRetransmits++;
+      retryCount++;
+      if (currentMode === "advanced") {
+        accumulatedHeatBer += GAME_CONFIG.MODES.advanced.retryBerDelta;
+      }
+
+      if (abortRequested) {
+        const abortChar = bitsToAsciiChar(rxDataBits);
+        setVerdict(`Retries aborted! Letter '${targetChar}' dropped (+0 Coins).`, "var(--red)");
+        resultsLog.push({ target: targetChar, received: abortChar, clean: false, tries: attempts, coinsSpent: roundCoinsSpent });
+        break;
+      }
+
+      const nextBer = getEffectiveBer();
+      const boostMsg = currentMode === "standard"
+        ? `Auto-Boost -> BER ${nextBer.toFixed(1)}%`
+        : `Heat Spike -> BER ${nextBer.toFixed(1)}%`;
+
+      setVerdict(
+        `NACK! ${errorCount}-bit error caught. Retransmitting... (${boostMsg})`,
+        "var(--amber)",
+        `Retry #${retryCount}`
+      );
+      renderAll();
+      await sleep(850);
+    }
+
+    document.getElementById("btnAbort").style.display = "none";
+    isTransmitting = false;
+    roundIdx++;
+    retryCount = 0;
+    renderAll();
+
+    if (roundIdx >= totalRounds) {
+      await sleep(650);
+      finishAllRounds();
+    } else {
+      document.getElementById("btnTransmit").disabled = false;
+      renderPacketBitsPreview();
+    }
+  }
+
+  function finishAllRounds() {
+    const totalRounds = GAME_CONFIG.TARGET_WORD.length;
+    const cleanLetters = resultsLog.filter((r) => r.clean).length;
+    const badLetters = totalRounds - cleanLetters;
+    const rxWord = resultsLog.map((r) => r.received).join("");
+    const endBonus = Math.max(0, GAME_CONFIG.MAX_END_BONUS - (badLetters * GAME_CONFIG.BONUS_PENALTY_PER_ERROR));
+
+    coins += endBonus;
+    renderAll();
+
+    endGame(
+      true,
+      badLetters === 0
+        ? `PERFECT HANDSHAKE ("${rxWord}")! Full +${endBonus} Coin Bonus Awarded!`
+        : `Decoded as "${rxWord}" (${cleanLetters}/${totalRounds} Clean) • End Bonus: +${endBonus} Coins`
+    );
+  }
+
+  function endGame(completed, subtitleText) {
+    const totalRounds = GAME_CONFIG.TARGET_WORD.length;
+    const cleanLetters = resultsLog.filter((r) => r.clean).length;
+    const badLetters = resultsLog.filter((r) => !r.clean).length;
+    const rxWord = resultsLog.map((r) => r.received).join("").padEnd(totalRounds, "_");
+    const endBonus = completed
+      ? Math.max(0, GAME_CONFIG.MAX_END_BONUS - (badLetters * GAME_CONFIG.BONUS_PENALTY_PER_ERROR))
+      : 0;
+
+    const statusLabel = completed
+      ? (cleanLetters === totalRounds ? "PERFECT TRANSMISSION" : "PARTIAL TRANSMISSION")
+      : "BANKRUPT";
+
+    const modeCfg = GAME_CONFIG.MODES[currentMode];
+
+    lastShareReport = [
+      "⚡ THERMAL RUNAWAY: BIT ERROR LAB ⚡",
+      `Mode: ${modeCfg.name} (Max ${modeCfg.maxBer}% BER)`,
+      `Status: ${statusLabel}`,
+      `Decoded String: "${rxWord}" (${cleanLetters}/${totalRounds} Clean)`,
+      `Total Bits Sent: ${totalBitsSent}b | ARQ Retransmits: ${totalRetransmits}`,
+      `End Bonus: +${endBonus} Coins | Final Balance: ${coins} Coins`
+    ].join("\n");
+
+    document.getElementById("shareStatus").textContent = "";
+    document.getElementById("btnShareTelemetry").textContent = "📤 Share Telemetry";
+
+    document.getElementById("modalTitle").textContent = completed
+      ? (cleanLetters === totalRounds ? "🏆 PERFECT TRANSMISSION!" : "⚠️ TRANSMISSION COMPLETE")
+      : "💥 TRANSCEIVER BANKRUPT";
+    document.getElementById("modalTitle").style.color = completed
+      ? (cleanLetters === totalRounds ? "var(--green)" : "var(--amber)")
+      : "var(--red)";
+    document.getElementById("modalSubtitle").textContent = subtitleText;
+
+    document.getElementById("modalStats").innerHTML = `
+      <div>Mode Played: <b>${modeCfg.name} (Max ${modeCfg.maxBer}% BER)</b></div>
+      <div>Target String:   <b>"${GAME_CONFIG.TARGET_WORD}"</b></div>
+      <div>Received String: <b style="color:${cleanLetters === totalRounds ? 'var(--green)' : 'var(--amber)'}">"${rxWord}"</b></div>
+      <div>Clean Letters: <b>${cleanLetters} / ${totalRounds}</b> (+${cleanLetters * GAME_CONFIG.LETTER_REWARD} Coins)</div>
+      <div>Corrupted Letters: <b>${badLetters}</b> (-${badLetters * GAME_CONFIG.BONUS_PENALTY_PER_ERROR} Bonus Penalty)</div>
+      <div>Total Bits Sent: <b>${totalBitsSent} bits</b> (${totalBitsSent * GAME_CONFIG.COST_PER_BIT} Coins spent)</div>
+      <div>ARQ Retransmits: <b>${totalRetransmits}</b></div>
+      <div>End Message Bonus: <b>+${endBonus} Coins</b> (Max ${GAME_CONFIG.MAX_END_BONUS})</div>
+      <hr style="border-color:#1e293b">
+      <div style="font-size:1.02rem;color:var(--gold)">Final Coin Balance: <b>${coins} Coins</b></div>
+    `;
+    document.getElementById("endModal").classList.add("open");
+  }
+
+  function copyReportFallback(text) {
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.setAttribute("readonly", "");
+      ta.style.position = "fixed";
+      ta.style.top = "-9999px";
+      document.body.appendChild(ta);
+      ta.select();
+      const ok = document.execCommand("copy");
+      document.body.removeChild(ta);
+      return ok;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  async function shareTelemetry() {
+    if (!lastShareReport) return;
+    playTone(880, "sine", 0.06, 0.06);
+    const btn = document.getElementById("btnShareTelemetry");
+    const statusEl = document.getElementById("shareStatus");
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: "Thermal Runaway: Bit Error Lab",
+          text: lastShareReport
+        });
+        btn.textContent = "✓ Telemetry Shared!";
+        statusEl.textContent = "Telemetry report shared!";
+        return;
+      } catch (err) {
+        if (err && err.name === "AbortError") return;
+      }
+    }
+
+    let copied = false;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      try {
+        await navigator.clipboard.writeText(lastShareReport);
+        copied = true;
+      } catch (e) {
+        copied = copyReportFallback(lastShareReport);
+      }
+    } else {
+      copied = copyReportFallback(lastShareReport);
+    }
+
+    if (copied) {
+      btn.textContent = "✓ Telemetry Copied!";
+      statusEl.textContent = "Copied telemetry summary to clipboard!";
+    } else {
+      statusEl.textContent = "Unable to access clipboard in this view.";
+    }
+  }
+
+  // Event Listeners
+  document.getElementById("btnStandard").addEventListener("click", () => switchMode("standard"));
+  document.getElementById("btnAdvanced").addEventListener("click", () => switchMode("advanced"));
+  document.getElementById("btnTutorial").addEventListener("click", () => toggleTutorial());
+  document.getElementById("btnTutPrev").addEventListener("click", () => stepTutorial(-1));
+  document.getElementById("btnTutNext").addEventListener("click", () => stepTutorial(1));
+  document.getElementById("btnTutExit").addEventListener("click", () => toggleTutorial(false));
+
+  document.getElementById("btnReset").addEventListener("click", () => {
+    playTone(440, "sine", 0.05, 0.05);
+    resetGame();
+  });
+  document.getElementById("btnTransmit").addEventListener("click", startTransmission);
+  document.getElementById("btnAbort").addEventListener("click", () => {
+    abortRequested = true;
+  });
+  document.getElementById("btnShareTelemetry").addEventListener("click", shareTelemetry);
+  document.getElementById("btnPlayAgain").addEventListener("click", () => {
+    playTone(660, "sine", 0.05, 0.05);
+    resetGame();
+  });
+
+  // Slider Navigation Buttons & Pill Click Delegation
+  document.getElementById("btnPrevCode").addEventListener("click", () => stepCodingSelection(-1));
+  document.getElementById("btnNextCode").addEventListener("click", () => stepCodingSelection(1));
+
+  document.getElementById("codingSliderTrack").addEventListener("click", (e) => {
+    if (isTransmitting) return;
+    const pill = e.target.closest(".code-pill");
+    if (!pill || !pill.dataset.code) return;
+    playTone(720, "sine", 0.04, 0.04);
+    selectedCode = pill.dataset.code;
+    renderAll();
+    renderPacketBitsPreview();
+    checkTutorialTrigger("selectCode");
+  });
+
+  // Touch Swipe Support on the Coding Slider Viewport
+  let touchStartX = null;
+  const sliderViewport = document.getElementById("sliderViewport");
+  sliderViewport.addEventListener("touchstart", (e) => {
+    if (e.touches.length === 1) touchStartX = e.touches[0].clientX;
+  }, { passive: true });
+
+  sliderViewport.addEventListener("touchend", (e) => {
+    if (touchStartX === null || !e.changedTouches.length) return;
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(dx) > 30) {
+      stepCodingSelection(dx < 0 ? 1 : -1);
+    }
+    touchStartX = null;
+  }, { passive: true });
+
+  window.addEventListener("resize", positionSliderTrack);
+
+  // Live RF Oscilloscope Canvas Loop with FSK Modulation
+  const canvas = document.getElementById("scopeCanvas");
+  const ctx = canvas.getContext("2d");
+  let phase = 0;
+
+  function drawOscilloscope() {
+    const w = canvas.width;
+    const h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+
+    ctx.strokeStyle = "#111c2d";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, h / 2);
+    ctx.lineTo(w, h / 2);
+    ctx.stroke();
+
+    const ber = getEffectiveBer();
+    const baseNoiseAmp = (ber / ADV_MAX_BER) * 20;
+
+    let freq = 0.045;
+    let amp = 13;
+    let color = ber > (ADV_MAX_BER * 0.7) ? "#ef4444" : ber > STD_MAX_BER ? "#f59e0b" : "#06b6d4";
+
+    if (fskState.glitchBurstFrames > 0) {
+      fskState.glitchBurstFrames--;
+      color = "#ef4444";
+      freq = 0.22;
+      amp = 22;
+    } else if (fskState.active) {
+      if (fskState.bitVal === 1) {
+        freq = 0.13; // High-frequency FSK carrier for '1'
+        amp = 19;
+        color = "#10b981";
+      } else {
+        freq = 0.026; // Low-frequency FSK carrier for '0'
+        amp = 19;
+        color = "#06b6d4";
+      }
+    }
+
+    ctx.strokeStyle = color;
+    ctx.lineWidth = fskState.active ? 2.4 : 1.8;
+    ctx.beginPath();
+
+    for (let x = 0; x < w; x += 3) {
+      const carrier = Math.sin((x * freq) + phase) * amp;
+      const glitchExtra = fskState.glitchBurstFrames > 0 ? (Math.random() - 0.5) * 26 : 0;
+      const thermalNoise = (Math.random() - 0.5) * 2 * baseNoiseAmp + glitchExtra;
+      const y = (h / 2) + carrier + thermalNoise;
+      if (x === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    phase += fskState.active ? (fskState.bitVal === 1 ? 0.34 : 0.14) : 0.12;
+    requestAnimationFrame(drawOscilloscope);
+  }
+
+  // Initialize Game
+  document.getElementById("modeSubtitle").textContent = GAME_CONFIG.MODES[currentMode].subtitle;
+  resetGame();
+  drawOscilloscope();
+})();
+</script>
+</body>
+</html>
