@@ -1,0 +1,2622 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nyquist Studio: CD Mastering Lab | © 2026 Barry Hemmerdinger</title>
+  <!--
+    ============================================================================
+    NYQUIST STUDIO: CD MASTERING LAB
+    Digital Sampling, Quantization & Bit-Budget Engineering Game
+    Copyright (c) 2026 Barry Hemmerdinger. All Rights Reserved.
+    ============================================================================
+  -->
+  <style>
+    :root {
+      --bg-deep: #090d16;
+      --bg-panel: #111827;
+      --bg-rack: #182234;
+      --bg-screen: #060a10;
+      --border-metal: #2b3954;
+      --gold: #f59e0b;
+      --gold-soft: rgba(245, 158, 11, 0.22);
+      --cyan: #06b6d4;
+      --cyan-bright: #22d3ee;
+      --cyan-soft: rgba(34, 211, 238, 0.2);
+      --green: #10b981;
+      --green-soft: rgba(16, 185, 129, 0.2);
+      --red: #ef4444;
+      --red-soft: rgba(239, 68, 68, 0.22);
+      --purple: #a855f7;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+      --font-math: 'Cambria Math', 'STIX Two Math', 'Times New Roman', serif;
+    }
+
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+
+    body {
+      background: radial-gradient(circle at 50% 0%, #17233b 0%, var(--bg-deep) 75%);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 12px;
+      overflow-x: hidden;
+    }
+
+
+    /* STUDIO CONSOLE CHASSIS */
+    .console-shell {
+      width: 100%;
+      max-width: 1180px;
+      background: linear-gradient(180deg, #162032 0%, #0d1320 100%);
+      border: 2px solid var(--border-metal);
+      border-radius: 14px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 14px;
+    }
+
+
+    /* TOP HEADER BAR */
+    .studio-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      background: rgba(6, 10, 16, 0.65);
+      border: 1px solid var(--border-metal);
+      border-radius: 10px;
+      padding: 10px 16px;
+    }
+
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+
+    .led-badge {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--gold);
+      box-shadow: 0 0 10px var(--gold);
+    }
+
+
+    .brand-title h1 {
+      font-size: 1.15rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      font-weight: 800;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+
+    .brand-sub {
+      font-size: 0.74rem;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+
+    .phase-pill {
+      font-family: var(--font-mono);
+      font-size: 0.76rem;
+      font-weight: 700;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: var(--gold-soft);
+      color: var(--gold);
+      border: 1px solid var(--gold);
+      letter-spacing: 0.04em;
+    }
+
+
+    .phase-pill.burned {
+      background: var(--cyan-soft);
+      color: var(--cyan-bright);
+      border-color: var(--cyan-bright);
+    }
+
+
+    .btn {
+      background: #1e293b;
+      color: var(--text-main);
+      border: 1px solid #3b4f73;
+      border-radius: 8px;
+      padding: 7px 13px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-sans);
+    }
+
+
+    .btn:hover:not(:disabled) {
+      background: #283750;
+      border-color: var(--cyan-bright);
+      transform: translateY(-1px);
+    }
+
+
+    .btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+
+    .btn-guide {
+      background: linear-gradient(135deg, #1e1b4b, #312e81);
+      border-color: #6366f1;
+      color: #e0e7ff;
+    }
+
+
+    .btn-guide:hover {
+      background: linear-gradient(135deg, #312e81, #4338ca);
+      border-color: #818cf8;
+    }
+
+
+    .btn-gold {
+      background: linear-gradient(135deg, #b45309, #d97706);
+      border-color: #fbbf24;
+      color: #fff;
+    }
+
+
+    .btn-cyan {
+      background: linear-gradient(135deg, #0e7490, #0891b2);
+      border-color: #22d3ee;
+      color: #fff;
+    }
+
+
+    .btn-burn {
+      background: linear-gradient(135deg, #dc2626, #ea580c);
+      border-color: #fca5a5;
+      color: #fff;
+      font-size: 0.92rem;
+      font-weight: 800;
+      padding: 11px 22px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      box-shadow: 0 0 20px rgba(239, 68, 68, 0.35);
+    }
+
+
+    .btn-burn:hover:not(:disabled) {
+      background: linear-gradient(135deg, #ef4444, #f97316);
+      box-shadow: 0 0 28px rgba(239, 68, 68, 0.6);
+    }
+
+
+    /* TRACK DECK & TRANSPORT BAR */
+    .transport-bar {
+      display: grid;
+      grid-template-columns: 1.3fr 1.7fr;
+      gap: 12px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border-metal);
+      border-radius: 10px;
+      padding: 12px 16px;
+      align-items: center;
+    }
+
+
+    @media (max-width: 860px) {
+      .transport-bar {
+        grid-template-columns: 1fr;
+      }
+    }
+
+
+    .track-info-box {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+
+    .track-label-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+
+    .track-tag {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      background: #1e293b;
+      color: var(--gold);
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      padding: 2px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+
+
+    .track-name {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+
+    .track-desc {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      line-height: 1.35;
+    }
+
+
+    .transport-controls {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+
+    .timecode-box {
+      font-family: var(--font-mono);
+      background: var(--bg-screen);
+      border: 1px solid #334155;
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 0.9rem;
+      color: var(--gold);
+      min-width: 128px;
+      text-align: center;
+    }
+
+
+    /* METER BRIDGE (OSCILLOSCOPE & FFT) */
+    .meter-bridge {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border-metal);
+      border-radius: 10px;
+      padding: 12px;
+    }
+
+
+    .meter-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    }
+
+
+    .meter-legend {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+
+    .swatch {
+      width: 12px;
+      height: 4px;
+      border-radius: 2px;
+    }
+
+
+    .toggle-switch {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-main);
+      background: #1a2436;
+      padding: 5px 11px;
+      border-radius: 6px;
+      border: 1px solid #334155;
+    }
+
+
+    .toggle-switch input {
+      accent-color: var(--cyan-bright);
+      width: 15px;
+      height: 15px;
+      cursor: pointer;
+    }
+
+
+    .screens-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+
+    @media (max-width: 860px) {
+      .screens-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+
+    .screen-card {
+      background: var(--bg-screen);
+      border: 1px solid #26354d;
+      border-radius: 8px;
+      padding: 8px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+
+    .screen-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: var(--font-mono);
+      font-size: 0.73rem;
+      color: var(--text-muted);
+      padding: 0 4px;
+    }
+
+
+    .screen-readout {
+      color: var(--cyan-bright);
+      font-weight: 600;
+    }
+
+
+    canvas.meter-canvas {
+      width: 100%;
+      height: 195px;
+      display: block;
+      background: #04070c;
+      border-radius: 6px;
+      border: 1px solid #162235;
+    }
+
+
+    /* KNOBS & CD BUDGET DECK */
+    .mastering-deck {
+      display: grid;
+      grid-template-columns: 1.25fr 1fr;
+      gap: 12px;
+    }
+
+
+    @media (max-width: 920px) {
+      .mastering-deck {
+        grid-template-columns: 1fr;
+      }
+    }
+
+
+    .knobs-panel, .budget-panel {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-metal);
+      border-radius: 10px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+
+    .panel-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+
+    .knobs-row {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 10px;
+    }
+
+
+    .knob-unit {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      background: rgba(6, 10, 16, 0.55);
+      border: 1px solid #24324b;
+      border-radius: 10px;
+      padding: 12px 10px;
+    }
+
+
+    .knob-title {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #fff;
+      text-align: center;
+    }
+
+
+    .knob-sub {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+
+
+    .knob-dial-wrap {
+      position: relative;
+      width: 96px;
+      height: 96px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: ns-resize;
+      touch-action: none;
+    }
+
+
+    .knob-dial {
+      width: 78px;
+      height: 78px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 32% 30%, #334155, #0f172a 75%);
+      border: 2px solid #475569;
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.65), inset 0 2px 3px rgba(255, 255, 255, 0.15);
+      position: relative;
+      transition: border-color 0.15s;
+    }
+
+
+    .knob-dial-wrap:hover .knob-dial {
+      border-color: var(--cyan-bright);
+    }
+
+
+    .knob-indicator {
+      position: absolute;
+      top: 7px;
+      left: 50%;
+      width: 4px;
+      height: 22px;
+      margin-left: -2px;
+      background: var(--cyan-bright);
+      border-radius: 2px;
+      transform-origin: 50% 30px;
+      box-shadow: 0 0 8px var(--cyan-bright);
+    }
+
+
+    .knob-unit.gold-knob .knob-indicator {
+      background: var(--gold);
+      box-shadow: 0 0 8px var(--gold);
+    }
+
+
+    .knob-value-box {
+      font-family: var(--font-mono);
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: var(--cyan-bright);
+      background: #060a10;
+      padding: 4px 12px;
+      border-radius: 6px;
+      border: 1px solid #26354d;
+    }
+
+
+    .knob-unit.gold-knob .knob-value-box {
+      color: var(--gold);
+    }
+
+
+    .knob-step-btns {
+      display: flex;
+      gap: 6px;
+    }
+
+
+    .step-btn {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: var(--text-main);
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      padding: 3px 9px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+
+    .step-btn:hover:not(:disabled) {
+      border-color: var(--cyan-bright);
+      background: #283750;
+    }
+
+
+    .coupling-bridge {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      text-align: center;
+      max-width: 95px;
+    }
+
+
+    .coupling-badge {
+      padding: 5px 8px;
+      border-radius: 6px;
+      background: #162032;
+      border: 1px solid #2e4061;
+      color: var(--text-muted);
+      font-weight: 700;
+      transition: all 0.2s;
+    }
+
+
+    .coupling-badge.active {
+      background: var(--red-soft);
+      border-color: var(--red);
+      color: #fca5a5;
+      box-shadow: 0 0 12px rgba(239, 68, 68, 0.35);
+    }
+
+
+    /* CD STORAGE BAR */
+    .cd-meter-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+
+    .cd-bar-outer {
+      height: 26px;
+      background: #060a10;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      overflow: hidden;
+      display: flex;
+      position: relative;
+    }
+
+
+    .cd-bar-used {
+      height: 100%;
+      background: linear-gradient(90deg, #0284c7, #22d3ee);
+      transition: width 0.12s ease;
+    }
+
+
+    .cd-bar-saved {
+      height: 100%;
+      background: repeating-linear-gradient(
+        -45deg,
+        rgba(16, 185, 129, 0.28),
+        rgba(16, 185, 129, 0.28) 8px,
+        rgba(16, 185, 129, 0.45) 8px,
+        rgba(16, 185, 129, 0.45) 16px
+      );
+      transition: width 0.12s ease;
+    }
+
+
+    .cd-bar-labels {
+      display: flex;
+      justify-content: space-between;
+      font-family: var(--font-mono);
+      font-size: 0.76rem;
+    }
+
+
+    .dsp-options-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding-top: 6px;
+      border-top: 1px solid rgba(255, 255, 255, 0.07);
+    }
+
+
+    /* SCOREBOARD / EVALUATION REPORT */
+    .score-panel {
+      background: linear-gradient(180deg, #131c2e 0%, #0b111d 100%);
+      border: 1px solid var(--border-metal);
+      border-radius: 10px;
+      padding: 14px 16px;
+      display: grid;
+      grid-template-columns: 1.5fr 1fr;
+      gap: 16px;
+      align-items: center;
+    }
+
+
+    @media (max-width: 860px) {
+      .score-panel {
+        grid-template-columns: 1fr;
+      }
+    }
+
+
+    .metrics-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+
+    .metric-row {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+
+    .metric-label-line {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.78rem;
+      font-family: var(--font-mono);
+    }
+
+
+    .metric-bar-bg {
+      height: 9px;
+      background: #060a10;
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid #26354d;
+    }
+
+
+    .metric-bar-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+
+    .total-score-card {
+      background: #060a10;
+      border: 1px solid #2e4061;
+      border-radius: 10px;
+      padding: 14px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      align-items: center;
+    }
+
+
+    .score-big {
+      font-family: var(--font-mono);
+      font-size: 2.1rem;
+      font-weight: 800;
+      color: var(--gold);
+      line-height: 1.1;
+    }
+
+
+    .score-verdict {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      line-height: 1.35;
+    }
+
+
+    /* FOOTER */
+    .studio-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-size: 0.74rem;
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+      padding: 4px 6px 0;
+    }
+
+
+    /* =========================================================================
+       ENGINEERING GUIDE MODAL & NATIVE HTML/CSS EQUATION TYPESETTING
+       ========================================================================= */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(3, 6, 12, 0.82);
+      backdrop-filter: blur(6px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 16px;
+    }
+
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+
+    .guide-modal {
+      background: linear-gradient(180deg, #162136 0%, #0c121e 100%);
+      border: 2px solid #3b4f73;
+      border-radius: 14px;
+      max-width: 920px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85);
+      display: flex;
+      flex-direction: column;
+    }
+
+
+    .guide-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 22px;
+      border-bottom: 1px solid #2b3954;
+      position: sticky;
+      top: 0;
+      background: #131c2e;
+      z-index: 5;
+    }
+
+
+    .guide-header h2 {
+      font-size: 1.15rem;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+
+    .guide-body {
+      padding: 20px 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+
+    .guide-intro {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      line-height: 1.55;
+      background: rgba(6, 10, 16, 0.5);
+      border-left: 3px solid var(--cyan-bright);
+      padding: 10px 14px;
+      border-radius: 0 8px 8px 0;
+    }
+
+
+    .formula-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+
+    @media (max-width: 780px) {
+      .formula-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+
+    .formula-card {
+      background: #0b111d;
+      border: 1px solid #283854;
+      border-radius: 10px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+
+    .formula-card-title {
+      font-size: 0.84rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--cyan-bright);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+
+    .formula-card.gold-card .formula-card-title {
+      color: var(--gold);
+    }
+
+
+    .formula-card.green-card .formula-card-title {
+      color: var(--green);
+    }
+
+
+    .formula-card.purple-card .formula-card-title {
+      color: #c084fc;
+    }
+
+
+    /* NATIVE HTML MATHEMATICAL EQUATION BOX */
+    .math-display {
+      background: #05080f;
+      border: 1px solid #1e2d45;
+      border-radius: 8px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-family: var(--font-math);
+      font-size: 1.22rem;
+      color: #f8fafc;
+      min-height: 74px;
+      box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.6);
+    }
+
+
+    .math-display var {
+      font-style: italic;
+      font-weight: 600;
+      color: #e2e8f0;
+    }
+
+
+    .math-display var.v-cyan {
+      color: var(--cyan-bright);
+    }
+
+
+    .math-display var.v-gold {
+      color: var(--gold);
+    }
+
+
+    .math-display var.v-green {
+      color: var(--green);
+    }
+
+
+    .math-display sub,
+    .math-display sup {
+      font-size: 0.72em;
+      font-style: normal;
+      font-family: var(--font-sans);
+      font-weight: 600;
+      color: #cbd5e1;
+    }
+
+
+    .math-op {
+      padding: 0 3px;
+      color: #94a3b8;
+      font-family: var(--font-math);
+    }
+
+
+    .math-paren {
+      font-size: 1.65em;
+      font-weight: 300;
+      color: #94a3b8;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      transform: translateY(-1px);
+    }
+
+
+    .math-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+
+    /* Stacked fraction layout */
+    .math-frac {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      vertical-align: middle;
+      margin: 0 4px;
+      line-height: 1.15;
+    }
+
+
+    .math-frac .num {
+      border-bottom: 1.5px solid #94a3b8;
+      padding: 0 6px 3px;
+      width: 100%;
+      text-align: center;
+    }
+
+
+    .math-frac .den {
+      padding: 3px 6px 0;
+      width: 100%;
+      text-align: center;
+    }
+
+
+    .math-unit {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-left: 3px;
+    }
+
+
+    .math-live-strip {
+      background: rgba(34, 211, 238, 0.08);
+      border: 1px dashed rgba(34, 211, 238, 0.35);
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+
+    .formula-explain {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      line-height: 1.48;
+    }
+
+
+    .formula-explain strong {
+      color: #e2e8f0;
+    }
+
+
+    .guide-footer {
+      padding: 14px 22px;
+      border-top: 1px solid #2b3954;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #101726;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+
+
+  <div class="console-shell">
+    <!-- HEADER -->
+    <header class="studio-header">
+      <div class="brand-group">
+        <div class="led-badge" id="statusLed"></div>
+        <div class="brand-title">
+          <h1>Nyquist Studio: CD Mastering Lab</h1>
+          <div class="brand-sub">10-Second Analog-to-CD Bit Budget Engineer • © 2026 Barry Hemmerdinger</div>
+        </div>
+      </div>
+
+
+      <div class="header-actions">
+        <span class="phase-pill" id="phaseBadge">PHASE 1: AUDITION &amp; DIAL-IN</span>
+        <button class="btn btn-guide" id="openGuideBtn" type="button">
+          📐 Engineering Guide &amp; Equations
+        </button>
+        <button class="btn" id="newCutBtn" type="button">
+          🎲 New Random Cut
+        </button>
+      </div>
+    </header>
+
+
+    <!-- TRACK & TRANSPORT BAR -->
+    <section class="transport-bar">
+      <div class="track-info-box">
+        <div class="track-label-row">
+          <span class="track-tag" id="trackArchetypeTag">ARCHETYPE</span>
+          <span class="track-name" id="trackTitle">Loading Analog Master...</span>
+        </div>
+        <p class="track-desc" id="trackHint">
+          Inspect the Oscilloscope and FFT Spectrum Analyzer while listening to the 48 kHz Analog Master.
+        </p>
+      </div>
+
+
+      <div class="transport-controls">
+        <button class="btn btn-gold" id="playMasterBtn" type="button">
+          ▶ Play Analog Master (10s)
+        </button>
+        <button class="btn btn-cyan" id="abToggleBtn" type="button" disabled>
+          🎧 Monitor: DIGITAL CUT
+        </button>
+        <button class="btn" id="peakScanBtn" type="button" title="Traces the maximum 10-second frequency envelope on the FFT">
+          📊 Peak Scan 10s
+        </button>
+        <div class="timecode-box" id="timecodeDisplay">00.0s / 10.0s</div>
+      </div>
+    </section>
+
+
+    <!-- METER BRIDGE: OSCILLOSCOPE & FFT SPECTRUM -->
+    <section class="meter-bridge">
+      <div class="meter-toolbar">
+        <div class="meter-legend">
+          <span class="legend-item">
+            <span class="swatch" style="background: var(--gold);"></span>
+            48 kHz Analog Master
+          </span>
+          <span class="legend-item">
+            <span class="swatch" style="background: var(--cyan-bright);"></span>
+            Quantized CD Signal (Post-Burn)
+          </span>
+          <span class="legend-item">
+            <span class="swatch" style="background: var(--red);"></span>
+            Nyquist Limit / Aliasing Zone
+          </span>
+        </div>
+
+
+        <label class="toggle-switch" title="Overlay Nyquist frequency cutoff line and bit quantization grid on the meters">
+          <input type="checkbox" id="meterCuesToggle" checked />
+          <span>SAMPLING METER CUES (f<sub>s</sub>/2 &amp; 2<sup>N</sup> Grid)</span>
+        </label>
+      </div>
+
+
+      <div class="screens-grid">
+        <!-- OSCILLOSCOPE -->
+        <div class="screen-card">
+          <div class="screen-header">
+            <span>TIME DOMAIN OSCILLOSCOPE (AMPLITUDE VS. TIME)</span>
+            <span class="screen-readout" id="oscopeReadout">64 Levels (6-bit)</span>
+          </div>
+          <canvas id="oscopeCanvas" class="meter-canvas" width="540" height="195"></canvas>
+        </div>
+
+
+        <!-- FFT SPECTRUM ANALYZER -->
+        <div class="screen-card">
+          <div class="screen-header">
+            <span>FFT SPECTRUM ANALYZER (0 Hz – 20 kHz)</span>
+            <span class="screen-readout" id="fftReadout">Nyquist f<sub>s</sub>/2 = 6.00 kHz</span>
+          </div>
+          <canvas id="fftCanvas" class="meter-canvas" width="540" height="195"></canvas>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- MASTERING KNOBS & CD BIT BUDGET -->
+    <section class="mastering-deck">
+      <!-- COUPLED ROTARY KNOBS -->
+      <div class="knobs-panel">
+        <div class="panel-title">
+          <span>COUPLED DIGITAL SAMPLING CONTROLS</span>
+          <span style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--cyan-bright);">
+            Drag Vertical or Use Step Buttons
+          </span>
+        </div>
+
+
+        <div class="knobs-row">
+          <!-- SAMPLING RATE KNOB -->
+          <div class="knob-unit" id="srKnobUnit">
+            <div class="knob-title">SAMPLING RATE (f<sub>s</sub>)</div>
+            <div class="knob-sub">Time / High-Freq Resolution</div>
+            <div class="knob-dial-wrap" id="srKnobDial" title="Drag up/down or scroll to adjust Sampling Rate">
+              <div class="knob-dial">
+                <div class="knob-indicator" id="srKnobIndicator"></div>
+              </div>
+            </div>
+            <div class="knob-value-box" id="srValueText">12.0 kHz</div>
+            <div class="knob-step-btns">
+              <button class="step-btn" id="srDownBtn" type="button">-1 kHz</button>
+              <button class="step-btn" id="srUpBtn" type="button">+1 kHz</button>
+            </div>
+          </div>
+
+
+          <!-- CEILING LINK INDICATOR -->
+          <div class="coupling-bridge">
+            <div class="coupling-badge" id="couplingBadge">
+              FREE HEADROOM
+            </div>
+            <span>At 960 kb ceiling, turning one knob UP pushes the other DOWN</span>
+          </div>
+
+
+          <!-- BIT DEPTH KNOB -->
+          <div class="knob-unit gold-knob" id="bdKnobUnit">
+            <div class="knob-title">BITS PER SAMPLE (N)</div>
+            <div class="knob-sub">Amplitude / Dynamic Quietness</div>
+            <div class="knob-dial-wrap" id="bdKnobDial" title="Drag up/down or scroll to adjust Bits per Sample">
+              <div class="knob-dial">
+                <div class="knob-indicator" id="bdKnobIndicator"></div>
+              </div>
+            </div>
+            <div class="knob-value-box" id="bdValueText">6.0 bits</div>
+            <div class="knob-step-btns">
+              <button class="step-btn" id="bdDownBtn" type="button">-0.5 bit</button>
+              <button class="step-btn" id="bdUpBtn" type="button">+0.5 bit</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- CD REMAINING BIT BUDGET & BURN ACTION -->
+      <div class="budget-panel">
+        <div class="panel-title">
+          <span>ALMOST-FULL CD BIT BUDGET (10s CUT)</span>
+          <span id="budgetPctText" style="font-family: var(--font-mono); color: var(--green);">
+            720 / 960 kb (25% Saved)
+          </span>
+        </div>
+
+
+        <div class="cd-meter-wrap">
+          <div class="cd-bar-outer">
+            <div class="cd-bar-used" id="cdBarUsed" style="width: 75%;"></div>
+            <div class="cd-bar-saved" id="cdBarSaved" style="width: 25%;"></div>
+          </div>
+          <div class="cd-bar-labels">
+            <span style="color: var(--cyan-bright);">
+              Used: <strong id="bitsUsedLabel">720.0 kb</strong> (<span id="bitrateLabel">72.0 kbps</span>)
+            </span>
+            <span style="color: var(--green);">
+              Saved Reserve: <strong id="bitsSavedLabel">240.0 kb</strong> (Bonus <span id="bonusMultPreview">+18.8%</span>)
+            </span>
+          </div>
+        </div>
+
+
+        <div class="dsp-options-row">
+          <label class="toggle-switch" title="Filters out frequencies above f_s/2 before sampling so they muffle softly instead of folding back as harsh metallic aliasing.">
+            <input type="checkbox" id="aaFilterToggle" checked />
+            <span>Anti-Aliasing Low-Pass Filter (f<sub>c</sub> = f<sub>s</sub>/2)</span>
+          </label>
+
+
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button class="btn" id="retryCutBtn" type="button" style="display: none;">
+              ↺ Unlock &amp; Retry Cut
+            </button>
+            <button class="btn btn-burn" id="burnBtn" type="button">
+              🔥 Finalize &amp; Burn to CD
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- SCORE & FIDELITY BREAKDOWN -->
+    <section class="score-panel">
+      <div class="metrics-list">
+        <div class="metric-row">
+          <div class="metric-label-line">
+            <span>1. Spectral Integrity (High-Freq Preservation &amp; Aliasing Control)</span>
+            <strong id="spectralScoreText" style="color: var(--cyan-bright);">— / 500 pts</strong>
+          </div>
+          <div class="metric-bar-bg">
+            <div class="metric-bar-fill" id="spectralBar" style="background: var(--cyan-bright);"></div>
+          </div>
+        </div>
+
+
+        <div class="metric-row">
+          <div class="metric-label-line">
+            <span>2. Dynamic Cleanliness (SQNR / Quantization Noise Floor)</span>
+            <strong id="dynamicScoreText" style="color: var(--gold);">— / 500 pts</strong>
+          </div>
+          <div class="metric-bar-bg">
+            <div class="metric-bar-fill" id="dynamicBar" style="background: var(--gold);"></div>
+          </div>
+        </div>
+
+
+        <div class="metric-row">
+          <div class="metric-label-line">
+            <span>3. Bit-Saver Efficiency Multiplier (Requires ≥ 700 Fidelity)</span>
+            <strong id="efficiencyScoreText" style="color: var(--green);">—</strong>
+          </div>
+          <div class="metric-bar-bg">
+            <div class="metric-bar-fill" id="efficiencyBar" style="background: var(--green);"></div>
+          </div>
+        </div>
+      </div>
+
+
+      <div class="total-score-card">
+        <div style="font-size: 0.72rem; font-family: var(--font-mono); color: var(--text-muted); text-transform: uppercase;">
+          Master Evaluation Score
+        </div>
+        <div class="score-big" id="totalScoreText">READY</div>
+        <div class="score-verdict" id="scoreVerdictText">
+          Audition the 10s analog master, dial in your Sampling Rate &amp; Bit Depth, then click <strong>Finalize &amp; Burn to CD</strong> to hear and score your digital cut.
+        </div>
+      </div>
+    </section>
+
+
+    <!-- FOOTER WITH COPYRIGHT -->
+    <footer class="studio-footer">
+      <span>NYQUIST STUDIO DSP ENGINE • 48 kHz FLOAT32 REFERENCE MASTER</span>
+      <span>© 2026 Barry Hemmerdinger. All Rights Reserved.</span>
+    </footer>
+  </div>
+
+
+  <!-- =========================================================================
+       ENGINEERING GUIDE MODAL (CLEAN HTML/CSS MATHEMATICAL FORMULAS)
+       ========================================================================= -->
+  <div class="modal-backdrop" id="guideModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="guideTitle">
+    <div class="guide-modal">
+      <div class="guide-header">
+        <h2 id="guideTitle">📐 Nyquist Studio: DSP Engineering Guide &amp; Equations</h2>
+        <button class="btn" id="closeGuideBtn" type="button">✕ Close Guide</button>
+      </div>
+
+
+      <div class="guide-body">
+        <div class="guide-intro">
+          Every digital recording balances two competing dimensions under a finite storage budget:
+          <strong>Sampling Rate (<var>f</var><sub>s</sub>)</strong> captures rapid changes in time (high frequencies), while
+          <strong>Bits per Sample (<var>N</var>)</strong> captures subtle changes in amplitude (quiet details without quantization hiss).
+          Below are the four core equations governing the studio—with your live knob settings plugged right in.
+        </div>
+
+
+        <div class="formula-grid">
+          <!-- CARD 1: NYQUIST-SHANNON THEOREM -->
+          <div class="formula-card">
+            <div class="formula-card-title">
+              <span>1. Nyquist–Shannon Sampling Theorem</span>
+              <span>Time Axis</span>
+            </div>
+
+
+            <div class="math-display">
+              <span><var class="v-cyan">f</var><sub>Nyquist</sub></span>
+              <span class="math-op">=</span>
+              <span class="math-frac">
+                <span class="num"><var class="v-cyan">f</var><sub>s</sub></span>
+                <span class="den">2</span>
+              </span>
+              <span class="math-op">≥</span>
+              <span><var class="v-gold">f</var><sub>max</sub></span>
+            </div>
+
+
+            <div class="math-live-strip" id="liveEqNyquist">
+              <span>Current <var>f</var><sub>s</sub> = 12.0 kHz</span>
+              <span>Max Clean Freq (<var>f</var><sub>s</sub>/2) = <strong>6.00 kHz</strong></span>
+            </div>
+
+
+            <p class="formula-explain">
+              To capture a musical frequency <var>f</var><sub>max</sub> without distortion, your sampling rate <var>f</var><sub>s</sub> must be at least <strong>twice</strong> that frequency. Any acoustic energy above <var>f</var><sub>s</sub>/2 either <strong>folds back</strong> as harsh metallic aliasing tones (if unfiltered) or gets shaved off by the <strong>Anti-Aliasing Low-Pass Filter</strong>.
+            </p>
+          </div>
+
+
+          <!-- CARD 2: QUANTIZATION & SQNR -->
+          <div class="formula-card gold-card">
+            <div class="formula-card-title">
+              <span>2. Quantization Levels &amp; SQNR</span>
+              <span>Amplitude Axis</span>
+            </div>
+
+
+            <div class="math-display">
+              <span><var class="v-gold">L</var> <span class="math-op">=</span> 2<sup><var class="v-gold">N</var></sup>,</span>
+              <span>&nbsp;&nbsp;SQNR<sub>dB</sub> <span class="math-op">≈</span> 6.02 <span class="math-op">·</span> <var class="v-gold">N</var> <span class="math-op">+</span> 1.76<span class="math-unit">dB</span></span>
+            </div>
+
+
+            <div class="math-live-strip" id="liveEqQuant" style="border-color: rgba(245,158,11,0.4); background: rgba(245,158,11,0.08);">
+              <span>Current <var>N</var> = 6.0 bits (64 steps)</span>
+              <span>SQNR ≈ <strong>37.9 dB</strong></span>
+            </div>
+
+
+            <p class="formula-explain">
+              Each extra bit doubles the number of vertical stair-steps (<var>L</var> = 2<sup><var>N</var></sup>) and lowers the quantization noise floor by <strong>6.02 dB</strong>. Tracks with wide dynamic range or soft decaying chords need higher <var>N</var> (8–12 bits), while loud, constant-volume synth cuts mask stair-step hiss even at 4–5 bits.
+            </p>
+          </div>
+
+
+          <!-- CARD 3: BIT BUDGET & CEILING COUPLING -->
+          <div class="formula-card green-card">
+            <div class="formula-card-title">
+              <span>3. CD Bit Budget &amp; Coupled Knobs</span>
+              <span>Storage Constraint</span>
+            </div>
+
+
+            <div class="math-display">
+              <span><var class="v-green">B</var><sub>used</sub> <span class="math-op">=</span> <var>T</var> <span class="math-op">×</span> <var class="v-cyan">f</var><sub>s</sub> <span class="math-op">×</span> <var class="v-gold">N</var> <span class="math-op">≤</span> <var>B</var><sub>max</sub></span>
+              <span class="math-op">⇒</span>
+              <span class="math-group">
+                <var class="v-cyan">f</var><sub>s</sub>
+                <span class="math-op">≤</span>
+                <span class="math-frac">
+                  <span class="num"><var>B</var><sub>max</sub></span>
+                  <span class="den"><var>T</var> <span class="math-op">·</span> <var class="v-gold">N</var></span>
+                </span>
+              </span>
+            </div>
+
+
+            <div class="math-live-strip" id="liveEqBudget" style="border-color: rgba(16,185,129,0.4); background: rgba(16,185,129,0.08);">
+              <span>10s × 12.0 kHz × 6.0 bits = <strong>720 kb</strong></span>
+              <span>Saved: <strong>240 kb</strong> / 960 kb</span>
+            </div>
+
+
+            <p class="formula-explain">
+              For a <var>T</var> = 10 s track with a ceiling of <var>B</var><sub>max</sub> = 960 kilobits, turning either knob <strong>down</strong> banks free space. Once <var>B</var><sub>used</sub> hits 960 kb, turning <var>f</var><sub>s</sub> <strong>up</strong> mechanically forces <var>N</var> <strong>down</strong> along the hyperbola <var>f</var><sub>s</sub> · <var>N</var> = 96 kbps.
+            </p>
+          </div>
+
+
+          <!-- CARD 4: SCORING & BIT-SAVER BONUS -->
+          <div class="formula-card purple-card">
+            <div class="formula-card-title">
+              <span>4. Fidelity &amp; Bit-Saver Bonus Formula</span>
+              <span>Master Score</span>
+            </div>
+
+
+            <div class="math-display">
+              <span><var>S</var><sub>total</sub> <span class="math-op">=</span> <var>F</var><sub>base</sub> <span class="math-op">×</span></span>
+              <span class="math-group">
+                <span class="math-paren">(</span>
+                <span>1 <span class="math-op">+</span> 0.75 <span class="math-op">·</span></span>
+                <span class="math-frac">
+                  <span class="num"><var>B</var><sub>max</sub> <span class="math-op">−</span> <var class="v-green">B</var><sub>used</sub></span>
+                  <span class="den"><var>B</var><sub>max</sub></span>
+                </span>
+                <span class="math-paren">)</span>
+              </span>
+            </div>
+
+
+            <div class="math-live-strip" id="liveEqScore" style="border-color: rgba(168,85,247,0.4); background: rgba(168,85,247,0.08);">
+              <span>Base Fidelity: 0–1000 pts</span>
+              <span>Current Bit-Saver Multiplier: <strong>×1.19</strong></span>
+            </div>
+
+
+            <p class="formula-explain">
+              Base Fidelity (<var>F</var><sub>base</sub>) combines <strong>Spectral Integrity</strong> (500 pts) and <strong>Dynamic Cleanliness</strong> (500 pts). If <var>F</var><sub>base</sub> ≥ 700 pts (<em>Master Approved</em>), every kilobit saved boosts your final score by up to <strong>+75%</strong>. Below 700 pts, the bit-saver bonus scales down so starving the track won't cheese the leaderboard.
+            </p>
+          </div>
+        </div>
+      </div>
+
+
+      <div class="guide-footer">
+        <span>Tip: Use "Peak Scan 10s" to spot where the highest frequencies live before burning.</span>
+        <span>© 2026 Barry Hemmerdinger. All Rights Reserved.</span>
+      </div>
+    </div>
+  </div>
+
+
+  <script>
+    /*
+     * ============================================================================
+     * NYQUIST STUDIO: CD MASTERING LAB - CORE AUDIO & DSP ENGINE
+     * Copyright (c) 2026 Barry Hemmerdinger. All Rights Reserved.
+     * ============================================================================
+     */
+
+
+    const MASTER_SR = 48000;
+    const DURATION_SEC = 10;
+    const TOTAL_SAMPLES = MASTER_SR * DURATION_SEC;
+    const MAX_BUDGET_KB = 960; // 960 kilobits total ceiling for 10s (i.e. f_s(kHz) * N * 10 <= 960)
+
+
+    // Knob bounds
+    const MIN_SR_KHZ = 2.0;
+    const MAX_SR_KHZ = 44.0;
+    const MIN_BITS = 2.0;
+    const MAX_BITS = 16.0;
+
+
+    // Musical Track Archetypes with distinct frequency & dynamic range distributions
+    const TRACK_ARCHETYPES = [
+      {
+        id: 'sub_pad',
+        tag: 'LOW FREQ • WIDE DYNAMICS',
+        name: 'Velvet Sub-Bass & Rhodes Pad',
+        hint: 'Warm sub-bass and soft, decaying electric piano chords. Almost all acoustic energy sits below 2.6 kHz, but the delicate quiet chord tails need high bit depth to avoid quantization hiss.',
+        f95Hz: 2500,
+        dynamicSensitivity: 1.35,
+        highFreqWeight: 0.65
+      },
+      {
+        id: 'bright_synth',
+        tag: 'HIGH FREQ • COMPRESSED LOUDNESS',
+        name: 'Neon Cymbal & FM Bell Rush',
+        hint: 'Fast, shimmering FM bells, high arpeggios, and crisp hi-hat transients reaching 13.5 kHz at a constant, compressed volume. The loud signal masks low bit-depth stair-stepping, but demands a high sampling rate!',
+        f95Hz: 13500,
+        dynamicSensitivity: 0.58,
+        highFreqWeight: 1.45
+      },
+      {
+        id: 'lofi_groove',
+        tag: 'MIDRANGE • BIT-SAVER GOLDMINE',
+        name: 'Dusty Suitcase Funk Groove',
+        hint: 'Punchy midrange bass and warm drum groove rolling off naturally around 4.8 kHz with moderate dynamics. Neither knob needs to be maxed—prime territory for banking a massive Bit-Saver Bonus!',
+        f95Hz: 4800,
+        dynamicSensitivity: 0.85,
+        highFreqWeight: 0.90
+      },
+      {
+        id: 'crescendo_swell',
+        tag: 'FULL SPECTRUM • EXTREME DYNAMICS',
+        name: 'Whisper-to-Thunder Cinematic Swell',
+        hint: 'Opens with a bare, whisper-quiet harp melody before erupting into a bright brass and cymbal finale up to 9.5 kHz. Balancing both Nyquist treble and quiet-tail bit depth is a true mastering test.',
+        f95Hz: 9500,
+        dynamicSensitivity: 1.22,
+        highFreqWeight: 1.20
+      }
+    ];
+
+
+    // Game & Audio State
+    const state = {
+      srKhz: 12.0,
+      bits: 6.0,
+      showMeterCues: true,
+      useAAFilter: true,
+      phase: 'AUDITION',
+      monitorMode: 'ANALOG',
+      isPlaying: false,
+      showPeakEnvelope: false,
+      currentArchetype: null,
+      analogSamples: null,
+      digitalSamples: null,
+      peakSpectrumDb: null,
+      lastScore: null
+    };
+
+
+    // Web Audio Context & Nodes
+    let audioCtx = null;
+    let activeSource = null;
+    let analyserNode = null;
+    let startTime = 0;
+    let playbackOffset = 0;
+    let animFrameId = null;
+
+
+    // DOM Elements
+    const el = {
+      statusLed: document.getElementById('statusLed'),
+      phaseBadge: document.getElementById('phaseBadge'),
+      openGuideBtn: document.getElementById('openGuideBtn'),
+      closeGuideBtn: document.getElementById('closeGuideBtn'),
+      guideModalBackdrop: document.getElementById('guideModalBackdrop'),
+      newCutBtn: document.getElementById('newCutBtn'),
+      trackArchetypeTag: document.getElementById('trackArchetypeTag'),
+      trackTitle: document.getElementById('trackTitle'),
+      trackHint: document.getElementById('trackHint'),
+      playMasterBtn: document.getElementById('playMasterBtn'),
+      abToggleBtn: document.getElementById('abToggleBtn'),
+      peakScanBtn: document.getElementById('peakScanBtn'),
+      timecodeDisplay: document.getElementById('timecodeDisplay'),
+      meterCuesToggle: document.getElementById('meterCuesToggle'),
+      oscopeCanvas: document.getElementById('oscopeCanvas'),
+      fftCanvas: document.getElementById('fftCanvas'),
+      oscopeReadout: document.getElementById('oscopeReadout'),
+      fftReadout: document.getElementById('fftReadout'),
+      srKnobDial: document.getElementById('srKnobDial'),
+      srKnobIndicator: document.getElementById('srKnobIndicator'),
+      srValueText: document.getElementById('srValueText'),
+      srDownBtn: document.getElementById('srDownBtn'),
+      srUpBtn: document.getElementById('srUpBtn'),
+      bdKnobDial: document.getElementById('bdKnobDial'),
+      bdKnobIndicator: document.getElementById('bdKnobIndicator'),
+      bdValueText: document.getElementById('bdValueText'),
+      bdDownBtn: document.getElementById('bdDownBtn'),
+      bdUpBtn: document.getElementById('bdUpBtn'),
+      couplingBadge: document.getElementById('couplingBadge'),
+      budgetPctText: document.getElementById('budgetPctText'),
+      cdBarUsed: document.getElementById('cdBarUsed'),
+      cdBarSaved: document.getElementById('cdBarSaved'),
+      bitsUsedLabel: document.getElementById('bitsUsedLabel'),
+      bitrateLabel: document.getElementById('bitrateLabel'),
+      bitsSavedLabel: document.getElementById('bitsSavedLabel'),
+      bonusMultPreview: document.getElementById('bonusMultPreview'),
+      aaFilterToggle: document.getElementById('aaFilterToggle'),
+      retryCutBtn: document.getElementById('retryCutBtn'),
+      burnBtn: document.getElementById('burnBtn'),
+      spectralScoreText: document.getElementById('spectralScoreText'),
+      spectralBar: document.getElementById('spectralBar'),
+      dynamicScoreText: document.getElementById('dynamicScoreText'),
+      dynamicBar: document.getElementById('dynamicBar'),
+      efficiencyScoreText: document.getElementById('efficiencyScoreText'),
+      efficiencyBar: document.getElementById('efficiencyBar'),
+      totalScoreText: document.getElementById('totalScoreText'),
+      scoreVerdictText: document.getElementById('scoreVerdictText'),
+      liveEqNyquist: document.getElementById('liveEqNyquist'),
+      liveEqQuant: document.getElementById('liveEqQuant'),
+      liveEqBudget: document.getElementById('liveEqBudget'),
+      liveEqScore: document.getElementById('liveEqScore')
+    };
+
+
+    const oscopeCtx = el.oscopeCanvas.getContext('2d');
+    const fftCtx = el.fftCanvas.getContext('2d');
+
+
+    /* =========================================================================
+       1. PROCEDURAL 10-SECOND ANALOG MASTER SYNTHESIS (48 kHz Float32)
+       ========================================================================= */
+    function generateAnalogCut(archetype) {
+      const out = new Float32Array(TOTAL_SAMPLES);
+      const seed = Math.random() * 1000;
+
+
+      const bassNotes = [73.42, 87.31, 98.00, 110.00, 65.41, 82.41];
+      const chordRoots = [293.66, 349.23, 392.00, 440.00, 261.63];
+      const leadNotes = [587.33, 698.46, 783.99, 880.00, 1046.50, 1174.66, 1318.51];
+
+
+      for (let i = 0; i < TOTAL_SAMPLES; i++) {
+        const t = i / MASTER_SR;
+        let sample = 0;
+
+
+        if (archetype.id === 'sub_pad') {
+          const bar = Math.floor(t / 2.5);
+          const barT = t % 2.5;
+          const fBass = bassNotes[bar % bassNotes.length];
+          const fChord = chordRoots[bar % chordRoots.length];
+
+
+          const env = Math.exp(-barT * 2.1);
+          const subEnv = Math.exp(-barT * 1.1);
+
+
+          sample += 0.46 * subEnv * Math.sin(2 * Math.PI * fBass * t);
+          sample += 0.22 * subEnv * Math.sin(2 * Math.PI * (fBass * 2) * t);
+
+
+          sample += 0.24 * env * (
+            Math.sin(2 * Math.PI * fChord * t) +
+            0.7 * Math.sin(2 * Math.PI * (fChord * 1.2) * t) +
+            0.5 * Math.sin(2 * Math.PI * (fChord * 1.5) * t) +
+            0.25 * Math.sin(2 * Math.PI * (fChord * 3.0) * t) +
+            0.12 * Math.sin(2 * Math.PI * (fChord * 5.0) * t)
+          );
+        } else if (archetype.id === 'bright_synth') {
+          const step = Math.floor(t * 8);
+          const stepT = (t * 8) % 1;
+          const fLead = leadNotes[(step + Math.floor(seed)) % leadNotes.length];
+          const fBass = bassNotes[Math.floor(t * 2) % bassNotes.length] * 2;
+
+
+          sample += 0.28 * Math.sin(2 * Math.PI * fBass * t + 0.4 * Math.sin(2 * Math.PI * fBass * 2 * t));
+
+
+          const bellEnv = 0.45 + 0.55 * Math.exp(-stepT * 2.5);
+          const mod = Math.sin(2 * Math.PI * (fLead * 3.5) * t) * 1.8;
+          sample += 0.32 * bellEnv * Math.sin(2 * Math.PI * fLead * t + mod);
+          sample += 0.16 * bellEnv * Math.sin(2 * Math.PI * (fLead * 6.0) * t);
+          sample += 0.12 * bellEnv * Math.sin(2 * Math.PI * (fLead * 9.5) * t);
+
+
+          const hatT = (t * 4) % 1;
+          const hatEnv = Math.exp(-hatT * 14);
+          const chime =
+            Math.sin(2 * Math.PI * 7800 * t) +
+            Math.sin(2 * Math.PI * 10400 * t + 1.3) +
+            Math.sin(2 * Math.PI * 12900 * t + 2.1);
+          sample += 0.14 * hatEnv * chime;
+
+
+          sample = Math.tanh(sample * 1.55) * 0.86;
+        } else if (archetype.id === 'lofi_groove') {
+          const beat = Math.floor(t * 4);
+          const beatT = (t * 4) % 1;
+          const fBass = bassNotes[(beat * 2) % bassNotes.length] * 1.5;
+          const fMid = chordRoots[beat % chordRoots.length];
+
+
+          const kickPitch = 130 * Math.exp(-beatT * 22) + 55;
+          const kickEnv = Math.exp(-beatT * 7.5);
+          sample += 0.42 * kickEnv * Math.sin(2 * Math.PI * kickPitch * t);
+
+
+          const riffEnv = Math.exp(-beatT * 3.8);
+          sample += 0.34 * riffEnv * (
+            Math.sin(2 * Math.PI * fBass * t) +
+            0.7 * Math.sin(2 * Math.PI * (fMid * 2) * t) +
+            0.45 * Math.sin(2 * Math.PI * (fMid * 4) * t) +
+            0.28 * Math.sin(2 * Math.PI * (fMid * 8) * t) +
+            0.14 * Math.sin(2 * Math.PI * (fMid * 11) * t)
+          );
+          sample = Math.tanh(sample * 1.25) * 0.85;
+        } else {
+          const swell = 0.06 + 0.90 * Math.pow(t / DURATION_SEC, 2.1);
+          const noteIdx = Math.floor(t * 3) % leadNotes.length;
+          const fMelody = leadNotes[noteIdx] * 0.5;
+          const fRoot = bassNotes[Math.floor(t) % bassNotes.length];
+          const noteT = (t * 3) % 1;
+          const pluckEnv = Math.exp(-noteT * 2.6);
+
+
+          sample += swell * 0.38 * pluckEnv * (
+            Math.sin(2 * Math.PI * fMelody * t) +
+            0.5 * Math.sin(2 * Math.PI * (fMelody * 2) * t) +
+            0.3 * Math.sin(2 * Math.PI * (fMelody * 4) * t)
+          );
+
+
+          const brassGain = Math.max(0, (t - 2.5) / 7.5);
+          sample += brassGain * 0.35 * (
+            Math.sin(2 * Math.PI * fRoot * t) +
+            0.6 * Math.sin(2 * Math.PI * (fMelody * 6) * t) +
+            0.35 * Math.sin(2 * Math.PI * (fMelody * 11) * t) +
+            0.22 * Math.sin(2 * Math.PI * (fMelody * 15) * t)
+          );
+        }
+
+
+        let edgeEnv = 1.0;
+        if (t < 0.08) edgeEnv = t / 0.08;
+        else if (t > DURATION_SEC - 0.15) edgeEnv = (DURATION_SEC - t) / 0.15;
+
+
+        out[i] = Math.max(-0.96, Math.min(0.96, sample * edgeEnv));
+      }
+
+
+      return out;
+    }
+
+
+    /* =========================================================================
+       2. DSP ENGINE: ANTI-ALIASING FILTER, DECIMATION & BIT QUANTIZATION
+       ========================================================================= */
+    function biquadLowPass(input, cutoffHz, sampleRate) {
+      const safeCutoff = Math.max(400, Math.min(cutoffHz * 0.92, sampleRate * 0.47));
+      let stage = new Float32Array(input);
+
+
+      const qValues = [0.54119610, 1.30656296];
+      for (let s = 0; s < 2; s++) {
+        const Q = qValues[s];
+        const w0 = (2 * Math.PI * safeCutoff) / sampleRate;
+        const cosw0 = Math.cos(w0);
+        const sinw0 = Math.sin(w0);
+        const alpha = sinw0 / (2 * Q);
+
+
+        const b0 = (1 - cosw0) / 2;
+        const b1 = 1 - cosw0;
+        const b2 = (1 - cosw0) / 2;
+        const a0 = 1 + alpha;
+        const a1 = -2 * cosw0;
+        const a2 = 1 - alpha;
+
+
+        const nb0 = b0 / a0, nb1 = b1 / a0, nb2 = b2 / a0;
+        const na1 = a1 / a0, na2 = a2 / a0;
+
+
+        const next = new Float32Array(stage.length);
+        let x1 = 0, x2 = 0, y1 = 0, y2 = 0;
+        for (let i = 0; i < stage.length; i++) {
+          const x0 = stage[i];
+          const y0 = nb0 * x0 + nb1 * x1 + nb2 * x2 - na1 * y1 - na2 * y2;
+          x2 = x1; x1 = x0;
+          y2 = y1; y1 = y0;
+          next[i] = y0;
+        }
+        stage = next;
+      }
+      return stage;
+    }
+
+
+    function synthesizeCompressedCut(analogBuf, srKhz, bits, useAAFilter) {
+      const targetSr = srKhz * 1000;
+      const nyquistHz = targetSr / 2;
+
+
+      const sourceSignal = useAAFilter
+        ? biquadLowPass(analogBuf, nyquistHz, MASTER_SR)
+        : analogBuf;
+
+
+      const levels = Math.pow(2, bits);
+      const halfLevels = levels / 2;
+
+
+      const stepPeriod = MASTER_SR / targetSr;
+      const out = new Float32Array(analogBuf.length);
+
+
+      let nextSamplePos = 0;
+      let heldValue = 0;
+
+
+      for (let i = 0; i < analogBuf.length; i++) {
+        if (i >= nextSamplePos) {
+          const raw = sourceSignal[i];
+          const q = Math.round(raw * halfLevels) / halfLevels;
+          heldValue = Math.max(-1, Math.min(1, q));
+          nextSamplePos += stepPeriod;
+        }
+        out[i] = heldValue;
+      }
+
+
+      return {
+        reconstructed: out,
+        filteredReference: sourceSignal
+      };
+    }
+
+
+    /* =========================================================================
+       3. PEAK 10-SECOND FFT ENVELOPE SCANNER
+       ========================================================================= */
+    function computePeakSpectrum(samples) {
+      const fftSize = 512;
+      const bins = fftSize / 2;
+      const peakDb = new Float32Array(bins).fill(-100);
+      const hop = 12000;
+
+
+      const win = new Float32Array(fftSize);
+      for (let n = 0; n < fftSize; n++) {
+        win[n] = 0.5 * (1 - Math.cos((2 * Math.PI * n) / (fftSize - 1)));
+      }
+
+
+      for (let offset = 0; offset + fftSize < samples.length; offset += hop) {
+        for (let k = 1; k < bins; k++) {
+          const freq = (k * MASTER_SR) / fftSize;
+          if (freq > 20500) break;
+
+
+          let re = 0, im = 0;
+          const w = (2 * Math.PI * k) / fftSize;
+          for (let n = 0; n < fftSize; n++) {
+            const s = samples[offset + n] * win[n];
+            re += s * Math.cos(w * n);
+            im -= s * Math.sin(w * n);
+          }
+          const mag = Math.sqrt(re * re + im * im) / (fftSize * 0.25);
+          const db = 20 * Math.log10(mag + 1e-6);
+          if (db > peakDb[k]) peakDb[k] = db;
+        }
+      }
+      return peakDb;
+    }
+
+
+    /* =========================================================================
+       4. SCORING ENGINE: SPECTRAL INTEGRITY, SQNR & BIT-SAVER MULTIPLIER
+       ========================================================================= */
+    function evaluateMasterScore() {
+      const arch = state.currentArchetype;
+      const nyquistHz = (state.srKhz * 1000) / 2;
+      const fTarget = arch.f95Hz;
+
+
+      let spectralRatio = 1.0;
+      if (nyquistHz < fTarget) {
+        const deficit = (fTarget - nyquistHz) / fTarget;
+        const aliasPenaltyFactor = state.useAAFilter ? 1.15 : 1.75;
+        spectralRatio = Math.max(0.05, 1 - Math.pow(deficit, 1.15) * aliasPenaltyFactor * arch.highFreqWeight);
+      } else if (state.useAAFilter && nyquistHz < fTarget * 1.06) {
+        spectralRatio = 0.97;
+      }
+      const spectralPts = Math.round(500 * Math.min(1, spectralRatio));
+
+
+      let sigPower = 0;
+      let quantErrPower = 0;
+      const levels = Math.pow(2, state.bits) / 2;
+
+
+      for (let i = 0; i < TOTAL_SAMPLES; i += 8) {
+        const s = state.analogSamples[i];
+        const q = Math.round(s * levels) / levels;
+        const err = s - q;
+        sigPower += s * s;
+        quantErrPower += err * err;
+      }
+
+
+      const sqnrDb = 10 * Math.log10((sigPower + 1e-9) / (quantErrPower + 1e-9));
+      const requiredSqnrDb = 44 * arch.dynamicSensitivity;
+      const dynamicRatio = Math.max(0.05, Math.min(1.0, Math.pow(Math.min(sqnrDb / requiredSqnrDb, 1.0), 1.1)));
+      const dynamicPts = Math.round(500 * dynamicRatio);
+
+
+      const baseFidelity = spectralPts + dynamicPts;
+
+
+      const usedKb = DURATION_SEC * state.srKhz * state.bits;
+      const savedKb = Math.max(0, MAX_BUDGET_KB - usedKb);
+      const savedFraction = savedKb / MAX_BUDGET_KB;
+
+
+      let gateFactor = 1.0;
+      if (baseFidelity < 700) {
+        gateFactor = Math.pow(baseFidelity / 700, 2.5);
+      }
+      const bonusMultiplier = 1 + 0.75 * savedFraction * gateFactor;
+      const totalScore = Math.round(baseFidelity * bonusMultiplier);
+
+
+      return {
+        spectralPts,
+        dynamicPts,
+        baseFidelity,
+        sqnrDb,
+        usedKb,
+        savedKb,
+        bonusMultiplier,
+        totalScore,
+        masterApproved: baseFidelity >= 700
+      };
+    }
+
+
+    /* =========================================================================
+       5. CEILING-COUPLED KNOBS & LIVE EQUATION UPDATER
+       ========================================================================= */
+    function updateKnobParameters(changedKnob, newValue) {
+      if (state.phase === 'BURNED') return;
+
+
+      let couplingTriggered = false;
+
+
+      if (changedKnob === 'sr') {
+        state.srKhz = Math.max(MIN_SR_KHZ, Math.min(MAX_SR_KHZ, Math.round(newValue * 2) / 2));
+        const usedKb = DURATION_SEC * state.srKhz * state.bits;
+        if (usedKb > MAX_BUDGET_KB) {
+          const maxAllowedBits = MAX_BUDGET_KB / (DURATION_SEC * state.srKhz);
+          state.bits = Math.max(MIN_BITS, Math.floor(maxAllowedBits * 10) / 10);
+          if (DURATION_SEC * state.srKhz * state.bits > MAX_BUDGET_KB) {
+            state.srKhz = Math.floor((MAX_BUDGET_KB / (DURATION_SEC * state.bits)) * 2) / 2;
+          }
+          couplingTriggered = true;
+        }
+      } else if (changedKnob === 'bits') {
+        state.bits = Math.max(MIN_BITS, Math.min(MAX_BITS, Math.round(newValue * 10) / 10));
+        const usedKb = DURATION_SEC * state.srKhz * state.bits;
+        if (usedKb > MAX_BUDGET_KB) {
+          const maxAllowedSr = MAX_BUDGET_KB / (DURATION_SEC * state.bits);
+          state.srKhz = Math.max(MIN_SR_KHZ, Math.floor(maxAllowedSr * 2) / 2);
+          if (DURATION_SEC * state.srKhz * state.bits > MAX_BUDGET_KB) {
+            state.bits = Math.floor((MAX_BUDGET_KB / (DURATION_SEC * state.srKhz)) * 10) / 10;
+          }
+          couplingTriggered = true;
+        }
+      }
+
+
+      refreshKnobsAndBudgetUI(couplingTriggered);
+    }
+
+
+    function refreshKnobsAndBudgetUI(couplingTriggered = false) {
+      const srNorm = (state.srKhz - MIN_SR_KHZ) / (MAX_SR_KHZ - MIN_SR_KHZ);
+      const bdNorm = (state.bits - MIN_BITS) / (MAX_BITS - MIN_BITS);
+
+
+      const srAngle = -135 + srNorm * 270;
+      const bdAngle = -135 + bdNorm * 270;
+
+
+      el.srKnobIndicator.style.transform = `rotate(${srAngle}deg)`;
+      el.bdKnobIndicator.style.transform = `rotate(${bdAngle}deg)`;
+
+
+      el.srValueText.textContent = `${state.srKhz.toFixed(1)} kHz`;
+      el.bdValueText.textContent = `${state.bits.toFixed(1)} bits`;
+
+
+      const levels = Math.round(Math.pow(2, state.bits));
+      const nyquistKhz = state.srKhz / 2;
+      el.oscopeReadout.textContent = `${levels.toLocaleString()} Levels (${state.bits.toFixed(1)}-bit)`;
+      el.fftReadout.innerHTML = `Nyquist f<sub>s</sub>/2 = ${nyquistKhz.toFixed(2)} kHz`;
+
+
+      const usedKb = Math.min(MAX_BUDGET_KB, DURATION_SEC * state.srKhz * state.bits);
+      const savedKb = Math.max(0, MAX_BUDGET_KB - usedKb);
+      const usedPct = (usedKb / MAX_BUDGET_KB) * 100;
+      const savedPct = 100 - usedPct;
+      const bonusPct = (0.75 * (savedKb / MAX_BUDGET_KB)) * 100;
+
+
+      el.cdBarUsed.style.width = `${usedPct.toFixed(1)}%`;
+      el.cdBarSaved.style.width = `${savedPct.toFixed(1)}%`;
+      el.bitsUsedLabel.textContent = `${usedKb.toFixed(1)} kb`;
+      el.bitrateLabel.textContent = `${(usedKb / DURATION_SEC).toFixed(1)} kbps`;
+      el.bitsSavedLabel.textContent = `${savedKb.toFixed(1)} kb`;
+      el.bonusMultPreview.textContent = `+${bonusPct.toFixed(1)}%`;
+      el.budgetPctText.textContent = `${usedKb.toFixed(0)} / ${MAX_BUDGET_KB} kb (${savedPct.toFixed(0)}% Saved)`;
+
+
+      const atCeiling = usedKb >= MAX_BUDGET_KB - 4;
+      if (atCeiling || couplingTriggered) {
+        el.couplingBadge.textContent = 'CEILING LINKED';
+        el.couplingBadge.classList.add('active');
+      } else {
+        el.couplingBadge.textContent = 'FREE HEADROOM';
+        el.couplingBadge.classList.remove('active');
+      }
+
+
+      const sqnrApprox = 6.02 * state.bits + 1.76;
+      const multPreview = 1 + 0.75 * (savedKb / MAX_BUDGET_KB);
+
+
+      el.liveEqNyquist.innerHTML = `
+        <span>Current <var>f</var><sub>s</sub> = ${state.srKhz.toFixed(1)} kHz</span>
+        <span>Max Clean Freq (<var>f</var><sub>s</sub>/2) = <strong>${nyquistKhz.toFixed(2)} kHz</strong></span>
+      `;
+      el.liveEqQuant.innerHTML = `
+        <span>Current <var>N</var> = ${state.bits.toFixed(1)} bits (${levels.toLocaleString()} steps)</span>
+        <span>SQNR ≈ <strong>${sqnrApprox.toFixed(1)} dB</strong></span>
+      `;
+      el.liveEqBudget.innerHTML = `
+        <span>10s × ${state.srKhz.toFixed(1)} kHz × ${state.bits.toFixed(1)} bits = <strong>${usedKb.toFixed(0)} kb</strong></span>
+        <span>Saved: <strong>${savedKb.toFixed(0)} kb</strong> / ${MAX_BUDGET_KB} kb</span>
+      `;
+      el.liveEqScore.innerHTML = `
+        <span>Base Fidelity: 0–1000 pts</span>
+        <span>Current Bit-Saver Multiplier: <strong>×${multPreview.toFixed(2)}</strong></span>
+      `;
+
+
+      drawStaticMeters();
+    }
+
+
+    /* =========================================================================
+       6. WEB AUDIO PLAYBACK & REAL-TIME A/B MONITOR
+       ========================================================================= */
+    function ensureAudioContext() {
+      if (!audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContextClass({ sampleRate: MASTER_SR });
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+
+    function stopPlayback() {
+      if (activeSource) {
+        try { activeSource.stop(); } catch (e) {}
+        try { activeSource.disconnect(); } catch (e) {}
+        activeSource = null;
+      }
+      state.isPlaying = false;
+      if (animFrameId) {
+        cancelAnimationFrame(animFrameId);
+        animFrameId = null;
+      }
+      el.playMasterBtn.textContent = state.phase === 'AUDITION'
+        ? '▶ Play Analog Master (10s)'
+        : '▶ Replay 10s Track';
+      drawStaticMeters();
+    }
+
+
+    function startPlayback(fromOffset = 0) {
+      ensureAudioContext();
+      stopPlayback();
+
+
+      const samplesToPlay = (state.phase === 'BURNED' && state.monitorMode === 'DIGITAL')
+        ? state.digitalSamples
+        : state.analogSamples;
+
+
+      const audioBuffer = audioCtx.createBuffer(1, samplesToPlay.length, MASTER_SR);
+      audioBuffer.getChannelData(0).set(samplesToPlay);
+
+
+      activeSource = audioCtx.createBufferSource();
+      activeSource.buffer = audioBuffer;
+
+
+      analyserNode = audioCtx.createAnalyser();
+      analyserNode.fftSize = 1024;
+      analyserNode.smoothingTimeConstant = 0.72;
+
+
+      activeSource.connect(analyserNode);
+      analyserNode.connect(audioCtx.destination);
+
+
+      playbackOffset = Math.max(0, Math.min(DURATION_SEC - 0.1, fromOffset));
+      startTime = audioCtx.currentTime - playbackOffset;
+      state.isPlaying = true;
+
+
+      el.playMasterBtn.textContent = '⏹ Stop Playback';
+
+
+      activeSource.onended = () => {
+        if (state.isPlaying) {
+          state.isPlaying = false;
+          playbackOffset = 0;
+          el.timecodeDisplay.textContent = `10.0s / 10.0s`;
+          el.playMasterBtn.textContent = state.phase === 'AUDITION'
+            ? '▶ Play Analog Master (10s)'
+            : '▶ Replay 10s Track';
+          drawStaticMeters();
+        }
+      };
+
+
+      activeSource.start(0, playbackOffset);
+      renderLiveMetersLoop();
+    }
+
+
+    /* =========================================================================
+       7. OSCILLOSCOPE & FFT SPECTRUM RENDERER (WITH SAMPLING CUES)
+       ========================================================================= */
+    function renderLiveMetersLoop() {
+      if (!state.isPlaying) return;
+      const elapsed = Math.min(DURATION_SEC, audioCtx.currentTime - startTime);
+      el.timecodeDisplay.textContent = `${elapsed.toFixed(1).padStart(4, '0')}s / 10.0s`;
+
+
+      const sampleIdx = Math.min(TOTAL_SAMPLES - 1024, Math.floor(elapsed * MASTER_SR));
+      drawOscilloscope(sampleIdx);
+      drawFFTSpectrum();
+
+
+      animFrameId = requestAnimationFrame(renderLiveMetersLoop);
+    }
+
+
+    function drawStaticMeters() {
+      const previewIdx = Math.floor(3.2 * MASTER_SR);
+      drawOscilloscope(previewIdx);
+      drawFFTSpectrum(true);
+    }
+
+
+    function drawOscilloscope(startIndex) {
+      const w = el.oscopeCanvas.width;
+      const h = el.oscopeCanvas.height;
+      oscopeCtx.clearRect(0, 0, w, h);
+
+
+      oscopeCtx.strokeStyle = 'rgba(148, 163, 184, 0.12)';
+      oscopeCtx.lineWidth = 1;
+      for (let x = 0; x <= w; x += w / 8) {
+        oscopeCtx.beginPath();
+        oscopeCtx.moveTo(x, 0);
+        oscopeCtx.lineTo(x, h);
+        oscopeCtx.stroke();
+      }
+      oscopeCtx.beginPath();
+      oscopeCtx.moveTo(0, h / 2);
+      oscopeCtx.lineTo(w, h / 2);
+      oscopeCtx.stroke();
+
+
+      if (state.showMeterCues) {
+        const levels = Math.pow(2, state.bits);
+        const drawSteps = Math.min(levels, 32);
+        oscopeCtx.strokeStyle = 'rgba(245, 158, 11, 0.18)';
+        oscopeCtx.lineWidth = 1;
+        for (let i = 1; i < drawSteps; i++) {
+          const y = (i / drawSteps) * h;
+          oscopeCtx.beginPath();
+          oscopeCtx.moveTo(0, y);
+          oscopeCtx.lineTo(w, y);
+          oscopeCtx.stroke();
+        }
+
+
+        const windowSamples = 360;
+        const sampleStepPx = (MASTER_SR / (state.srKhz * 1000)) * (w / windowSamples);
+        if (sampleStepPx >= 4) {
+          oscopeCtx.strokeStyle = 'rgba(34, 211, 238, 0.28)';
+          for (let x = 0; x < w; x += sampleStepPx) {
+            oscopeCtx.beginPath();
+            oscopeCtx.moveTo(x, h / 2 - 6);
+            oscopeCtx.lineTo(x, h / 2 + 6);
+            oscopeCtx.stroke();
+          }
+        }
+      }
+
+
+      if (!state.analogSamples) return;
+      const windowSamples = 360;
+
+
+      oscopeCtx.strokeStyle = '#f59e0b';
+      oscopeCtx.lineWidth = 2;
+      oscopeCtx.beginPath();
+      for (let i = 0; i < windowSamples; i++) {
+        const x = (i / (windowSamples - 1)) * w;
+        const s = state.analogSamples[startIndex + i] || 0;
+        const y = h / 2 - s * (h * 0.43);
+        if (i === 0) oscopeCtx.moveTo(x, y);
+        else oscopeCtx.lineTo(x, y);
+      }
+      oscopeCtx.stroke();
+
+
+      if (state.phase === 'BURNED' && state.digitalSamples) {
+        oscopeCtx.strokeStyle = '#22d3ee';
+        oscopeCtx.lineWidth = 2.2;
+        oscopeCtx.beginPath();
+        for (let i = 0; i < windowSamples; i++) {
+          const x = (i / (windowSamples - 1)) * w;
+          const s = state.digitalSamples[startIndex + i] || 0;
+          const y = h / 2 - s * (h * 0.43);
+          if (i === 0) oscopeCtx.moveTo(x, y);
+          else oscopeCtx.lineTo(x, y);
+        }
+        oscopeCtx.stroke();
+      }
+    }
+
+
+    function drawFFTSpectrum(isStatic = false) {
+      const w = el.fftCanvas.width;
+      const h = el.fftCanvas.height;
+      fftCtx.clearRect(0, 0, w, h);
+
+
+      const maxFreqHz = 20000;
+
+
+      const gridKhz = [2, 4, 6, 8, 10, 12, 14, 16, 18];
+      fftCtx.strokeStyle = 'rgba(148, 163, 184, 0.12)';
+      fftCtx.fillStyle = '#64748b';
+      fftCtx.font = '10px "JetBrains Mono", monospace';
+      fftCtx.lineWidth = 1;
+
+
+      gridKhz.forEach((khz) => {
+        const x = ((khz * 1000) / maxFreqHz) * w;
+        fftCtx.beginPath();
+        fftCtx.moveTo(x, 0);
+        fftCtx.lineTo(x, h - 18);
+        fftCtx.stroke();
+        fftCtx.fillText(`${khz}k`, x - 10, h - 5);
+      });
+
+
+      if ((state.showPeakEnvelope || isStatic) && state.peakSpectrumDb) {
+        const bins = state.peakSpectrumDb.length;
+        fftCtx.beginPath();
+        fftCtx.moveTo(0, h - 18);
+        for (let k = 1; k < bins; k++) {
+          const freq = (k * MASTER_SR) / (bins * 2);
+          if (freq > maxFreqHz) break;
+          const x = (freq / maxFreqHz) * w;
+          const norm = Math.max(0, Math.min(1, (state.peakSpectrumDb[k] + 75) / 72));
+          const y = (h - 20) * (1 - norm);
+          fftCtx.lineTo(x, y);
+        }
+        fftCtx.strokeStyle = 'rgba(245, 158, 11, 0.65)';
+        fftCtx.lineWidth = 1.8;
+        fftCtx.stroke();
+
+
+        fftCtx.lineTo(w, h - 18);
+        fftCtx.closePath();
+        fftCtx.fillStyle = 'rgba(245, 158, 11, 0.12)';
+        fftCtx.fill();
+      }
+
+
+      if (state.isPlaying && analyserNode) {
+        const freqData = new Uint8Array(analyserNode.frequencyBinCount);
+        analyserNode.getByteFrequencyData(freqData);
+        const binCount = freqData.length;
+
+
+        const isDigitalMon = state.phase === 'BURNED' && state.monitorMode === 'DIGITAL';
+        fftCtx.fillStyle = isDigitalMon ? 'rgba(34, 211, 238, 0.72)' : 'rgba(245, 158, 11, 0.72)';
+
+
+        for (let k = 1; k < binCount; k++) {
+          const freq = (k * MASTER_SR) / (binCount * 2);
+          if (freq > maxFreqHz) break;
+          const x = (freq / maxFreqHz) * w;
+          const val = freqData[k] / 255;
+          const barH = val * (h - 24);
+          fftCtx.fillRect(x, h - 18 - barH, 2.5, barH);
+        }
+      }
+
+
+      if (state.showMeterCues) {
+        const nyquistHz = (state.srKhz * 1000) / 2;
+        const nyquistX = Math.min(w, (nyquistHz / maxFreqHz) * w);
+
+
+        fftCtx.fillStyle = 'rgba(239, 68, 68, 0.16)';
+        fftCtx.fillRect(nyquistX, 0, w - nyquistX, h - 18);
+
+
+        fftCtx.strokeStyle = '#ef4444';
+        fftCtx.lineWidth = 2;
+        fftCtx.setLineDash([5, 4]);
+        fftCtx.beginPath();
+        fftCtx.moveTo(nyquistX, 0);
+        fftCtx.lineTo(nyquistX, h - 18);
+        fftCtx.stroke();
+        fftCtx.setLineDash([]);
+
+
+        const labelText = `fₛ/2 = ${(nyquistHz / 1000).toFixed(1)} kHz`;
+        fftCtx.fillStyle = '#ef4444';
+        fftCtx.font = 'bold 11px "JetBrains Mono", monospace';
+        const labelX = nyquistX < w - 115 ? nyquistX + 6 : nyquistX - 108;
+        fftCtx.fillText(labelText, labelX, 16);
+      }
+    }
+
+
+    /* =========================================================================
+       8. GAMEPLAY PHASE TRANSITIONS: NEW CUT, BURN TO CD & RETRY
+       ========================================================================= */
+    function loadNewRandomCut() {
+      stopPlayback();
+
+
+      const pool = TRACK_ARCHETYPES.filter((a) => a !== state.currentArchetype);
+      const chosen = pool[Math.floor(Math.random() * pool.length)] || TRACK_ARCHETYPES[0];
+      state.currentArchetype = chosen;
+
+
+      state.phase = 'AUDITION';
+      state.monitorMode = 'ANALOG';
+      state.srKhz = 12.0;
+      state.bits = 6.0;
+      state.digitalSamples = null;
+
+
+      state.analogSamples = generateAnalogCut(chosen);
+      state.peakSpectrumDb = computePeakSpectrum(state.analogSamples);
+
+
+      updatePhaseUI();
+      refreshKnobsAndBudgetUI();
+      resetScoreboardUI();
+    }
+
+
+    function finalizeAndBurnToCD() {
+      if (state.phase === 'BURNED') return;
+      stopPlayback();
+
+
+      const dspResult = synthesizeCompressedCut(
+        state.analogSamples,
+        state.srKhz,
+        state.bits,
+        state.useAAFilter
+      );
+      state.digitalSamples = dspResult.reconstructed;
+      state.phase = 'BURNED';
+      state.monitorMode = 'DIGITAL';
+
+
+      const score = evaluateMasterScore();
+      state.lastScore = score;
+
+
+      updatePhaseUI();
+      renderScoreboard(score);
+
+
+      startPlayback(0);
+    }
+
+
+    function retrySameCut() {
+      stopPlayback();
+      state.phase = 'AUDITION';
+      state.monitorMode = 'ANALOG';
+      state.digitalSamples = null;
+      updatePhaseUI();
+      refreshKnobsAndBudgetUI();
+    }
+
+
+    function updatePhaseUI() {
+      const arch = state.currentArchetype;
+      el.trackArchetypeTag.textContent = arch.tag;
+      el.trackTitle.textContent = arch.name;
+      el.trackHint.textContent = arch.hint;
+
+
+      const isBurned = state.phase === 'BURNED';
+      el.phaseBadge.textContent = isBurned
+        ? 'PHASE 2: CD BURNED • A/B REVIEW'
+        : 'PHASE 1: AUDITION & DIAL-IN';
+      el.phaseBadge.classList.toggle('burned', isBurned);
+      el.statusLed.style.background = isBurned ? 'var(--cyan-bright)' : 'var(--gold)';
+      el.statusLed.style.boxShadow = isBurned ? '0 0 10px var(--cyan-bright)' : '0 0 10px var(--gold)';
+
+
+      el.abToggleBtn.disabled = !isBurned;
+      el.abToggleBtn.textContent = state.monitorMode === 'DIGITAL'
+        ? '🎧 Monitor: DIGITAL CUT (Click for A/B)'
+        : '🎧 Monitor: ANALOG MASTER (Click for A/B)';
+
+
+      el.burnBtn.disabled = isBurned;
+      el.retryCutBtn.style.display = isBurned ? 'inline-flex' : 'none';
+      el.srDownBtn.disabled = isBurned;
+      el.srUpBtn.disabled = isBurned;
+      el.bdDownBtn.disabled = isBurned;
+      el.bdUpBtn.disabled = isBurned;
+      el.aaFilterToggle.disabled = isBurned;
+    }
+
+
+    function resetScoreboardUI() {
+      el.spectralScoreText.textContent = '— / 500 pts';
+      el.spectralBar.style.width = '0%';
+      el.dynamicScoreText.textContent = '— / 500 pts';
+      el.dynamicBar.style.width = '0%';
+      el.efficiencyScoreText.textContent = '—';
+      el.efficiencyBar.style.width = '0%';
+      el.totalScoreText.textContent = 'READY';
+      el.scoreVerdictText.innerHTML =
+        'Audition the 10s analog master, dial in your Sampling Rate &amp; Bit Depth, then click <strong>Finalize &amp; Burn to CD</strong> to hear and score your digital cut.';
+    }
+
+
+    function renderScoreboard(score) {
+      el.spectralScoreText.textContent = `${score.spectralPts} / 500 pts`;
+      el.spectralBar.style.width = `${(score.spectralPts / 500) * 100}%`;
+
+
+      el.dynamicScoreText.textContent = `${score.dynamicPts} / 500 pts (${score.sqnrDb.toFixed(1)} dB SQNR)`;
+      el.dynamicBar.style.width = `${(score.dynamicPts / 500) * 100}%`;
+
+
+      const savedPct = (score.savedKb / MAX_BUDGET_KB) * 100;
+      el.efficiencyScoreText.textContent = `×${score.bonusMultiplier.toFixed(2)} (${score.savedKb.toFixed(0)} kb saved)`;
+      el.efficiencyBar.style.width = `${Math.min(100, savedPct * 1.4)}%`;
+
+
+      el.totalScoreText.textContent = `${score.totalScore.toLocaleString()} PTS`;
+
+
+      let verdict = '';
+      if (score.totalScore >= 1050) {
+        verdict = `🏆 <strong>Platinum Mastering Engineer!</strong> Transparent fidelity (${score.baseFidelity}/1000) with ${score.savedKb.toFixed(0)} kb of spared CD space.`;
+      } else if (score.masterApproved) {
+        verdict = `✅ <strong>Master Approved (${score.baseFidelity}/1000 Fidelity).</strong> Try "Unlock & Retry Cut" to see if you can shave off more bits or tighten the Nyquist cutoff!`;
+      } else if (score.spectralPts < score.dynamicPts) {
+        verdict = `⚠️ <strong>High-Frequency Loss / Aliasing (${score.baseFidelity}/1000).</strong> Sampling Rate (${state.srKhz.toFixed(1)} kHz) was too low for this cut's treble energy.`;
+      } else {
+        verdict = `⚠️ <strong>Quantization Hiss Detected (${score.baseFidelity}/1000).</strong> Bit Depth (${state.bits.toFixed(1)} bits) was too coarse for this cut's quiet passages.`;
+      }
+      el.scoreVerdictText.innerHTML = verdict;
+    }
+
+
+    /* =========================================================================
+       9. INTERACTIVE CONTROLS & MODAL EVENT LISTENERS
+       ========================================================================= */
+    function bindRotaryKnob(dialElem, paramName, minVal, maxVal, sensitivity) {
+      let dragging = false;
+      let startY = 0;
+      let startVal = 0;
+
+
+      dialElem.addEventListener('pointerdown', (e) => {
+        if (state.phase === 'BURNED') return;
+        dragging = true;
+        startY = e.clientY;
+        startVal = paramName === 'sr' ? state.srKhz : state.bits;
+        dialElem.setPointerCapture(e.pointerId);
+      });
+
+
+      dialElem.addEventListener('pointermove', (e) => {
+        if (!dragging || state.phase === 'BURNED') return;
+        const dy = startY - e.clientY;
+        const delta = (dy / sensitivity) * (maxVal - minVal);
+        updateKnobParameters(paramName, startVal + delta);
+      });
+
+
+      dialElem.addEventListener('pointerup', () => {
+        dragging = false;
+      });
+
+
+      dialElem.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        if (state.phase === 'BURNED') return;
+        const step = paramName === 'sr' ? 0.5 : 0.5;
+        const dir = e.deltaY < 0 ? 1 : -1;
+        const cur = paramName === 'sr' ? state.srKhz : state.bits;
+        updateKnobParameters(paramName, cur + dir * step);
+      }, { passive: false });
+    }
+
+
+    bindRotaryKnob(el.srKnobDial, 'sr', MIN_SR_KHZ, MAX_SR_KHZ, 150);
+    bindRotaryKnob(el.bdKnobDial, 'bits', MIN_BITS, MAX_BITS, 150);
+
+
+    el.srDownBtn.addEventListener('click', () => updateKnobParameters('sr', state.srKhz - 1.0));
+    el.srUpBtn.addEventListener('click', () => updateKnobParameters('sr', state.srKhz + 1.0));
+    el.bdDownBtn.addEventListener('click', () => updateKnobParameters('bits', state.bits - 0.5));
+    el.bdUpBtn.addEventListener('click', () => updateKnobParameters('bits', state.bits + 0.5));
+
+
+    el.meterCuesToggle.addEventListener('change', (e) => {
+      state.showMeterCues = e.target.checked;
+      drawStaticMeters();
+    });
+
+
+    el.aaFilterToggle.addEventListener('change', (e) => {
+      state.useAAFilter = e.target.checked;
+    });
+
+
+    el.playMasterBtn.addEventListener('click', () => {
+      if (state.isPlaying) {
+        stopPlayback();
+      } else {
+        startPlayback(0);
+      }
+    });
+
+
+    el.abToggleBtn.addEventListener('click', () => {
+      if (state.phase !== 'BURNED') return;
+      const currentPos = state.isPlaying && audioCtx
+        ? Math.min(DURATION_SEC - 0.2, audioCtx.currentTime - startTime)
+        : 0;
+      state.monitorMode = state.monitorMode === 'DIGITAL' ? 'ANALOG' : 'DIGITAL';
+      updatePhaseUI();
+      if (state.isPlaying) {
+        startPlayback(currentPos);
+      }
+    });
+
+
+    el.peakScanBtn.addEventListener('click', () => {
+      state.showPeakEnvelope = !state.showPeakEnvelope;
+      el.peakScanBtn.classList.toggle('btn-cyan', state.showPeakEnvelope);
+      drawStaticMeters();
+    });
+
+
+    el.burnBtn.addEventListener('click', finalizeAndBurnToCD);
+    el.retryCutBtn.addEventListener('click', retrySameCut);
+    el.newCutBtn.addEventListener('click', loadNewRandomCut);
+
+
+    el.openGuideBtn.addEventListener('click', () => {
+      el.guideModalBackdrop.classList.add('open');
+    });
+    el.closeGuideBtn.addEventListener('click', () => {
+      el.guideModalBackdrop.classList.remove('open');
+    });
+    el.guideModalBackdrop.addEventListener('click', (e) => {
+      if (e.target === el.guideModalBackdrop) {
+        el.guideModalBackdrop.classList.remove('open');
+      }
+    });
+
+
+    loadNewRandomCut();
+  </script>
+</body>
+</html>
