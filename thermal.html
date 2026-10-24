@@ -20,7 +20,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="author" content="Barry Hemmerdinger">
 <meta name="copyright" content="Copyright © 2026 Barry Hemmerdinger. All Rights Reserved.">
-<title>Thermal Runaway: Bit Error Lab</title>
+<title>Thermal Runaway: Bit Error Rate (BER) Lab</title>
 <style>
   :root {
     --bg: #0a0e14;
@@ -810,7 +810,7 @@
   <!-- Header & Mode Selector -->
   <div class="top-bar" id="topBar">
     <div class="brand">
-      <h1>Thermal Runaway: Bit Error Lab</h1>
+      <h1>Thermal Runaway: Bit Error Rate (BER) Lab</h1>
       <span id="modeSubtitle">Standard Mode: Max 4% BER • Auto Power-Boost on Retry (-1% BER)</span>
     </div>
     <div class="mode-controls">
@@ -911,7 +911,7 @@
     </div>
 
     <div class="selected-code-info">
-      <div class="info-desc" id="selectedCodeDesc">Catches ODD bit errors (1, 3, 5) & auto-retransmits. Fooled by EVEN errors (2, 4)!</div>
+      <div class="info-desc" id="selectedCodeDesc">Detects ODD number of bit errors (1, 3, 5) & auto-retransmits. Fooled by EVEN numberof errors (2, 4)!</div>
       <div class="info-odds" id="selectedCodeOdds">Pass: 91.4% | Retry: 8.3% | Silent Err: 0.3%</div>
     </div>
 
@@ -965,7 +965,7 @@ const BONUS_PENALTY_PER_ERROR = 10;
 const BIT_TRANSMIT_DELAY_MS = 1000;
 
 // Single-Source BER Curves
-const STANDARD_BER_CURVE = [1, 1.5, 2, 2, 2.5, 4, 4, 4.5, 5, 5];
+const STANDARD_BER_CURVE = [1, 1.5, 2, 2, 2.5, 3, 3, 3.5, 4, 4];
 const ADVANCED_BER_CURVE = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
 const STD_MAX_BER = Math.max(...STANDARD_BER_CURVE);
@@ -1023,13 +1023,13 @@ const GAME_CONFIG = {
     {
       target: "#deckPanel",
       title: "7. Silent Errors vs. ARQ Retransmits",
-      text: "Raw Uncoded (8 Coins) has no check bits—any flip corrupts the letter silently! 1-Bit Parity (9 Coins) catches odd errors (1, 3) and auto-retransmits, but 2 simultaneous flips fool it!",
+      text: "Raw Uncoded (8 Coins) has no check bits—any flip corrupts the letter silently! 1-Bit Parity (9 Coins) detects odd errors (1, 3) and auto-retransmits, but 2 simultaneous flips fool it!",
       prompt: "Click Next › to learn about Advanced Coding"
     },
     {
       target: "#deckPanel",
-      title: "8. Advanced Coding (CRC & FEC)",
-      text: "In Advanced Mode, 2-Bit Dual Check (10 Coins) catches 1- and 2-bit errors, while Hamming FEC (12 Coins) auto-heals 1-bit errors on the spot without paying for a retransmit!",
+      title: "8. Advanced Coding (Cyclic Redundancy Check & Forward Error Correction)",
+      text: "In Advanced Mode, 2-Bit CRC Dual Check (10 Coins) detects 1- and 2-bit errors, while Hamming FEC (12 Coins) auto-heals 1-bit errors on the spot without paying for a retransmit!",
       prompt: "Click Next › to prepare for launch"
     },
     {
@@ -1110,14 +1110,14 @@ const GAME_CONFIG = {
       shortName: "1-Bit Parity",
       bits: 9,
       checkBits: 1,
-      desc: "Catches ODD bit errors (1, 3, 5) & auto-retransmits. Fooled by EVEN errors (2, 4)."
+      desc: "Detects ODD bit errors (1, 3, 5) & auto-retransmits. Fooled by EVEN errors (2, 4)."
     },
     crc2: {
       id: "crc2",
       shortName: "2-Bit Dual Check",
       bits: 10,
       checkBits: 2,
-      desc: "Catches 1-bit & 2-bit errors & auto-retransmits. Only fooled by 3+ errors."
+      desc: "Detects 1-bit & 2-bit errors & auto-retransmits. Only fooled by 3+ errors."
     },
     fec4: {
       id: "fec4",
@@ -1845,7 +1845,7 @@ const GAME_CONFIG = {
     const modeCfg = GAME_CONFIG.MODES[currentMode];
 
     lastShareReport = [
-      "⚡ THERMAL RUNAWAY: BIT ERROR LAB ⚡",
+      "⚡ THERMAL RUNAWAY: BIT ERROR RATE LAB ⚡",
       `Mode: ${modeCfg.name} (Max ${modeCfg.maxBer}% BER)`,
       `Status: ${statusLabel}`,
       `Decoded String: "${rxWord}" (${cleanLetters}/${totalRounds} Clean)`,
@@ -1905,7 +1905,7 @@ const GAME_CONFIG = {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: "Thermal Runaway: Bit Error Lab",
+          title: "Thermal Runaway: Bit Error Rate Lab",
           text: lastShareReport
         });
         btn.textContent = "✓ Telemetry Shared!";
