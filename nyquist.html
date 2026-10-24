@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -6,7 +6,7 @@
   <title>Nyquist Studio: CD Mastering Lab | © 2026 Barry Hemmerdinger</title>
   <!--
     ============================================================================
-    NYQUIST STUDIO: CD MASTERING LAB
+    NYQUIST STUDIO: CD MASTERING LAB (v4)
     Digital Sampling, Quantization & Bit-Budget Engineering Game
     Copyright (c) 2026 Barry Hemmerdinger. All Rights Reserved.
     ============================================================================
@@ -36,14 +36,12 @@
       --font-math: 'Cambria Math', 'STIX Two Math', 'Times New Roman', serif;
     }
 
-
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
       user-select: none;
     }
-
 
     body {
       background: radial-gradient(circle at 50% 0%, #17233b 0%, var(--bg-deep) 75%);
@@ -56,7 +54,6 @@
       padding: 12px;
       overflow-x: hidden;
     }
-
 
     /* STUDIO CONSOLE CHASSIS */
     .console-shell {
@@ -73,7 +70,6 @@
       padding: 14px;
     }
 
-
     /* TOP HEADER BAR */
     .studio-header {
       display: flex;
@@ -87,13 +83,11 @@
       padding: 10px 16px;
     }
 
-
     .brand-group {
       display: flex;
       align-items: center;
       gap: 12px;
     }
-
 
     .led-badge {
       width: 12px;
@@ -102,7 +96,6 @@
       background: var(--gold);
       box-shadow: 0 0 10px var(--gold);
     }
-
 
     .brand-title h1 {
       font-size: 1.15rem;
@@ -115,41 +108,57 @@
       gap: 8px;
     }
 
-
     .brand-sub {
       font-size: 0.74rem;
       color: var(--text-muted);
       font-family: var(--font-mono);
     }
 
-
     .header-actions {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
       flex-wrap: wrap;
     }
 
-
-    .phase-pill {
-      font-family: var(--font-mono);
-      font-size: 0.76rem;
-      font-weight: 700;
-      padding: 6px 12px;
-      border-radius: 999px;
-      background: var(--gold-soft);
-      color: var(--gold);
-      border: 1px solid var(--gold);
-      letter-spacing: 0.04em;
+    .track-select {
+      background: #1e293b;
+      color: var(--text-main);
+      border: 1px solid #3b4f73;
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      font-family: var(--font-sans);
+      cursor: pointer;
+      outline: none;
+      max-width: 230px;
     }
 
-
-    .phase-pill.burned {
-      background: var(--cyan-soft);
-      color: var(--cyan-bright);
+    .track-select:hover, .track-select:focus {
       border-color: var(--cyan-bright);
     }
 
+    /* OBJECTIVE BANNER */
+    .objective-banner {
+      background: linear-gradient(90deg, rgba(245, 158, 11, 0.12) 0%, rgba(34, 211, 238, 0.08) 100%);
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      border-left: 4px solid var(--gold);
+      border-radius: 10px;
+      padding: 10px 16px;
+      font-size: 0.83rem;
+      line-height: 1.45;
+      color: #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .objective-banner strong {
+      color: var(--gold);
+    }
 
     .btn {
       background: #1e293b;
@@ -167,19 +176,16 @@
       font-family: var(--font-sans);
     }
 
-
     .btn:hover:not(:disabled) {
       background: #283750;
       border-color: var(--cyan-bright);
       transform: translateY(-1px);
     }
 
-
     .btn:disabled {
       opacity: 0.45;
       cursor: not-allowed;
     }
-
 
     .btn-guide {
       background: linear-gradient(135deg, #1e1b4b, #312e81);
@@ -187,12 +193,10 @@
       color: #e0e7ff;
     }
 
-
     .btn-guide:hover {
       background: linear-gradient(135deg, #312e81, #4338ca);
       border-color: #818cf8;
     }
-
 
     .btn-gold {
       background: linear-gradient(135deg, #b45309, #d97706);
@@ -200,13 +204,26 @@
       color: #fff;
     }
 
-
     .btn-cyan {
       background: linear-gradient(135deg, #0e7490, #0891b2);
       border-color: #22d3ee;
       color: #fff;
     }
 
+    .btn-share {
+      background: linear-gradient(135deg, #059669, #10b981);
+      border-color: #6ee7b7;
+      color: #fff;
+      font-weight: 700;
+      width: 100%;
+      justify-content: center;
+      margin-top: 4px;
+    }
+
+    .btn-share:hover:not(:disabled) {
+      background: linear-gradient(135deg, #10b981, #34d399);
+      border-color: #a7f3d0;
+    }
 
     .btn-burn {
       background: linear-gradient(135deg, #dc2626, #ea580c);
@@ -220,32 +237,34 @@
       box-shadow: 0 0 20px rgba(239, 68, 68, 0.35);
     }
 
-
     .btn-burn:hover:not(:disabled) {
       background: linear-gradient(135deg, #ef4444, #f97316);
       box-shadow: 0 0 28px rgba(239, 68, 68, 0.6);
     }
 
-
     /* TRACK DECK & TRANSPORT BAR */
     .transport-bar {
-      display: grid;
-      grid-template-columns: 1.3fr 1.7fr;
-      gap: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
       background: var(--bg-panel);
       border: 1px solid var(--border-metal);
       border-radius: 10px;
       padding: 12px 16px;
+    }
+
+    .transport-main-row {
+      display: grid;
+      grid-template-columns: 1.3fr 1.7fr;
+      gap: 12px;
       align-items: center;
     }
 
-
     @media (max-width: 860px) {
-      .transport-bar {
+      .transport-main-row {
         grid-template-columns: 1fr;
       }
     }
-
 
     .track-info-box {
       display: flex;
@@ -253,14 +272,12 @@
       gap: 4px;
     }
 
-
     .track-label-row {
       display: flex;
       align-items: center;
       gap: 8px;
       flex-wrap: wrap;
     }
-
 
     .track-tag {
       font-family: var(--font-mono);
@@ -273,6 +290,15 @@
       text-transform: uppercase;
     }
 
+    .catalog-source-badge {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      background: rgba(16, 185, 129, 0.14);
+      color: var(--green);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      padding: 2px 7px;
+      border-radius: 4px;
+    }
 
     .track-name {
       font-size: 1.05rem;
@@ -280,13 +306,11 @@
       color: #fff;
     }
 
-
     .track-desc {
       font-size: 0.8rem;
       color: var(--text-muted);
       line-height: 1.35;
     }
-
 
     .transport-controls {
       display: flex;
@@ -295,7 +319,6 @@
       gap: 10px;
       flex-wrap: wrap;
     }
-
 
     .timecode-box {
       font-family: var(--font-mono);
@@ -309,8 +332,41 @@
       text-align: center;
     }
 
+    /* 10s UPLOADED MP3 WINDOW PICKER BAR */
+    .mp3-window-bar {
+      display: none;
+      background: rgba(6, 10, 16, 0.75);
+      border: 1px solid #2e4061;
+      border-radius: 8px;
+      padding: 9px 14px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
 
-    /* METER BRIDGE (OSCILLOSCOPE & FFT) */
+    .mp3-window-bar.visible {
+      display: flex;
+    }
+
+    .mp3-window-label {
+      font-family: var(--font-mono);
+      font-size: 0.76rem;
+      color: var(--cyan-bright);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .mp3-window-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      min-width: 240px;
+    }
+
+    /* METER BRIDGE (OSCILLOSCOPE & FFT WITH LOCKED SLIDERS UNDER EACH) */
     .meter-bridge {
       display: flex;
       flex-direction: column;
@@ -320,7 +376,6 @@
       border-radius: 10px;
       padding: 12px;
     }
-
 
     .meter-toolbar {
       display: flex;
@@ -332,7 +387,6 @@
       border-bottom: 1px solid rgba(255, 255, 255, 0.07);
     }
 
-
     .meter-legend {
       display: flex;
       align-items: center;
@@ -342,20 +396,17 @@
       color: var(--text-muted);
     }
 
-
     .legend-item {
       display: flex;
       align-items: center;
       gap: 6px;
     }
 
-
     .swatch {
       width: 12px;
       height: 4px;
       border-radius: 2px;
     }
-
 
     .toggle-switch {
       display: inline-flex;
@@ -371,7 +422,6 @@
       border: 1px solid #334155;
     }
 
-
     .toggle-switch input {
       accent-color: var(--cyan-bright);
       width: 15px;
@@ -379,32 +429,35 @@
       cursor: pointer;
     }
 
-
     .screens-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 12px;
+      gap: 14px;
     }
 
-
-    @media (max-width: 860px) {
+    @media (max-width: 880px) {
       .screens-grid {
         grid-template-columns: 1fr;
       }
     }
 
-
-    .screen-card {
+    /* UNIFIED SCREEN + LOCKED SLIDER MODULE */
+    .screen-module {
       background: var(--bg-screen);
-      border: 1px solid #26354d;
-      border-radius: 8px;
-      padding: 8px;
-      position: relative;
+      border: 1px solid #283a56;
+      border-radius: 10px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
+    }
+
+    .screen-top {
+      padding: 9px 10px 8px;
       display: flex;
       flex-direction: column;
       gap: 6px;
     }
-
 
     .screen-header {
       display: flex;
@@ -413,52 +466,187 @@
       font-family: var(--font-mono);
       font-size: 0.73rem;
       color: var(--text-muted);
-      padding: 0 4px;
+      padding: 0 2px;
     }
-
 
     .screen-readout {
       color: var(--cyan-bright);
-      font-weight: 600;
+      font-weight: 700;
     }
 
+    .screen-module.gold-module .screen-readout {
+      color: var(--gold);
+    }
 
     canvas.meter-canvas {
       width: 100%;
-      height: 195px;
+      height: 190px;
       display: block;
       background: #04070c;
       border-radius: 6px;
       border: 1px solid #162235;
     }
 
+    /* LOCKED SLIDER DOCK DIRECTLY UNDERNEATH EACH SCREEN */
+    .locked-slider-dock {
+      background: linear-gradient(180deg, #101929 0%, #0b111d 100%);
+      border-top: 2px solid #243550;
+      padding: 11px 14px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
 
-    /* KNOBS & CD BUDGET DECK */
-    .mastering-deck {
+    .slider-top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .slider-label-group {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .slider-title {
+      font-size: 0.84rem;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: 0.03em;
+    }
+
+    .slider-sub {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+
+    .slider-value-box {
+      font-family: var(--font-mono);
+      font-size: 0.98rem;
+      font-weight: 800;
+      color: var(--cyan-bright);
+      background: #05080f;
+      padding: 4px 12px;
+      border-radius: 6px;
+      border: 1px solid #26354d;
+      min-width: 98px;
+      text-align: center;
+    }
+
+    .screen-module.gold-module .slider-value-box {
+      color: var(--gold);
+    }
+
+    .slider-track-row {
       display: grid;
-      grid-template-columns: 1.25fr 1fr;
-      gap: 12px;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 10px;
     }
 
-
-    @media (max-width: 920px) {
-      .mastering-deck {
-        grid-template-columns: 1fr;
-      }
+    .fader-input {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 10px;
+      border-radius: 999px;
+      background: #060a10;
+      border: 1px solid #2e4061;
+      outline: none;
+      cursor: pointer;
     }
 
+    .fader-input:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
 
-    .knobs-panel, .budget-panel {
+    .fader-input::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      background: linear-gradient(180deg, #38bdf8 0%, #0284c7 100%);
+      border: 2px solid #e0f2fe;
+      box-shadow: 0 0 10px rgba(34, 211, 238, 0.65);
+      cursor: grab;
+      transition: transform 0.1s ease;
+    }
+
+    .fader-input::-webkit-slider-thumb:active {
+      cursor: grabbing;
+      transform: scale(1.08);
+    }
+
+    .screen-module.gold-module .fader-input::-webkit-slider-thumb {
+      background: linear-gradient(180deg, #fbbf24 0%, #d97706 100%);
+      border-color: #fef3c7;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.65);
+    }
+
+    .fader-input::-moz-range-thumb {
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      background: linear-gradient(180deg, #38bdf8 0%, #0284c7 100%);
+      border: 2px solid #e0f2fe;
+      box-shadow: 0 0 10px rgba(34, 211, 238, 0.65);
+      cursor: grab;
+    }
+
+    .screen-module.gold-module .fader-input::-moz-range-thumb {
+      background: linear-gradient(180deg, #fbbf24 0%, #d97706 100%);
+      border-color: #fef3c7;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.65);
+    }
+
+    .slider-ticks {
+      display: flex;
+      justify-content: space-between;
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      color: var(--text-dim);
+      padding: 0 52px;
+    }
+
+    .step-btn {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: var(--text-main);
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 5px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      min-width: 48px;
+    }
+
+    .step-btn:hover:not(:disabled) {
+      border-color: var(--cyan-bright);
+      background: #283750;
+    }
+
+    .step-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    /* CD BUDGET & BURN BAR */
+    .budget-panel {
       background: var(--bg-panel);
       border: 1px solid var(--border-metal);
       border-radius: 10px;
-      padding: 14px 16px;
+      padding: 13px 16px;
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
-      gap: 12px;
+      gap: 10px;
     }
-
 
     .panel-title {
       font-size: 0.8rem;
@@ -469,157 +657,21 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-    }
-
-
-    .knobs-row {
-      display: grid;
-      grid-template-columns: 1fr auto 1fr;
-      align-items: center;
-      gap: 10px;
-    }
-
-
-    .knob-unit {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      flex-wrap: wrap;
       gap: 8px;
-      background: rgba(6, 10, 16, 0.55);
-      border: 1px solid #24324b;
-      border-radius: 10px;
-      padding: 12px 10px;
     }
-
-
-    .knob-title {
-      font-size: 0.82rem;
-      font-weight: 700;
-      color: #fff;
-      text-align: center;
-    }
-
-
-    .knob-sub {
-      font-size: 0.7rem;
-      color: var(--text-muted);
-      font-family: var(--font-mono);
-    }
-
-
-    .knob-dial-wrap {
-      position: relative;
-      width: 96px;
-      height: 96px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: ns-resize;
-      touch-action: none;
-    }
-
-
-    .knob-dial {
-      width: 78px;
-      height: 78px;
-      border-radius: 50%;
-      background: radial-gradient(circle at 32% 30%, #334155, #0f172a 75%);
-      border: 2px solid #475569;
-      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.65), inset 0 2px 3px rgba(255, 255, 255, 0.15);
-      position: relative;
-      transition: border-color 0.15s;
-    }
-
-
-    .knob-dial-wrap:hover .knob-dial {
-      border-color: var(--cyan-bright);
-    }
-
-
-    .knob-indicator {
-      position: absolute;
-      top: 7px;
-      left: 50%;
-      width: 4px;
-      height: 22px;
-      margin-left: -2px;
-      background: var(--cyan-bright);
-      border-radius: 2px;
-      transform-origin: 50% 30px;
-      box-shadow: 0 0 8px var(--cyan-bright);
-    }
-
-
-    .knob-unit.gold-knob .knob-indicator {
-      background: var(--gold);
-      box-shadow: 0 0 8px var(--gold);
-    }
-
-
-    .knob-value-box {
-      font-family: var(--font-mono);
-      font-size: 1.05rem;
-      font-weight: 800;
-      color: var(--cyan-bright);
-      background: #060a10;
-      padding: 4px 12px;
-      border-radius: 6px;
-      border: 1px solid #26354d;
-    }
-
-
-    .knob-unit.gold-knob .knob-value-box {
-      color: var(--gold);
-    }
-
-
-    .knob-step-btns {
-      display: flex;
-      gap: 6px;
-    }
-
-
-    .step-btn {
-      background: #1e293b;
-      border: 1px solid #334155;
-      color: var(--text-main);
-      font-family: var(--font-mono);
-      font-size: 0.72rem;
-      padding: 3px 9px;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-
-
-    .step-btn:hover:not(:disabled) {
-      border-color: var(--cyan-bright);
-      background: #283750;
-    }
-
-
-    .coupling-bridge {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
-      font-family: var(--font-mono);
-      font-size: 0.7rem;
-      color: var(--text-muted);
-      text-align: center;
-      max-width: 95px;
-    }
-
 
     .coupling-badge {
-      padding: 5px 8px;
-      border-radius: 6px;
+      padding: 3px 9px;
+      border-radius: 4px;
       background: #162032;
       border: 1px solid #2e4061;
       color: var(--text-muted);
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
       font-weight: 700;
       transition: all 0.2s;
     }
-
 
     .coupling-badge.active {
       background: var(--red-soft);
@@ -628,17 +680,14 @@
       box-shadow: 0 0 12px rgba(239, 68, 68, 0.35);
     }
 
-
-    /* CD STORAGE BAR */
     .cd-meter-wrap {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 7px;
     }
 
-
     .cd-bar-outer {
-      height: 26px;
+      height: 24px;
       background: #060a10;
       border: 1px solid #334155;
       border-radius: 8px;
@@ -647,13 +696,11 @@
       position: relative;
     }
 
-
     .cd-bar-used {
       height: 100%;
       background: linear-gradient(90deg, #0284c7, #22d3ee);
-      transition: width 0.12s ease;
+      transition: width 0.1s ease;
     }
-
 
     .cd-bar-saved {
       height: 100%;
@@ -664,17 +711,18 @@
         rgba(16, 185, 129, 0.45) 8px,
         rgba(16, 185, 129, 0.45) 16px
       );
-      transition: width 0.12s ease;
+      transition: width 0.1s ease;
     }
-
 
     .cd-bar-labels {
       display: flex;
       justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
       font-family: var(--font-mono);
       font-size: 0.76rem;
     }
-
 
     .dsp-options-row {
       display: flex;
@@ -686,7 +734,6 @@
       border-top: 1px solid rgba(255, 255, 255, 0.07);
     }
 
-
     /* SCOREBOARD / EVALUATION REPORT */
     .score-panel {
       background: linear-gradient(180deg, #131c2e 0%, #0b111d 100%);
@@ -694,11 +741,10 @@
       border-radius: 10px;
       padding: 14px 16px;
       display: grid;
-      grid-template-columns: 1.5fr 1fr;
+      grid-template-columns: 1.45fr 1fr;
       gap: 16px;
       align-items: center;
     }
-
 
     @media (max-width: 860px) {
       .score-panel {
@@ -706,13 +752,11 @@
       }
     }
 
-
     .metrics-list {
       display: flex;
       flex-direction: column;
       gap: 10px;
     }
-
 
     .metric-row {
       display: flex;
@@ -720,14 +764,12 @@
       gap: 4px;
     }
 
-
     .metric-label-line {
       display: flex;
       justify-content: space-between;
       font-size: 0.78rem;
       font-family: var(--font-mono);
     }
-
 
     .metric-bar-bg {
       height: 9px;
@@ -737,14 +779,12 @@
       border: 1px solid #26354d;
     }
 
-
     .metric-bar-fill {
       height: 100%;
       width: 0%;
       border-radius: 999px;
       transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1);
     }
-
 
     .total-score-card {
       background: #060a10;
@@ -758,22 +798,19 @@
       align-items: center;
     }
 
-
     .score-big {
       font-family: var(--font-mono);
-      font-size: 2.1rem;
+      font-size: 2.05rem;
       font-weight: 800;
       color: var(--gold);
       line-height: 1.1;
     }
 
-
     .score-verdict {
-      font-size: 0.8rem;
+      font-size: 0.79rem;
       color: var(--text-muted);
       line-height: 1.35;
     }
-
 
     /* FOOTER */
     .studio-footer {
@@ -787,7 +824,6 @@
       font-family: var(--font-mono);
       padding: 4px 6px 0;
     }
-
 
     /* =========================================================================
        ENGINEERING GUIDE MODAL & NATIVE HTML/CSS EQUATION TYPESETTING
@@ -804,11 +840,9 @@
       padding: 16px;
     }
 
-
     .modal-backdrop.open {
       display: flex;
     }
-
 
     .guide-modal {
       background: linear-gradient(180deg, #162136 0%, #0c121e 100%);
@@ -823,7 +857,6 @@
       flex-direction: column;
     }
 
-
     .guide-header {
       display: flex;
       justify-content: space-between;
@@ -836,7 +869,6 @@
       z-index: 5;
     }
 
-
     .guide-header h2 {
       font-size: 1.15rem;
       color: #fff;
@@ -845,14 +877,12 @@
       gap: 10px;
     }
 
-
     .guide-body {
       padding: 20px 22px;
       display: flex;
       flex-direction: column;
       gap: 18px;
     }
-
 
     .guide-intro {
       font-size: 0.88rem;
@@ -864,20 +894,17 @@
       border-radius: 0 8px 8px 0;
     }
 
-
     .formula-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 14px;
     }
 
-
     @media (max-width: 780px) {
       .formula-grid {
         grid-template-columns: 1fr;
       }
     }
-
 
     .formula-card {
       background: #0b111d;
@@ -888,7 +915,6 @@
       flex-direction: column;
       gap: 12px;
     }
-
 
     .formula-card-title {
       font-size: 0.84rem;
@@ -901,23 +927,10 @@
       align-items: center;
     }
 
+    .formula-card.gold-card .formula-card-title { color: var(--gold); }
+    .formula-card.green-card .formula-card-title { color: var(--green); }
+    .formula-card.purple-card .formula-card-title { color: #c084fc; }
 
-    .formula-card.gold-card .formula-card-title {
-      color: var(--gold);
-    }
-
-
-    .formula-card.green-card .formula-card-title {
-      color: var(--green);
-    }
-
-
-    .formula-card.purple-card .formula-card-title {
-      color: #c084fc;
-    }
-
-
-    /* NATIVE HTML MATHEMATICAL EQUATION BOX */
     .math-display {
       background: #05080f;
       border: 1px solid #1e2d45;
@@ -935,31 +948,12 @@
       box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.6);
     }
 
+    .math-display var { font-style: italic; font-weight: 600; color: #e2e8f0; }
+    .math-display var.v-cyan { color: var(--cyan-bright); }
+    .math-display var.v-gold { color: var(--gold); }
+    .math-display var.v-green { color: var(--green); }
 
-    .math-display var {
-      font-style: italic;
-      font-weight: 600;
-      color: #e2e8f0;
-    }
-
-
-    .math-display var.v-cyan {
-      color: var(--cyan-bright);
-    }
-
-
-    .math-display var.v-gold {
-      color: var(--gold);
-    }
-
-
-    .math-display var.v-green {
-      color: var(--green);
-    }
-
-
-    .math-display sub,
-    .math-display sup {
+    .math-display sub, .math-display sup {
       font-size: 0.72em;
       font-style: normal;
       font-family: var(--font-sans);
@@ -967,14 +961,7 @@
       color: #cbd5e1;
     }
 
-
-    .math-op {
-      padding: 0 3px;
-      color: #94a3b8;
-      font-family: var(--font-math);
-    }
-
-
+    .math-op { padding: 0 3px; color: #94a3b8; font-family: var(--font-math); }
     .math-paren {
       font-size: 1.65em;
       font-weight: 300;
@@ -984,16 +971,7 @@
       align-items: center;
       transform: translateY(-1px);
     }
-
-
-    .math-group {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-    }
-
-
-    /* Stacked fraction layout */
+    .math-group { display: inline-flex; align-items: center; gap: 5px; }
     .math-frac {
       display: inline-flex;
       flex-direction: column;
@@ -1002,30 +980,9 @@
       margin: 0 4px;
       line-height: 1.15;
     }
-
-
-    .math-frac .num {
-      border-bottom: 1.5px solid #94a3b8;
-      padding: 0 6px 3px;
-      width: 100%;
-      text-align: center;
-    }
-
-
-    .math-frac .den {
-      padding: 3px 6px 0;
-      width: 100%;
-      text-align: center;
-    }
-
-
-    .math-unit {
-      font-family: var(--font-mono);
-      font-size: 0.78rem;
-      color: var(--text-muted);
-      margin-left: 3px;
-    }
-
+    .math-frac .num { border-bottom: 1.5px solid #94a3b8; padding: 0 6px 3px; width: 100%; text-align: center; }
+    .math-frac .den { padding: 3px 6px 0; width: 100%; text-align: center; }
+    .math-unit { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-muted); margin-left: 3px; }
 
     .math-live-strip {
       background: rgba(34, 211, 238, 0.08);
@@ -1042,18 +999,8 @@
       gap: 6px;
     }
 
-
-    .formula-explain {
-      font-size: 0.8rem;
-      color: var(--text-muted);
-      line-height: 1.48;
-    }
-
-
-    .formula-explain strong {
-      color: #e2e8f0;
-    }
-
+    .formula-explain { font-size: 0.8rem; color: var(--text-muted); line-height: 1.48; }
+    .formula-explain strong { color: #e2e8f0; }
 
     .guide-footer {
       padding: 14px 22px;
@@ -1067,9 +1014,11 @@
       color: var(--text-muted);
     }
   </style>
+
+  <!-- EXTERNAL MUSIC CATALOG FILE (Edit tracks.js in your GitHub repo anytime!) -->
+  <script src="tracks.js"></script>
 </head>
 <body>
-
 
   <div class="console-shell">
     <!-- HEADER -->
@@ -1082,48 +1031,86 @@
         </div>
       </div>
 
-
       <div class="header-actions">
-        <span class="phase-pill" id="phaseBadge">PHASE 1: AUDITION &amp; DIAL-IN</span>
-        <button class="btn btn-guide" id="openGuideBtn" type="button">
-          📐 Engineering Guide &amp; Equations
+        <select class="track-select" id="trackPickerSelect" title="Jump directly to any track from tracks.js or uploaded files">
+          <option value="random">🎲 Select Track...</option>
+        </select>
+
+        <!-- LOCAL MP3 / WAV FILE UPLOAD -->
+        <input type="file" id="localMp3Input" accept="audio/*,.mp3,.wav,.ogg,.m4a,.flac" style="display: none;" />
+        <button class="btn btn-cyan" id="uploadMp3Btn" type="button" title="Load a local MP3, WAV, or OGG file from your computer">
+          📁 Upload Local MP3
         </button>
+
         <button class="btn" id="newCutBtn" type="button">
           🎲 New Random Cut
+        </button>
+        <button class="btn btn-guide" id="openGuideBtn" type="button">
+          📐 Engineering Guide
         </button>
       </div>
     </header>
 
+    <!-- MISSION OBJECTIVE BANNER -->
+    <div class="objective-banner">
+      <div>
+        <strong>MISSION OBJECTIVE:</strong> With only <strong>960 kb</strong> of free space left on your CD mixtape, you want to squeeze in one more 10-second piece of music. Your goal is to adjust the digital <strong>Sampling Rate</strong> and <strong>Bits per Sample</strong> to get the best digital fidelity that you can fit onto the CD. You get points based on <strong>quality AND efficiency</strong> — with bonus points for unused storage!
+      </div>
+    </div>
 
     <!-- TRACK & TRANSPORT BAR -->
     <section class="transport-bar">
-      <div class="track-info-box">
-        <div class="track-label-row">
-          <span class="track-tag" id="trackArchetypeTag">ARCHETYPE</span>
-          <span class="track-name" id="trackTitle">Loading Analog Master...</span>
+      <div class="transport-main-row">
+        <div class="track-info-box">
+          <div class="track-label-row">
+            <span class="track-tag" id="trackArchetypeTag">ARCHETYPE</span>
+            <span class="catalog-source-badge" id="catalogSourceBadge">tracks.js</span>
+            <span class="track-name" id="trackTitle">Loading Analog Master...</span>
+          </div>
+          <p class="track-desc" id="trackHint">
+            Inspect the Oscilloscope and FFT Spectrum Analyzer while listening to the 48 kHz Analog Master.
+          </p>
         </div>
-        <p class="track-desc" id="trackHint">
-          Inspect the Oscilloscope and FFT Spectrum Analyzer while listening to the 48 kHz Analog Master.
-        </p>
+
+        <div class="transport-controls">
+          <button class="btn btn-gold" id="playMasterBtn" type="button">
+            ▶ Play Analog Master (10s)
+          </button>
+          <button class="btn btn-cyan" id="abToggleBtn" type="button" disabled>
+            🎧 Monitor: DIGITAL CUT
+          </button>
+          <button class="btn" id="peakScanBtn" type="button" title="Traces the maximum 10-second frequency envelope on the FFT">
+            📊 Peak Scan 10s
+          </button>
+          <div class="timecode-box" id="timecodeDisplay">00.0s / 10.0s</div>
+        </div>
       </div>
 
-
-      <div class="transport-controls">
-        <button class="btn btn-gold" id="playMasterBtn" type="button">
-          ▶ Play Analog Master (10s)
-        </button>
-        <button class="btn btn-cyan" id="abToggleBtn" type="button" disabled>
-          🎧 Monitor: DIGITAL CUT
-        </button>
-        <button class="btn" id="peakScanBtn" type="button" title="Traces the maximum 10-second frequency envelope on the FFT">
-          📊 Peak Scan 10s
-        </button>
-        <div class="timecode-box" id="timecodeDisplay">00.0s / 10.0s</div>
+      <!-- 10-SECOND WINDOW PICKER FOR UPLOADED MP3 FILES (DEFAULT: 0.0s FROM BEGINNING) -->
+      <div class="mp3-window-bar" id="mp3WindowBar">
+        <div class="mp3-window-label">
+          <span>✂️ <strong>10s MP3 Window:</strong></span>
+          <span id="mp3WindowReadout">0:00.0 – 0:10.0 (Default: Start)</span>
+        </div>
+        <div class="mp3-window-controls">
+          <button class="step-btn" id="winStartResetBtn" type="button" title="Reset window to the beginning (0:00)">0:00</button>
+          <button class="step-btn" id="winDownBtn" type="button" title="Shift 10s window earlier by 1 second">-1s</button>
+          <input
+            type="range"
+            class="fader-input"
+            id="mp3WindowSlider"
+            min="0"
+            max="60"
+            step="0.5"
+            value="0"
+            aria-label="Select 10-second start offset in uploaded audio"
+          />
+          <button class="step-btn" id="winUpBtn" type="button" title="Shift 10s window later by 1 second">+1s</button>
+        </div>
       </div>
     </section>
 
-
-    <!-- METER BRIDGE: OSCILLOSCOPE & FFT SPECTRUM -->
+    <!-- METER BRIDGE: EACH SCREEN HAS ITS SLIDER BAR LOCKED DIRECTLY BELOW IT -->
     <section class="meter-bridge">
       <div class="meter-toolbar">
         <div class="meter-legend">
@@ -1141,142 +1128,150 @@
           </span>
         </div>
 
-
         <label class="toggle-switch" title="Overlay Nyquist frequency cutoff line and bit quantization grid on the meters">
           <input type="checkbox" id="meterCuesToggle" checked />
           <span>SAMPLING METER CUES (f<sub>s</sub>/2 &amp; 2<sup>N</sup> Grid)</span>
         </label>
       </div>
 
-
       <div class="screens-grid">
-        <!-- OSCILLOSCOPE -->
-        <div class="screen-card">
-          <div class="screen-header">
-            <span>TIME DOMAIN OSCILLOSCOPE (AMPLITUDE VS. TIME)</span>
-            <span class="screen-readout" id="oscopeReadout">64 Levels (6-bit)</span>
+        <!-- LEFT MODULE: TIME DOMAIN OSCILLOSCOPE + LOCKED BITS PER SAMPLE SLIDER -->
+        <div class="screen-module gold-module" id="oscopeModule">
+          <div class="screen-top">
+            <div class="screen-header">
+              <span>TIME DOMAIN OSCILLOSCOPE (AMPLITUDE VS. TIME)</span>
+              <span class="screen-readout" id="oscopeReadout">64 Levels (6.0-bit)</span>
+            </div>
+            <canvas id="oscopeCanvas" class="meter-canvas" width="540" height="190"></canvas>
           </div>
-          <canvas id="oscopeCanvas" class="meter-canvas" width="540" height="195"></canvas>
+
+          <div class="locked-slider-dock">
+            <div class="slider-top-row">
+              <div class="slider-label-group">
+                <span class="slider-title">BITS PER SAMPLE (N) — AMPLITUDE RESOLUTION</span>
+                <span class="slider-sub">Sets vertical stair-step levels (2<sup>N</sup>) &amp; lowers quantization hiss</span>
+              </div>
+              <div class="slider-value-box" id="bdValueText">6.0 bits</div>
+            </div>
+
+            <div class="slider-track-row">
+              <button class="step-btn" id="bdDownBtn" type="button" title="Decrease Bits per Sample by 0.5 bit">-0.5b</button>
+              <input
+                type="range"
+                class="fader-input"
+                id="bdSliderInput"
+                min="2.0"
+                max="16.0"
+                step="0.5"
+                value="6.0"
+                aria-label="Bits per Sample"
+              />
+              <button class="step-btn" id="bdUpBtn" type="button" title="Increase Bits per Sample by 0.5 bit">+0.5b</button>
+            </div>
+
+            <div class="slider-ticks">
+              <span>2 bits (4 steps)</span>
+              <span>6 bits (64)</span>
+              <span>10 bits (1,024)</span>
+              <span>16 bits (65,536)</span>
+            </div>
+          </div>
         </div>
 
-
-        <!-- FFT SPECTRUM ANALYZER -->
-        <div class="screen-card">
-          <div class="screen-header">
-            <span>FFT SPECTRUM ANALYZER (0 Hz – 20 kHz)</span>
-            <span class="screen-readout" id="fftReadout">Nyquist f<sub>s</sub>/2 = 6.00 kHz</span>
+        <!-- RIGHT MODULE: FFT SPECTRUM ANALYZER + LOCKED SAMPLING RATE SLIDER -->
+        <div class="screen-module" id="fftModule">
+          <div class="screen-top">
+            <div class="screen-header">
+              <span>FFT SPECTRUM ANALYZER (0 Hz – 20 kHz)</span>
+              <span class="screen-readout" id="fftReadout">Nyquist f<sub>s</sub>/2 = 6.00 kHz</span>
+            </div>
+            <canvas id="fftCanvas" class="meter-canvas" width="540" height="190"></canvas>
           </div>
-          <canvas id="fftCanvas" class="meter-canvas" width="540" height="195"></canvas>
+
+          <div class="locked-slider-dock">
+            <div class="slider-top-row">
+              <div class="slider-label-group">
+                <span class="slider-title">SAMPLING RATE (f<sub>s</sub>) — FREQUENCY / TIME RESOLUTION</span>
+                <span class="slider-sub">Moves Nyquist limit (f<sub>s</sub>/2) across the 0–20 kHz spectrum above</span>
+              </div>
+              <div class="slider-value-box" id="srValueText">12.0 kHz</div>
+            </div>
+
+            <div class="slider-track-row">
+              <button class="step-btn" id="srDownBtn" type="button" title="Decrease Sampling Rate by 0.5 kHz">-0.5k</button>
+              <input
+                type="range"
+                class="fader-input"
+                id="srSliderInput"
+                min="2.0"
+                max="40.0"
+                step="0.5"
+                value="12.0"
+                aria-label="Sampling Rate in kHz"
+              />
+              <button class="step-btn" id="srUpBtn" type="button" title="Increase Sampling Rate by 0.5 kHz">+0.5k</button>
+            </div>
+
+            <div class="slider-ticks">
+              <span>2 kHz (f<sub>s</sub>/2=1k)</span>
+              <span>12 kHz (6k)</span>
+              <span>20 kHz (10k)</span>
+              <span>30 kHz (15k)</span>
+              <span>40 kHz (20k)</span>
+            </div>
+          </div>
         </div>
       </div>
     </section>
 
-
-    <!-- MASTERING KNOBS & CD BIT BUDGET -->
-    <section class="mastering-deck">
-      <!-- COUPLED ROTARY KNOBS -->
-      <div class="knobs-panel">
-        <div class="panel-title">
-          <span>COUPLED DIGITAL SAMPLING CONTROLS</span>
-          <span style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--cyan-bright);">
-            Drag Vertical or Use Step Buttons
-          </span>
-        </div>
-
-
-        <div class="knobs-row">
-          <!-- SAMPLING RATE KNOB -->
-          <div class="knob-unit" id="srKnobUnit">
-            <div class="knob-title">SAMPLING RATE (f<sub>s</sub>)</div>
-            <div class="knob-sub">Time / High-Freq Resolution</div>
-            <div class="knob-dial-wrap" id="srKnobDial" title="Drag up/down or scroll to adjust Sampling Rate">
-              <div class="knob-dial">
-                <div class="knob-indicator" id="srKnobIndicator"></div>
-              </div>
-            </div>
-            <div class="knob-value-box" id="srValueText">12.0 kHz</div>
-            <div class="knob-step-btns">
-              <button class="step-btn" id="srDownBtn" type="button">-1 kHz</button>
-              <button class="step-btn" id="srUpBtn" type="button">+1 kHz</button>
-            </div>
-          </div>
-
-
-          <!-- CEILING LINK INDICATOR -->
-          <div class="coupling-bridge">
-            <div class="coupling-badge" id="couplingBadge">
-              FREE HEADROOM
-            </div>
-            <span>At 960 kb ceiling, turning one knob UP pushes the other DOWN</span>
-          </div>
-
-
-          <!-- BIT DEPTH KNOB -->
-          <div class="knob-unit gold-knob" id="bdKnobUnit">
-            <div class="knob-title">BITS PER SAMPLE (N)</div>
-            <div class="knob-sub">Amplitude / Dynamic Quietness</div>
-            <div class="knob-dial-wrap" id="bdKnobDial" title="Drag up/down or scroll to adjust Bits per Sample">
-              <div class="knob-dial">
-                <div class="knob-indicator" id="bdKnobIndicator"></div>
-              </div>
-            </div>
-            <div class="knob-value-box" id="bdValueText">6.0 bits</div>
-            <div class="knob-step-btns">
-              <button class="step-btn" id="bdDownBtn" type="button">-0.5 bit</button>
-              <button class="step-btn" id="bdUpBtn" type="button">+0.5 bit</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-
-      <!-- CD REMAINING BIT BUDGET & BURN ACTION -->
-      <div class="budget-panel">
-        <div class="panel-title">
-          <span>ALMOST-FULL CD BIT BUDGET (10s CUT)</span>
+    <!-- CD REMAINING BIT BUDGET & BURN ACTION -->
+    <section class="budget-panel">
+      <div class="panel-title">
+        <span>CD MIXTAPE REMAINING BIT BUDGET (960 kb CEILING FOR 10s CUT)</span>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span class="coupling-badge" id="couplingBadge">FREE HEADROOM</span>
           <span id="budgetPctText" style="font-family: var(--font-mono); color: var(--green);">
             720 / 960 kb (25% Saved)
           </span>
         </div>
+      </div>
 
-
-        <div class="cd-meter-wrap">
-          <div class="cd-bar-outer">
-            <div class="cd-bar-used" id="cdBarUsed" style="width: 75%;"></div>
-            <div class="cd-bar-saved" id="cdBarSaved" style="width: 25%;"></div>
-          </div>
-          <div class="cd-bar-labels">
-            <span style="color: var(--cyan-bright);">
-              Used: <strong id="bitsUsedLabel">720.0 kb</strong> (<span id="bitrateLabel">72.0 kbps</span>)
-            </span>
-            <span style="color: var(--green);">
-              Saved Reserve: <strong id="bitsSavedLabel">240.0 kb</strong> (Bonus <span id="bonusMultPreview">+18.8%</span>)
-            </span>
-          </div>
+      <div class="cd-meter-wrap">
+        <div class="cd-bar-outer">
+          <div class="cd-bar-used" id="cdBarUsed" style="width: 75%;"></div>
+          <div class="cd-bar-saved" id="cdBarSaved" style="width: 25%;"></div>
         </div>
+        <div class="cd-bar-labels">
+          <span style="color: var(--cyan-bright);">
+            Used: <strong id="bitsUsedLabel">720.0 kb</strong> (<span id="bitrateLabel">72.0 kbps</span>)
+          </span>
+          <span style="color: var(--text-muted); font-size: 0.72rem;">
+            At 960 kb ceiling, sliding one bar UP automatically pushes the other DOWN
+          </span>
+          <span style="color: var(--green);">
+            Unused Storage Bonus Reserve: <strong id="bitsSavedLabel">240.0 kb</strong> (Bonus <span id="bonusMultPreview">+18.8%</span>)
+          </span>
+        </div>
+      </div>
 
+      <div class="dsp-options-row">
+        <label class="toggle-switch" title="Filters out frequencies above f_s/2 before sampling so they muffle softly instead of folding back as harsh metallic aliasing.">
+          <input type="checkbox" id="aaFilterToggle" checked />
+          <span>Anti-Aliasing Low-Pass Filter (f<sub>c</sub> = f<sub>s</sub>/2)</span>
+        </label>
 
-        <div class="dsp-options-row">
-          <label class="toggle-switch" title="Filters out frequencies above f_s/2 before sampling so they muffle softly instead of folding back as harsh metallic aliasing.">
-            <input type="checkbox" id="aaFilterToggle" checked />
-            <span>Anti-Aliasing Low-Pass Filter (f<sub>c</sub> = f<sub>s</sub>/2)</span>
-          </label>
-
-
-          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-            <button class="btn" id="retryCutBtn" type="button" style="display: none;">
-              ↺ Unlock &amp; Retry Cut
-            </button>
-            <button class="btn btn-burn" id="burnBtn" type="button">
-              🔥 Finalize &amp; Burn to CD
-            </button>
-          </div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button class="btn" id="retryCutBtn" type="button" style="display: none;">
+            ↺ Unlock &amp; Retry Cut
+          </button>
+          <button class="btn btn-burn" id="burnBtn" type="button">
+            🔥 Finalize &amp; Burn to CD
+          </button>
         </div>
       </div>
     </section>
 
-
-    <!-- SCORE & FIDELITY BREAKDOWN -->
+    <!-- SCORE, FIDELITY BREAKDOWN (1, 2, 3) & SHARE -->
     <section class="score-panel">
       <div class="metrics-list">
         <div class="metric-row">
@@ -1289,7 +1284,6 @@
           </div>
         </div>
 
-
         <div class="metric-row">
           <div class="metric-label-line">
             <span>2. Dynamic Cleanliness (SQNR / Quantization Noise Floor)</span>
@@ -1299,7 +1293,6 @@
             <div class="metric-bar-fill" id="dynamicBar" style="background: var(--gold);"></div>
           </div>
         </div>
-
 
         <div class="metric-row">
           <div class="metric-label-line">
@@ -1312,18 +1305,19 @@
         </div>
       </div>
 
-
       <div class="total-score-card">
         <div style="font-size: 0.72rem; font-family: var(--font-mono); color: var(--text-muted); text-transform: uppercase;">
           Master Evaluation Score
         </div>
         <div class="score-big" id="totalScoreText">READY</div>
         <div class="score-verdict" id="scoreVerdictText">
-          Audition the 10s analog master, dial in your Sampling Rate &amp; Bit Depth, then click <strong>Finalize &amp; Burn to CD</strong> to hear and score your digital cut.
+          Audition the 10s analog master, adjust your Sampling Rate &amp; Bit Depth sliders under each screen, then click <strong>Finalize &amp; Burn to CD</strong>.
         </div>
+        <button class="btn btn-share" id="shareScoreBtn" type="button" disabled title="Share your score breakdown (1, 2, 3), track selection, and game link">
+          📤 Share Score &amp; Track
+        </button>
       </div>
     </section>
-
 
     <!-- FOOTER WITH COPYRIGHT -->
     <footer class="studio-footer">
@@ -1331,7 +1325,6 @@
       <span>© 2026 Barry Hemmerdinger. All Rights Reserved.</span>
     </footer>
   </div>
-
 
   <!-- =========================================================================
        ENGINEERING GUIDE MODAL (CLEAN HTML/CSS MATHEMATICAL FORMULAS)
@@ -1343,25 +1336,20 @@
         <button class="btn" id="closeGuideBtn" type="button">✕ Close Guide</button>
       </div>
 
-
       <div class="guide-body">
         <div class="guide-intro">
           Every digital recording balances two competing dimensions under a finite storage budget:
           <strong>Sampling Rate (<var>f</var><sub>s</sub>)</strong> captures rapid changes in time (high frequencies), while
           <strong>Bits per Sample (<var>N</var>)</strong> captures subtle changes in amplitude (quiet details without quantization hiss).
-          Below are the four core equations governing the studio—with your live knob settings plugged right in.
+          Below are the four core equations governing the studio—with your live slider settings plugged right in.
         </div>
 
-
         <div class="formula-grid">
-          <!-- CARD 1: NYQUIST-SHANNON THEOREM -->
           <div class="formula-card">
             <div class="formula-card-title">
               <span>1. Nyquist–Shannon Sampling Theorem</span>
-              <span>Time Axis</span>
+              <span>Time / Frequency Axis</span>
             </div>
-
-
             <div class="math-display">
               <span><var class="v-cyan">f</var><sub>Nyquist</sub></span>
               <span class="math-op">=</span>
@@ -1372,54 +1360,38 @@
               <span class="math-op">≥</span>
               <span><var class="v-gold">f</var><sub>max</sub></span>
             </div>
-
-
             <div class="math-live-strip" id="liveEqNyquist">
               <span>Current <var>f</var><sub>s</sub> = 12.0 kHz</span>
               <span>Max Clean Freq (<var>f</var><sub>s</sub>/2) = <strong>6.00 kHz</strong></span>
             </div>
-
-
             <p class="formula-explain">
               To capture a musical frequency <var>f</var><sub>max</sub> without distortion, your sampling rate <var>f</var><sub>s</sub> must be at least <strong>twice</strong> that frequency. Any acoustic energy above <var>f</var><sub>s</sub>/2 either <strong>folds back</strong> as harsh metallic aliasing tones (if unfiltered) or gets shaved off by the <strong>Anti-Aliasing Low-Pass Filter</strong>.
             </p>
           </div>
 
-
-          <!-- CARD 2: QUANTIZATION & SQNR -->
           <div class="formula-card gold-card">
             <div class="formula-card-title">
               <span>2. Quantization Levels &amp; SQNR</span>
               <span>Amplitude Axis</span>
             </div>
-
-
             <div class="math-display">
               <span><var class="v-gold">L</var> <span class="math-op">=</span> 2<sup><var class="v-gold">N</var></sup>,</span>
               <span>&nbsp;&nbsp;SQNR<sub>dB</sub> <span class="math-op">≈</span> 6.02 <span class="math-op">·</span> <var class="v-gold">N</var> <span class="math-op">+</span> 1.76<span class="math-unit">dB</span></span>
             </div>
-
-
             <div class="math-live-strip" id="liveEqQuant" style="border-color: rgba(245,158,11,0.4); background: rgba(245,158,11,0.08);">
               <span>Current <var>N</var> = 6.0 bits (64 steps)</span>
               <span>SQNR ≈ <strong>37.9 dB</strong></span>
             </div>
-
-
             <p class="formula-explain">
               Each extra bit doubles the number of vertical stair-steps (<var>L</var> = 2<sup><var>N</var></sup>) and lowers the quantization noise floor by <strong>6.02 dB</strong>. Tracks with wide dynamic range or soft decaying chords need higher <var>N</var> (8–12 bits), while loud, constant-volume synth cuts mask stair-step hiss even at 4–5 bits.
             </p>
           </div>
 
-
-          <!-- CARD 3: BIT BUDGET & CEILING COUPLING -->
           <div class="formula-card green-card">
             <div class="formula-card-title">
-              <span>3. CD Bit Budget &amp; Coupled Knobs</span>
+              <span>3. CD Bit Budget &amp; Coupled Sliders</span>
               <span>Storage Constraint</span>
             </div>
-
-
             <div class="math-display">
               <span><var class="v-green">B</var><sub>used</sub> <span class="math-op">=</span> <var>T</var> <span class="math-op">×</span> <var class="v-cyan">f</var><sub>s</sub> <span class="math-op">×</span> <var class="v-gold">N</var> <span class="math-op">≤</span> <var>B</var><sub>max</sub></span>
               <span class="math-op">⇒</span>
@@ -1432,28 +1404,20 @@
                 </span>
               </span>
             </div>
-
-
             <div class="math-live-strip" id="liveEqBudget" style="border-color: rgba(16,185,129,0.4); background: rgba(16,185,129,0.08);">
               <span>10s × 12.0 kHz × 6.0 bits = <strong>720 kb</strong></span>
               <span>Saved: <strong>240 kb</strong> / 960 kb</span>
             </div>
-
-
             <p class="formula-explain">
-              For a <var>T</var> = 10 s track with a ceiling of <var>B</var><sub>max</sub> = 960 kilobits, turning either knob <strong>down</strong> banks free space. Once <var>B</var><sub>used</sub> hits 960 kb, turning <var>f</var><sub>s</sub> <strong>up</strong> mechanically forces <var>N</var> <strong>down</strong> along the hyperbola <var>f</var><sub>s</sub> · <var>N</var> = 96 kbps.
+              For a <var>T</var> = 10 s track with a ceiling of <var>B</var><sub>max</sub> = 960 kilobits, sliding either bar <strong>left</strong> banks free space. Once <var>B</var><sub>used</sub> hits 960 kb, sliding <var>f</var><sub>s</sub> <strong>right</strong> mechanically pushes <var>N</var> <strong>left</strong> along the hyperbola <var>f</var><sub>s</sub> · <var>N</var> = 96 kbps.
             </p>
           </div>
 
-
-          <!-- CARD 4: SCORING & BIT-SAVER BONUS -->
           <div class="formula-card purple-card">
             <div class="formula-card-title">
               <span>4. Fidelity &amp; Bit-Saver Bonus Formula</span>
               <span>Master Score</span>
             </div>
-
-
             <div class="math-display">
               <span><var>S</var><sub>total</sub> <span class="math-op">=</span> <var>F</var><sub>base</sub> <span class="math-op">×</span></span>
               <span class="math-group">
@@ -1466,14 +1430,10 @@
                 <span class="math-paren">)</span>
               </span>
             </div>
-
-
             <div class="math-live-strip" id="liveEqScore" style="border-color: rgba(168,85,247,0.4); background: rgba(168,85,247,0.08);">
               <span>Base Fidelity: 0–1000 pts</span>
               <span>Current Bit-Saver Multiplier: <strong>×1.19</strong></span>
             </div>
-
-
             <p class="formula-explain">
               Base Fidelity (<var>F</var><sub>base</sub>) combines <strong>Spectral Integrity</strong> (500 pts) and <strong>Dynamic Cleanliness</strong> (500 pts). If <var>F</var><sub>base</sub> ≥ 700 pts (<em>Master Approved</em>), every kilobit saved boosts your final score by up to <strong>+75%</strong>. Below 700 pts, the bit-saver bonus scales down so starving the track won't cheese the leaderboard.
             </p>
@@ -1481,39 +1441,33 @@
         </div>
       </div>
 
-
       <div class="guide-footer">
-        <span>Tip: Use "Peak Scan 10s" to spot where the highest frequencies live before burning.</span>
+        <span>Tip: Use "Upload Local MP3" to test any song and pick any 10s window!</span>
         <span>© 2026 Barry Hemmerdinger. All Rights Reserved.</span>
       </div>
     </div>
   </div>
 
-
   <script>
     /*
      * ============================================================================
-     * NYQUIST STUDIO: CD MASTERING LAB - CORE AUDIO & DSP ENGINE
+     * NYQUIST STUDIO: CD MASTERING LAB - CORE AUDIO & DSP ENGINE (v4)
      * Copyright (c) 2026 Barry Hemmerdinger. All Rights Reserved.
      * ============================================================================
      */
 
-
     const MASTER_SR = 48000;
     const DURATION_SEC = 10;
     const TOTAL_SAMPLES = MASTER_SR * DURATION_SEC;
-    const MAX_BUDGET_KB = 960; // 960 kilobits total ceiling for 10s (i.e. f_s(kHz) * N * 10 <= 960)
+    const MAX_BUDGET_KB = 960;
 
-
-    // Knob bounds
     const MIN_SR_KHZ = 2.0;
-    const MAX_SR_KHZ = 44.0;
+    const MAX_SR_KHZ = 40.0;
     const MIN_BITS = 2.0;
     const MAX_BITS = 16.0;
 
-
-    // Musical Track Archetypes with distinct frequency & dynamic range distributions
-    const TRACK_ARCHETYPES = [
+    // Built-in fallback catalog if tracks.js is not found in the same folder
+    const FALLBACK_TRACK_LIBRARY = [
       {
         id: 'sub_pad',
         tag: 'LOW FREQ • WIDE DYNAMICS',
@@ -1521,7 +1475,19 @@
         hint: 'Warm sub-bass and soft, decaying electric piano chords. Almost all acoustic energy sits below 2.6 kHz, but the delicate quiet chord tails need high bit depth to avoid quantization hiss.',
         f95Hz: 2500,
         dynamicSensitivity: 1.35,
-        highFreqWeight: 0.65
+        highFreqWeight: 0.65,
+        synth: {
+          barLengthSec: 2.5,
+          bassNotes: [73.42, 87.31, 98.00, 110.00, 65.41, 82.41],
+          chordNotes: [293.66, 349.23, 392.00, 440.00, 261.63],
+          bassLevel: 0.46,
+          bassDecay: 1.1,
+          chordLevel: 0.24,
+          chordDecay: 2.1,
+          chordHarmonics: [1.0, 1.2, 1.5, 3.0, 5.0],
+          chordWeights: [1.0, 0.7, 0.5, 0.25, 0.12],
+          drive: 1.0
+        }
       },
       {
         id: 'bright_synth',
@@ -1530,16 +1496,43 @@
         hint: 'Fast, shimmering FM bells, high arpeggios, and crisp hi-hat transients reaching 13.5 kHz at a constant, compressed volume. The loud signal masks low bit-depth stair-stepping, but demands a high sampling rate!',
         f95Hz: 13500,
         dynamicSensitivity: 0.58,
-        highFreqWeight: 1.45
+        highFreqWeight: 1.45,
+        synth: {
+          stepRateHz: 8,
+          bassNotes: [146.84, 174.62, 196.00, 220.00, 130.82, 164.82],
+          leadNotes: [587.33, 698.46, 783.99, 880.00, 1046.50, 1174.66, 1318.51],
+          bassLevel: 0.28,
+          fmBellLevel: 0.32,
+          fmModRatio: 3.5,
+          fmModIndex: 1.8,
+          fmHighHarmonics: [6.0, 9.5],
+          hiHatLevel: 0.14,
+          hiHatRateHz: 4,
+          hiHatDecay: 14.0,
+          hiHatFreqs: [7800, 10400, 12900],
+          drive: 1.55
+        }
       },
       {
         id: 'lofi_groove',
         tag: 'MIDRANGE • BIT-SAVER GOLDMINE',
         name: 'Dusty Suitcase Funk Groove',
-        hint: 'Punchy midrange bass and warm drum groove rolling off naturally around 4.8 kHz with moderate dynamics. Neither knob needs to be maxed—prime territory for banking a massive Bit-Saver Bonus!',
+        hint: 'Punchy midrange bass and warm drum groove rolling off naturally around 4.8 kHz with moderate dynamics. Neither slider needs to be maxed—prime territory for banking a massive Bit-Saver Bonus!',
         f95Hz: 4800,
         dynamicSensitivity: 0.85,
-        highFreqWeight: 0.90
+        highFreqWeight: 0.90,
+        synth: {
+          stepRateHz: 4,
+          bassNotes: [110.13, 130.96, 147.00, 165.00, 98.11, 123.61],
+          chordNotes: [293.66, 349.23, 392.00, 440.00, 261.63],
+          kickLevel: 0.42,
+          kickDecay: 7.5,
+          chordLevel: 0.34,
+          chordDecay: 3.8,
+          chordHarmonics: [1.0, 2.0, 4.0, 8.0, 11.0],
+          chordWeights: [1.0, 0.7, 0.45, 0.28, 0.14],
+          drive: 1.25
+        }
       },
       {
         id: 'crescendo_swell',
@@ -1548,12 +1541,69 @@
         hint: 'Opens with a bare, whisper-quiet harp melody before erupting into a bright brass and cymbal finale up to 9.5 kHz. Balancing both Nyquist treble and quiet-tail bit depth is a true mastering test.',
         f95Hz: 9500,
         dynamicSensitivity: 1.22,
-        highFreqWeight: 1.20
+        highFreqWeight: 1.20,
+        synth: {
+          stepRateHz: 3,
+          bassNotes: [73.42, 87.31, 98.00, 110.00, 65.41, 82.41],
+          leadNotes: [293.66, 349.23, 392.00, 440.00, 523.25, 587.33, 659.25],
+          swellStart: 0.06,
+          swellPower: 2.1,
+          brassEntrySec: 2.5,
+          brassHarmonics: [1.0, 6.0, 11.0, 15.0],
+          brassWeights: [1.0, 0.6, 0.35, 0.22],
+          drive: 1.0
+        }
+      },
+      {
+        id: 'chiptune_arp',
+        tag: 'BRIGHT ARPEGGIO • STEADY VOLUME',
+        name: 'Arcade Pulse & Crystal Lead',
+        hint: 'Crisp upper-register chiptune lead with harmonic overtones up to 8.2 kHz and steady amplitude. Moderate bit depth works fine, but watch the Nyquist line!',
+        f95Hz: 8200,
+        dynamicSensitivity: 0.65,
+        highFreqWeight: 1.25,
+        synth: {
+          stepRateHz: 10,
+          bassNotes: [130.81, 146.83, 164.81, 196.00],
+          leadNotes: [523.25, 659.25, 783.99, 1046.50, 1318.51, 1567.98],
+          bassLevel: 0.30,
+          fmBellLevel: 0.36,
+          fmModRatio: 2.0,
+          fmModIndex: 1.2,
+          fmHighHarmonics: [3.0, 5.0],
+          hiHatLevel: 0.08,
+          hiHatRateHz: 5,
+          hiHatDecay: 18.0,
+          hiHatFreqs: [6400, 8100],
+          drive: 1.4
+        }
+      },
+      {
+        id: 'sonar_abyss',
+        tag: 'ULTRA-LOW FREQ • DELICATE TAILS',
+        name: 'Deep Trench Sonar & Warm Organ',
+        hint: 'Sub-bass drone and resonant sonar pings that never exceed 1.9 kHz, followed by long, whisper-quiet reverberant tails. Move your Sampling Rate slider down and pour your budget into Bits per Sample!',
+        f95Hz: 1900,
+        dynamicSensitivity: 1.45,
+        highFreqWeight: 0.55,
+        synth: {
+          barLengthSec: 2.0,
+          bassNotes: [55.00, 65.41, 73.42, 82.41],
+          chordNotes: [220.00, 261.63, 293.66, 329.63],
+          bassLevel: 0.48,
+          bassDecay: 1.4,
+          chordLevel: 0.28,
+          chordDecay: 2.6,
+          chordHarmonics: [1.0, 1.5, 2.0, 3.0, 4.0],
+          chordWeights: [1.0, 0.6, 0.4, 0.2, 0.1],
+          drive: 1.0
+        }
       }
     ];
 
+    const EXTERNAL_LOADED = Array.isArray(window.NYQUIST_TRACK_LIBRARY) && window.NYQUIST_TRACK_LIBRARY.length > 0;
+    const TRACK_ARCHETYPES = EXTERNAL_LOADED ? [...window.NYQUIST_TRACK_LIBRARY] : [...FALLBACK_TRACK_LIBRARY];
 
-    // Game & Audio State
     const state = {
       srKhz: 12.0,
       bits: 6.0,
@@ -1564,14 +1614,13 @@
       isPlaying: false,
       showPeakEnvelope: false,
       currentArchetype: null,
+      effectiveF95Hz: 4800,
       analogSamples: null,
       digitalSamples: null,
       peakSpectrumDb: null,
       lastScore: null
     };
 
-
-    // Web Audio Context & Nodes
     let audioCtx = null;
     let activeSource = null;
     let analyserNode = null;
@@ -1579,34 +1628,39 @@
     let playbackOffset = 0;
     let animFrameId = null;
 
-
-    // DOM Elements
     const el = {
       statusLed: document.getElementById('statusLed'),
-      phaseBadge: document.getElementById('phaseBadge'),
+      trackPickerSelect: document.getElementById('trackPickerSelect'),
+      localMp3Input: document.getElementById('localMp3Input'),
+      uploadMp3Btn: document.getElementById('uploadMp3Btn'),
       openGuideBtn: document.getElementById('openGuideBtn'),
       closeGuideBtn: document.getElementById('closeGuideBtn'),
       guideModalBackdrop: document.getElementById('guideModalBackdrop'),
       newCutBtn: document.getElementById('newCutBtn'),
       trackArchetypeTag: document.getElementById('trackArchetypeTag'),
+      catalogSourceBadge: document.getElementById('catalogSourceBadge'),
       trackTitle: document.getElementById('trackTitle'),
       trackHint: document.getElementById('trackHint'),
       playMasterBtn: document.getElementById('playMasterBtn'),
       abToggleBtn: document.getElementById('abToggleBtn'),
       peakScanBtn: document.getElementById('peakScanBtn'),
       timecodeDisplay: document.getElementById('timecodeDisplay'),
+      mp3WindowBar: document.getElementById('mp3WindowBar'),
+      mp3WindowReadout: document.getElementById('mp3WindowReadout'),
+      mp3WindowSlider: document.getElementById('mp3WindowSlider'),
+      winStartResetBtn: document.getElementById('winStartResetBtn'),
+      winDownBtn: document.getElementById('winDownBtn'),
+      winUpBtn: document.getElementById('winUpBtn'),
       meterCuesToggle: document.getElementById('meterCuesToggle'),
       oscopeCanvas: document.getElementById('oscopeCanvas'),
       fftCanvas: document.getElementById('fftCanvas'),
       oscopeReadout: document.getElementById('oscopeReadout'),
       fftReadout: document.getElementById('fftReadout'),
-      srKnobDial: document.getElementById('srKnobDial'),
-      srKnobIndicator: document.getElementById('srKnobIndicator'),
+      srSliderInput: document.getElementById('srSliderInput'),
       srValueText: document.getElementById('srValueText'),
       srDownBtn: document.getElementById('srDownBtn'),
       srUpBtn: document.getElementById('srUpBtn'),
-      bdKnobDial: document.getElementById('bdKnobDial'),
-      bdKnobIndicator: document.getElementById('bdKnobIndicator'),
+      bdSliderInput: document.getElementById('bdSliderInput'),
       bdValueText: document.getElementById('bdValueText'),
       bdDownBtn: document.getElementById('bdDownBtn'),
       bdUpBtn: document.getElementById('bdUpBtn'),
@@ -1629,113 +1683,135 @@
       efficiencyBar: document.getElementById('efficiencyBar'),
       totalScoreText: document.getElementById('totalScoreText'),
       scoreVerdictText: document.getElementById('scoreVerdictText'),
+      shareScoreBtn: document.getElementById('shareScoreBtn'),
       liveEqNyquist: document.getElementById('liveEqNyquist'),
       liveEqQuant: document.getElementById('liveEqQuant'),
       liveEqBudget: document.getElementById('liveEqBudget'),
       liveEqScore: document.getElementById('liveEqScore')
     };
 
-
     const oscopeCtx = el.oscopeCanvas.getContext('2d');
     const fftCtx = el.fftCanvas.getContext('2d');
 
+    function formatMinSec(sec) {
+      const s = Math.max(0, sec);
+      const mins = Math.floor(s / 60);
+      const rem = (s % 60).toFixed(1).padStart(4, '0');
+      return `${mins}:${rem}`;
+    }
+
+    function populateTrackDropdown() {
+      el.catalogSourceBadge.textContent = EXTERNAL_LOADED
+        ? `tracks.js (${TRACK_ARCHETYPES.length} cuts)`
+        : `Catalog (${TRACK_ARCHETYPES.length} cuts)`;
+      el.trackPickerSelect.innerHTML = `<option value="random">🎲 Track Catalog (${TRACK_ARCHETYPES.length} Cuts)...</option>`;
+      TRACK_ARCHETYPES.forEach((t, idx) => {
+        const opt = document.createElement('option');
+        opt.value = String(idx);
+        opt.textContent = `${idx + 1}. ${t.name}`;
+        el.trackPickerSelect.appendChild(opt);
+      });
+    }
 
     /* =========================================================================
-       1. PROCEDURAL 10-SECOND ANALOG MASTER SYNTHESIS (48 kHz Float32)
+       1. DATA-DRIVEN SYNTHESIS & EXTERNAL/LOCAL MP3 10s WINDOW EXTRACTOR
        ========================================================================= */
-    function generateAnalogCut(archetype) {
+    function generateAnalogCutFromRecipe(archetype) {
       const out = new Float32Array(TOTAL_SAMPLES);
-      const seed = Math.random() * 1000;
+      const seed = Math.floor(Math.random() * 1000);
+      const cfg = archetype.synth || {};
 
+      const bassNotes = cfg.bassNotes || [73.42, 87.31, 98.00, 110.00];
+      const chordNotes = cfg.chordNotes || [293.66, 349.23, 392.00, 440.00];
+      const leadNotes = cfg.leadNotes || [587.33, 698.46, 783.99, 880.00, 1046.50];
 
-      const bassNotes = [73.42, 87.31, 98.00, 110.00, 65.41, 82.41];
-      const chordRoots = [293.66, 349.23, 392.00, 440.00, 261.63];
-      const leadNotes = [587.33, 698.46, 783.99, 880.00, 1046.50, 1174.66, 1318.51];
-
+      const stepRate = cfg.stepRateHz || 4;
+      const barLen = cfg.barLengthSec || 2.5;
+      const drive = cfg.drive || 1.0;
 
       for (let i = 0; i < TOTAL_SAMPLES; i++) {
         const t = i / MASTER_SR;
         let sample = 0;
 
+        if (cfg.barLengthSec) {
+          const bar = Math.floor(t / barLen);
+          const barT = t % barLen;
+          const fBass = bassNotes[(bar + seed) % bassNotes.length];
+          const fChord = chordNotes[(bar + seed) % chordNotes.length];
 
-        if (archetype.id === 'sub_pad') {
-          const bar = Math.floor(t / 2.5);
-          const barT = t % 2.5;
-          const fBass = bassNotes[bar % bassNotes.length];
-          const fChord = chordRoots[bar % chordRoots.length];
+          const subEnv = Math.exp(-barT * (cfg.bassDecay || 1.1));
+          const chordEnv = Math.exp(-barT * (cfg.chordDecay || 2.1));
 
+          sample += (cfg.bassLevel ?? 0.45) * subEnv * Math.sin(2 * Math.PI * fBass * t);
+          sample += (cfg.bassLevel ?? 0.45) * 0.45 * subEnv * Math.sin(2 * Math.PI * (fBass * 2) * t);
 
-          const env = Math.exp(-barT * 2.1);
-          const subEnv = Math.exp(-barT * 1.1);
+          const harms = cfg.chordHarmonics || [1, 1.2, 1.5, 3, 5];
+          const weights = cfg.chordWeights || [1, 0.7, 0.5, 0.25, 0.12];
+          let chordSum = 0;
+          for (let h = 0; h < harms.length; h++) {
+            chordSum += (weights[h] || 0.2) * Math.sin(2 * Math.PI * (fChord * harms[h]) * t);
+          }
+          sample += (cfg.chordLevel ?? 0.24) * chordEnv * chordSum;
+        }
 
+        if (cfg.fmBellLevel) {
+          const step = Math.floor(t * stepRate);
+          const stepT = (t * stepRate) % 1;
+          const fLead = leadNotes[(step + seed) % leadNotes.length];
+          const fBass = bassNotes[Math.floor(t * 2) % bassNotes.length];
 
-          sample += 0.46 * subEnv * Math.sin(2 * Math.PI * fBass * t);
-          sample += 0.22 * subEnv * Math.sin(2 * Math.PI * (fBass * 2) * t);
-
-
-          sample += 0.24 * env * (
-            Math.sin(2 * Math.PI * fChord * t) +
-            0.7 * Math.sin(2 * Math.PI * (fChord * 1.2) * t) +
-            0.5 * Math.sin(2 * Math.PI * (fChord * 1.5) * t) +
-            0.25 * Math.sin(2 * Math.PI * (fChord * 3.0) * t) +
-            0.12 * Math.sin(2 * Math.PI * (fChord * 5.0) * t)
-          );
-        } else if (archetype.id === 'bright_synth') {
-          const step = Math.floor(t * 8);
-          const stepT = (t * 8) % 1;
-          const fLead = leadNotes[(step + Math.floor(seed)) % leadNotes.length];
-          const fBass = bassNotes[Math.floor(t * 2) % bassNotes.length] * 2;
-
-
-          sample += 0.28 * Math.sin(2 * Math.PI * fBass * t + 0.4 * Math.sin(2 * Math.PI * fBass * 2 * t));
-
+          sample += (cfg.bassLevel ?? 0.28) * Math.sin(2 * Math.PI * fBass * t + 0.4 * Math.sin(2 * Math.PI * fBass * 2 * t));
 
           const bellEnv = 0.45 + 0.55 * Math.exp(-stepT * 2.5);
-          const mod = Math.sin(2 * Math.PI * (fLead * 3.5) * t) * 1.8;
-          sample += 0.32 * bellEnv * Math.sin(2 * Math.PI * fLead * t + mod);
-          sample += 0.16 * bellEnv * Math.sin(2 * Math.PI * (fLead * 6.0) * t);
-          sample += 0.12 * bellEnv * Math.sin(2 * Math.PI * (fLead * 9.5) * t);
+          const mod = Math.sin(2 * Math.PI * (fLead * (cfg.fmModRatio || 3.5)) * t) * (cfg.fmModIndex || 1.8);
+          sample += cfg.fmBellLevel * bellEnv * Math.sin(2 * Math.PI * fLead * t + mod);
 
+          const highHarms = cfg.fmHighHarmonics || [6.0, 9.5];
+          sample += (cfg.fmBellLevel * 0.5) * bellEnv * Math.sin(2 * Math.PI * (fLead * highHarms[0]) * t);
+          if (highHarms[1]) {
+            sample += (cfg.fmBellLevel * 0.35) * bellEnv * Math.sin(2 * Math.PI * (fLead * highHarms[1]) * t);
+          }
 
-          const hatT = (t * 4) % 1;
-          const hatEnv = Math.exp(-hatT * 14);
-          const chime =
-            Math.sin(2 * Math.PI * 7800 * t) +
-            Math.sin(2 * Math.PI * 10400 * t + 1.3) +
-            Math.sin(2 * Math.PI * 12900 * t + 2.1);
-          sample += 0.14 * hatEnv * chime;
+          if (cfg.hiHatLevel) {
+            const hatRate = cfg.hiHatRateHz || 4;
+            const hatT = (t * hatRate) % 1;
+            const hatEnv = Math.exp(-hatT * (cfg.hiHatDecay || 14));
+            const hatFreqs = cfg.hiHatFreqs || [7800, 10400, 12900];
+            let chime = 0;
+            for (let f = 0; f < hatFreqs.length; f++) {
+              chime += Math.sin(2 * Math.PI * hatFreqs[f] * t + f * 1.1);
+            }
+            sample += cfg.hiHatLevel * hatEnv * chime;
+          }
+        }
 
-
-          sample = Math.tanh(sample * 1.55) * 0.86;
-        } else if (archetype.id === 'lofi_groove') {
-          const beat = Math.floor(t * 4);
-          const beatT = (t * 4) % 1;
-          const fBass = bassNotes[(beat * 2) % bassNotes.length] * 1.5;
-          const fMid = chordRoots[beat % chordRoots.length];
-
+        if (cfg.kickLevel) {
+          const beat = Math.floor(t * stepRate);
+          const beatT = (t * stepRate) % 1;
+          const fBass = bassNotes[(beat * 2 + seed) % bassNotes.length];
+          const fMid = chordNotes[(beat + seed) % chordNotes.length];
 
           const kickPitch = 130 * Math.exp(-beatT * 22) + 55;
-          const kickEnv = Math.exp(-beatT * 7.5);
-          sample += 0.42 * kickEnv * Math.sin(2 * Math.PI * kickPitch * t);
+          const kickEnv = Math.exp(-beatT * (cfg.kickDecay || 7.5));
+          sample += cfg.kickLevel * kickEnv * Math.sin(2 * Math.PI * kickPitch * t);
 
+          const riffEnv = Math.exp(-beatT * (cfg.chordDecay || 3.8));
+          const harms = cfg.chordHarmonics || [1, 2, 4, 8, 11];
+          const weights = cfg.chordWeights || [1, 0.7, 0.45, 0.28, 0.14];
+          let riff = Math.sin(2 * Math.PI * fBass * t);
+          for (let h = 1; h < harms.length; h++) {
+            riff += (weights[h] || 0.2) * Math.sin(2 * Math.PI * (fMid * harms[h]) * t);
+          }
+          sample += (cfg.chordLevel ?? 0.34) * riffEnv * riff;
+        }
 
-          const riffEnv = Math.exp(-beatT * 3.8);
-          sample += 0.34 * riffEnv * (
-            Math.sin(2 * Math.PI * fBass * t) +
-            0.7 * Math.sin(2 * Math.PI * (fMid * 2) * t) +
-            0.45 * Math.sin(2 * Math.PI * (fMid * 4) * t) +
-            0.28 * Math.sin(2 * Math.PI * (fMid * 8) * t) +
-            0.14 * Math.sin(2 * Math.PI * (fMid * 11) * t)
-          );
-          sample = Math.tanh(sample * 1.25) * 0.85;
-        } else {
-          const swell = 0.06 + 0.90 * Math.pow(t / DURATION_SEC, 2.1);
-          const noteIdx = Math.floor(t * 3) % leadNotes.length;
-          const fMelody = leadNotes[noteIdx] * 0.5;
+        if (cfg.swellPower) {
+          const swell = (cfg.swellStart ?? 0.06) + 0.90 * Math.pow(t / DURATION_SEC, cfg.swellPower);
+          const noteIdx = Math.floor(t * stepRate) % leadNotes.length;
+          const fMelody = leadNotes[noteIdx];
           const fRoot = bassNotes[Math.floor(t) % bassNotes.length];
-          const noteT = (t * 3) % 1;
+          const noteT = (t * stepRate) % 1;
           const pluckEnv = Math.exp(-noteT * 2.6);
-
 
           sample += swell * 0.38 * pluckEnv * (
             Math.sin(2 * Math.PI * fMelody * t) +
@@ -1743,29 +1819,74 @@
             0.3 * Math.sin(2 * Math.PI * (fMelody * 4) * t)
           );
 
-
-          const brassGain = Math.max(0, (t - 2.5) / 7.5);
-          sample += brassGain * 0.35 * (
-            Math.sin(2 * Math.PI * fRoot * t) +
-            0.6 * Math.sin(2 * Math.PI * (fMelody * 6) * t) +
-            0.35 * Math.sin(2 * Math.PI * (fMelody * 11) * t) +
-            0.22 * Math.sin(2 * Math.PI * (fMelody * 15) * t)
-          );
+          const entrySec = cfg.brassEntrySec ?? 2.5;
+          const brassGain = Math.max(0, (t - entrySec) / (DURATION_SEC - entrySec));
+          const bHarms = cfg.brassHarmonics || [1, 6, 11, 15];
+          const bWeights = cfg.brassWeights || [1, 0.6, 0.35, 0.22];
+          let brass = bWeights[0] * Math.sin(2 * Math.PI * fRoot * t);
+          for (let h = 1; h < bHarms.length; h++) {
+            brass += (bWeights[h] || 0.2) * Math.sin(2 * Math.PI * (fMelody * bHarms[h]) * t);
+          }
+          sample += brassGain * 0.35 * brass;
         }
 
+        if (drive > 1.02) {
+          sample = Math.tanh(sample * drive) * 0.86;
+        }
 
         let edgeEnv = 1.0;
         if (t < 0.08) edgeEnv = t / 0.08;
         else if (t > DURATION_SEC - 0.15) edgeEnv = (DURATION_SEC - t) / 0.15;
 
-
         out[i] = Math.max(-0.96, Math.min(0.96, sample * edgeEnv));
       }
-
 
       return out;
     }
 
+    async function decodeAudioBufferFromUrl(url) {
+      ensureAudioContext();
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`HTTP ${response.status} loading ${url}`);
+      const arrayBuf = await response.arrayBuffer();
+      return await audioCtx.decodeAudioData(arrayBuf);
+    }
+
+    async function extractTenSecondWindow(decodedBuffer, startOffsetSec = 0, loopShort = true) {
+      const offline = new OfflineAudioContext(1, TOTAL_SAMPLES, MASTER_SR);
+      const src = offline.createBufferSource();
+      src.buffer = decodedBuffer;
+
+      const safeStart = Math.max(0, Math.min(startOffsetSec, Math.max(0, decodedBuffer.duration - 0.1)));
+      if (decodedBuffer.duration - safeStart < DURATION_SEC && loopShort !== false) {
+        src.loop = true;
+        src.loopStart = safeStart;
+        src.loopEnd = decodedBuffer.duration;
+      }
+
+      src.connect(offline.destination);
+      src.start(0, safeStart, src.loop ? undefined : DURATION_SEC);
+
+      const rendered = await offline.startRendering();
+      const samples = new Float32Array(rendered.getChannelData(0));
+
+      let peak = 0;
+      for (let i = 0; i < samples.length; i++) {
+        const abs = Math.abs(samples[i]);
+        if (abs > peak) peak = abs;
+      }
+      const normGain = peak > 0.01 ? 0.92 / peak : 1.0;
+
+      for (let i = 0; i < samples.length; i++) {
+        const t = i / MASTER_SR;
+        let edgeEnv = 1.0;
+        if (t < 0.08) edgeEnv = t / 0.08;
+        else if (t > DURATION_SEC - 0.15) edgeEnv = (DURATION_SEC - t) / 0.15;
+        samples[i] = Math.max(-0.96, Math.min(0.96, samples[i] * normGain * edgeEnv));
+      }
+
+      return samples;
+    }
 
     /* =========================================================================
        2. DSP ENGINE: ANTI-ALIASING FILTER, DECIMATION & BIT QUANTIZATION
@@ -1773,7 +1894,6 @@
     function biquadLowPass(input, cutoffHz, sampleRate) {
       const safeCutoff = Math.max(400, Math.min(cutoffHz * 0.92, sampleRate * 0.47));
       let stage = new Float32Array(input);
-
 
       const qValues = [0.54119610, 1.30656296];
       for (let s = 0; s < 2; s++) {
@@ -1783,7 +1903,6 @@
         const sinw0 = Math.sin(w0);
         const alpha = sinw0 / (2 * Q);
 
-
         const b0 = (1 - cosw0) / 2;
         const b1 = 1 - cosw0;
         const b2 = (1 - cosw0) / 2;
@@ -1791,10 +1910,8 @@
         const a1 = -2 * cosw0;
         const a2 = 1 - alpha;
 
-
         const nb0 = b0 / a0, nb1 = b1 / a0, nb2 = b2 / a0;
         const na1 = a1 / a0, na2 = a2 / a0;
-
 
         const next = new Float32Array(stage.length);
         let x1 = 0, x2 = 0, y1 = 0, y2 = 0;
@@ -1810,28 +1927,22 @@
       return stage;
     }
 
-
     function synthesizeCompressedCut(analogBuf, srKhz, bits, useAAFilter) {
       const targetSr = srKhz * 1000;
       const nyquistHz = targetSr / 2;
-
 
       const sourceSignal = useAAFilter
         ? biquadLowPass(analogBuf, nyquistHz, MASTER_SR)
         : analogBuf;
 
-
       const levels = Math.pow(2, bits);
       const halfLevels = levels / 2;
-
 
       const stepPeriod = MASTER_SR / targetSr;
       const out = new Float32Array(analogBuf.length);
 
-
       let nextSamplePos = 0;
       let heldValue = 0;
-
 
       for (let i = 0; i < analogBuf.length; i++) {
         if (i >= nextSamplePos) {
@@ -1843,35 +1954,31 @@
         out[i] = heldValue;
       }
 
-
       return {
         reconstructed: out,
         filteredReference: sourceSignal
       };
     }
 
-
     /* =========================================================================
-       3. PEAK 10-SECOND FFT ENVELOPE SCANNER
+       3. PEAK 10-SECOND FFT ENVELOPE SCANNER & AUTO-F95 ESTIMATOR
        ========================================================================= */
     function computePeakSpectrum(samples) {
       const fftSize = 512;
       const bins = fftSize / 2;
       const peakDb = new Float32Array(bins).fill(-100);
+      const energyPerBin = new Float32Array(bins).fill(0);
       const hop = 12000;
-
 
       const win = new Float32Array(fftSize);
       for (let n = 0; n < fftSize; n++) {
         win[n] = 0.5 * (1 - Math.cos((2 * Math.PI * n) / (fftSize - 1)));
       }
 
-
       for (let offset = 0; offset + fftSize < samples.length; offset += hop) {
         for (let k = 1; k < bins; k++) {
           const freq = (k * MASTER_SR) / fftSize;
           if (freq > 20500) break;
-
 
           let re = 0, im = 0;
           const w = (2 * Math.PI * k) / fftSize;
@@ -1881,13 +1988,26 @@
             im -= s * Math.sin(w * n);
           }
           const mag = Math.sqrt(re * re + im * im) / (fftSize * 0.25);
+          energyPerBin[k] += mag * mag;
           const db = 20 * Math.log10(mag + 1e-6);
           if (db > peakDb[k]) peakDb[k] = db;
         }
       }
-      return peakDb;
-    }
 
+      let totalEnergy = 0;
+      for (let k = 1; k < bins; k++) totalEnergy += energyPerBin[k];
+      let accum = 0;
+      let autoF95Hz = 4800;
+      for (let k = 1; k < bins; k++) {
+        accum += energyPerBin[k];
+        if (accum >= totalEnergy * 0.95) {
+          autoF95Hz = Math.max(1500, Math.min(18000, (k * MASTER_SR) / fftSize));
+          break;
+        }
+      }
+
+      return { peakDb, autoF95Hz };
+    }
 
     /* =========================================================================
        4. SCORING ENGINE: SPECTRAL INTEGRITY, SQNR & BIT-SAVER MULTIPLIER
@@ -1895,24 +2015,23 @@
     function evaluateMasterScore() {
       const arch = state.currentArchetype;
       const nyquistHz = (state.srKhz * 1000) / 2;
-      const fTarget = arch.f95Hz;
-
+      const fTarget = state.effectiveF95Hz || 4800;
+      const highFreqWeight = arch.highFreqWeight || 1.0;
+      const dynamicSensitivity = arch.dynamicSensitivity || 1.0;
 
       let spectralRatio = 1.0;
       if (nyquistHz < fTarget) {
         const deficit = (fTarget - nyquistHz) / fTarget;
         const aliasPenaltyFactor = state.useAAFilter ? 1.15 : 1.75;
-        spectralRatio = Math.max(0.05, 1 - Math.pow(deficit, 1.15) * aliasPenaltyFactor * arch.highFreqWeight);
+        spectralRatio = Math.max(0.05, 1 - Math.pow(deficit, 1.15) * aliasPenaltyFactor * highFreqWeight);
       } else if (state.useAAFilter && nyquistHz < fTarget * 1.06) {
         spectralRatio = 0.97;
       }
       const spectralPts = Math.round(500 * Math.min(1, spectralRatio));
 
-
       let sigPower = 0;
       let quantErrPower = 0;
       const levels = Math.pow(2, state.bits) / 2;
-
 
       for (let i = 0; i < TOTAL_SAMPLES; i += 8) {
         const s = state.analogSamples[i];
@@ -1922,20 +2041,16 @@
         quantErrPower += err * err;
       }
 
-
       const sqnrDb = 10 * Math.log10((sigPower + 1e-9) / (quantErrPower + 1e-9));
-      const requiredSqnrDb = 44 * arch.dynamicSensitivity;
+      const requiredSqnrDb = 44 * dynamicSensitivity;
       const dynamicRatio = Math.max(0.05, Math.min(1.0, Math.pow(Math.min(sqnrDb / requiredSqnrDb, 1.0), 1.1)));
       const dynamicPts = Math.round(500 * dynamicRatio);
 
-
       const baseFidelity = spectralPts + dynamicPts;
-
 
       const usedKb = DURATION_SEC * state.srKhz * state.bits;
       const savedKb = Math.max(0, MAX_BUDGET_KB - usedKb);
       const savedFraction = savedKb / MAX_BUDGET_KB;
-
 
       let gateFactor = 1.0;
       if (baseFidelity < 700) {
@@ -1943,7 +2058,6 @@
       }
       const bonusMultiplier = 1 + 0.75 * savedFraction * gateFactor;
       const totalScore = Math.round(baseFidelity * bonusMultiplier);
-
 
       return {
         spectralPts,
@@ -1958,75 +2072,64 @@
       };
     }
 
-
     /* =========================================================================
-       5. CEILING-COUPLED KNOBS & LIVE EQUATION UPDATER
+       5. CEILING-COUPLED SLIDER BARS & LIVE EQUATION UPDATER
        ========================================================================= */
-    function updateKnobParameters(changedKnob, newValue) {
+    function updateSliderParameters(changedSlider, newValue) {
       if (state.phase === 'BURNED') return;
-
 
       let couplingTriggered = false;
 
-
-      if (changedKnob === 'sr') {
+      if (changedSlider === 'sr') {
         state.srKhz = Math.max(MIN_SR_KHZ, Math.min(MAX_SR_KHZ, Math.round(newValue * 2) / 2));
         const usedKb = DURATION_SEC * state.srKhz * state.bits;
         if (usedKb > MAX_BUDGET_KB) {
           const maxAllowedBits = MAX_BUDGET_KB / (DURATION_SEC * state.srKhz);
-          state.bits = Math.max(MIN_BITS, Math.floor(maxAllowedBits * 10) / 10);
+          state.bits = Math.max(MIN_BITS, Math.floor(maxAllowedBits * 2) / 2);
           if (DURATION_SEC * state.srKhz * state.bits > MAX_BUDGET_KB) {
             state.srKhz = Math.floor((MAX_BUDGET_KB / (DURATION_SEC * state.bits)) * 2) / 2;
           }
           couplingTriggered = true;
         }
-      } else if (changedKnob === 'bits') {
-        state.bits = Math.max(MIN_BITS, Math.min(MAX_BITS, Math.round(newValue * 10) / 10));
+      } else if (changedSlider === 'bits') {
+        state.bits = Math.max(MIN_BITS, Math.min(MAX_BITS, Math.round(newValue * 2) / 2));
         const usedKb = DURATION_SEC * state.srKhz * state.bits;
         if (usedKb > MAX_BUDGET_KB) {
           const maxAllowedSr = MAX_BUDGET_KB / (DURATION_SEC * state.bits);
           state.srKhz = Math.max(MIN_SR_KHZ, Math.floor(maxAllowedSr * 2) / 2);
           if (DURATION_SEC * state.srKhz * state.bits > MAX_BUDGET_KB) {
-            state.bits = Math.floor((MAX_BUDGET_KB / (DURATION_SEC * state.srKhz)) * 10) / 10;
+            state.bits = Math.floor((MAX_BUDGET_KB / (DURATION_SEC * state.srKhz)) * 2) / 2;
           }
           couplingTriggered = true;
         }
       }
 
-
-      refreshKnobsAndBudgetUI(couplingTriggered);
+      refreshSlidersAndBudgetUI(couplingTriggered);
     }
 
+    function refreshSlidersAndBudgetUI(couplingTriggered = false) {
+      el.srSliderInput.value = String(state.srKhz);
+      el.bdSliderInput.value = String(state.bits);
 
-    function refreshKnobsAndBudgetUI(couplingTriggered = false) {
-      const srNorm = (state.srKhz - MIN_SR_KHZ) / (MAX_SR_KHZ - MIN_SR_KHZ);
-      const bdNorm = (state.bits - MIN_BITS) / (MAX_BITS - MIN_BITS);
+      const srPct = ((state.srKhz - MIN_SR_KHZ) / (MAX_SR_KHZ - MIN_SR_KHZ)) * 100;
+      const bdPct = ((state.bits - MIN_BITS) / (MAX_BITS - MIN_BITS)) * 100;
 
-
-      const srAngle = -135 + srNorm * 270;
-      const bdAngle = -135 + bdNorm * 270;
-
-
-      el.srKnobIndicator.style.transform = `rotate(${srAngle}deg)`;
-      el.bdKnobIndicator.style.transform = `rotate(${bdAngle}deg)`;
-
+      el.srSliderInput.style.background = `linear-gradient(90deg, #06b6d4 0%, #22d3ee ${srPct}%, #060a10 ${srPct}%, #060a10 100%)`;
+      el.bdSliderInput.style.background = `linear-gradient(90deg, #d97706 0%, #f59e0b ${bdPct}%, #060a10 ${bdPct}%, #060a10 100%)`;
 
       el.srValueText.textContent = `${state.srKhz.toFixed(1)} kHz`;
       el.bdValueText.textContent = `${state.bits.toFixed(1)} bits`;
-
 
       const levels = Math.round(Math.pow(2, state.bits));
       const nyquistKhz = state.srKhz / 2;
       el.oscopeReadout.textContent = `${levels.toLocaleString()} Levels (${state.bits.toFixed(1)}-bit)`;
       el.fftReadout.innerHTML = `Nyquist f<sub>s</sub>/2 = ${nyquistKhz.toFixed(2)} kHz`;
 
-
       const usedKb = Math.min(MAX_BUDGET_KB, DURATION_SEC * state.srKhz * state.bits);
       const savedKb = Math.max(0, MAX_BUDGET_KB - usedKb);
       const usedPct = (usedKb / MAX_BUDGET_KB) * 100;
       const savedPct = 100 - usedPct;
       const bonusPct = (0.75 * (savedKb / MAX_BUDGET_KB)) * 100;
-
 
       el.cdBarUsed.style.width = `${usedPct.toFixed(1)}%`;
       el.cdBarSaved.style.width = `${savedPct.toFixed(1)}%`;
@@ -2035,7 +2138,6 @@
       el.bitsSavedLabel.textContent = `${savedKb.toFixed(1)} kb`;
       el.bonusMultPreview.textContent = `+${bonusPct.toFixed(1)}%`;
       el.budgetPctText.textContent = `${usedKb.toFixed(0)} / ${MAX_BUDGET_KB} kb (${savedPct.toFixed(0)}% Saved)`;
-
 
       const atCeiling = usedKb >= MAX_BUDGET_KB - 4;
       if (atCeiling || couplingTriggered) {
@@ -2046,10 +2148,8 @@
         el.couplingBadge.classList.remove('active');
       }
 
-
       const sqnrApprox = 6.02 * state.bits + 1.76;
       const multPreview = 1 + 0.75 * (savedKb / MAX_BUDGET_KB);
-
 
       el.liveEqNyquist.innerHTML = `
         <span>Current <var>f</var><sub>s</sub> = ${state.srKhz.toFixed(1)} kHz</span>
@@ -2068,10 +2168,8 @@
         <span>Current Bit-Saver Multiplier: <strong>×${multPreview.toFixed(2)}</strong></span>
       `;
 
-
       drawStaticMeters();
     }
-
 
     /* =========================================================================
        6. WEB AUDIO PLAYBACK & REAL-TIME A/B MONITOR
@@ -2085,7 +2183,6 @@
         audioCtx.resume();
       }
     }
-
 
     function stopPlayback() {
       if (activeSource) {
@@ -2104,41 +2201,33 @@
       drawStaticMeters();
     }
 
-
     function startPlayback(fromOffset = 0) {
+      if (!state.analogSamples) return;
       ensureAudioContext();
       stopPlayback();
-
 
       const samplesToPlay = (state.phase === 'BURNED' && state.monitorMode === 'DIGITAL')
         ? state.digitalSamples
         : state.analogSamples;
 
-
       const audioBuffer = audioCtx.createBuffer(1, samplesToPlay.length, MASTER_SR);
       audioBuffer.getChannelData(0).set(samplesToPlay);
 
-
       activeSource = audioCtx.createBufferSource();
       activeSource.buffer = audioBuffer;
-
 
       analyserNode = audioCtx.createAnalyser();
       analyserNode.fftSize = 1024;
       analyserNode.smoothingTimeConstant = 0.72;
 
-
       activeSource.connect(analyserNode);
       analyserNode.connect(audioCtx.destination);
-
 
       playbackOffset = Math.max(0, Math.min(DURATION_SEC - 0.1, fromOffset));
       startTime = audioCtx.currentTime - playbackOffset;
       state.isPlaying = true;
 
-
       el.playMasterBtn.textContent = '⏹ Stop Playback';
-
 
       activeSource.onended = () => {
         if (state.isPlaying) {
@@ -2152,11 +2241,9 @@
         }
       };
 
-
       activeSource.start(0, playbackOffset);
       renderLiveMetersLoop();
     }
-
 
     /* =========================================================================
        7. OSCILLOSCOPE & FFT SPECTRUM RENDERER (WITH SAMPLING CUES)
@@ -2166,15 +2253,12 @@
       const elapsed = Math.min(DURATION_SEC, audioCtx.currentTime - startTime);
       el.timecodeDisplay.textContent = `${elapsed.toFixed(1).padStart(4, '0')}s / 10.0s`;
 
-
       const sampleIdx = Math.min(TOTAL_SAMPLES - 1024, Math.floor(elapsed * MASTER_SR));
       drawOscilloscope(sampleIdx);
       drawFFTSpectrum();
 
-
       animFrameId = requestAnimationFrame(renderLiveMetersLoop);
     }
-
 
     function drawStaticMeters() {
       const previewIdx = Math.floor(3.2 * MASTER_SR);
@@ -2182,12 +2266,10 @@
       drawFFTSpectrum(true);
     }
 
-
     function drawOscilloscope(startIndex) {
       const w = el.oscopeCanvas.width;
       const h = el.oscopeCanvas.height;
       oscopeCtx.clearRect(0, 0, w, h);
-
 
       oscopeCtx.strokeStyle = 'rgba(148, 163, 184, 0.12)';
       oscopeCtx.lineWidth = 1;
@@ -2202,7 +2284,6 @@
       oscopeCtx.lineTo(w, h / 2);
       oscopeCtx.stroke();
 
-
       if (state.showMeterCues) {
         const levels = Math.pow(2, state.bits);
         const drawSteps = Math.min(levels, 32);
@@ -2215,7 +2296,6 @@
           oscopeCtx.lineTo(w, y);
           oscopeCtx.stroke();
         }
-
 
         const windowSamples = 360;
         const sampleStepPx = (MASTER_SR / (state.srKhz * 1000)) * (w / windowSamples);
@@ -2230,10 +2310,8 @@
         }
       }
 
-
       if (!state.analogSamples) return;
       const windowSamples = 360;
-
 
       oscopeCtx.strokeStyle = '#f59e0b';
       oscopeCtx.lineWidth = 2;
@@ -2246,7 +2324,6 @@
         else oscopeCtx.lineTo(x, y);
       }
       oscopeCtx.stroke();
-
 
       if (state.phase === 'BURNED' && state.digitalSamples) {
         oscopeCtx.strokeStyle = '#22d3ee';
@@ -2263,22 +2340,18 @@
       }
     }
 
-
     function drawFFTSpectrum(isStatic = false) {
       const w = el.fftCanvas.width;
       const h = el.fftCanvas.height;
       fftCtx.clearRect(0, 0, w, h);
 
-
       const maxFreqHz = 20000;
-
 
       const gridKhz = [2, 4, 6, 8, 10, 12, 14, 16, 18];
       fftCtx.strokeStyle = 'rgba(148, 163, 184, 0.12)';
       fftCtx.fillStyle = '#64748b';
       fftCtx.font = '10px "JetBrains Mono", monospace';
       fftCtx.lineWidth = 1;
-
 
       gridKhz.forEach((khz) => {
         const x = ((khz * 1000) / maxFreqHz) * w;
@@ -2288,7 +2361,6 @@
         fftCtx.stroke();
         fftCtx.fillText(`${khz}k`, x - 10, h - 5);
       });
-
 
       if ((state.showPeakEnvelope || isStatic) && state.peakSpectrumDb) {
         const bins = state.peakSpectrumDb.length;
@@ -2306,23 +2378,19 @@
         fftCtx.lineWidth = 1.8;
         fftCtx.stroke();
 
-
         fftCtx.lineTo(w, h - 18);
         fftCtx.closePath();
         fftCtx.fillStyle = 'rgba(245, 158, 11, 0.12)';
         fftCtx.fill();
       }
 
-
       if (state.isPlaying && analyserNode) {
         const freqData = new Uint8Array(analyserNode.frequencyBinCount);
         analyserNode.getByteFrequencyData(freqData);
         const binCount = freqData.length;
 
-
         const isDigitalMon = state.phase === 'BURNED' && state.monitorMode === 'DIGITAL';
         fftCtx.fillStyle = isDigitalMon ? 'rgba(34, 211, 238, 0.72)' : 'rgba(245, 158, 11, 0.72)';
-
 
         for (let k = 1; k < binCount; k++) {
           const freq = (k * MASTER_SR) / (binCount * 2);
@@ -2334,15 +2402,12 @@
         }
       }
 
-
       if (state.showMeterCues) {
         const nyquistHz = (state.srKhz * 1000) / 2;
         const nyquistX = Math.min(w, (nyquistHz / maxFreqHz) * w);
 
-
         fftCtx.fillStyle = 'rgba(239, 68, 68, 0.16)';
         fftCtx.fillRect(nyquistX, 0, w - nyquistX, h - 18);
-
 
         fftCtx.strokeStyle = '#ef4444';
         fftCtx.lineWidth = 2;
@@ -2353,8 +2418,7 @@
         fftCtx.stroke();
         fftCtx.setLineDash([]);
 
-
-        const labelText = `fₛ/2 = ${(nyquistHz / 1000).toFixed(1)} kHz`;
+        const labelText = `f\u209B/2 = ${(nyquistHz / 1000).toFixed(1)} kHz`;
         fftCtx.fillStyle = '#ef4444';
         fftCtx.font = 'bold 11px "JetBrains Mono", monospace';
         const labelX = nyquistX < w - 115 ? nyquistX + 6 : nyquistX - 108;
@@ -2362,40 +2426,135 @@
       }
     }
 
-
     /* =========================================================================
-       8. GAMEPLAY PHASE TRANSITIONS: NEW CUT, BURN TO CD & RETRY
+       8. GAMEPLAY TRANSITIONS, MP3 10s WINDOW SLICING & SHARE SCORE
        ========================================================================= */
-    function loadNewRandomCut() {
+    function updateMp3WindowUI(track) {
+      if (!track || !track.decodedBuffer) {
+        el.mp3WindowBar.classList.remove('visible');
+        return;
+      }
+
+      el.mp3WindowBar.classList.add('visible');
+      const totalDur = track.decodedBuffer.duration;
+      const maxStart = Math.max(0, Math.floor((totalDur - DURATION_SEC) * 2) / 2);
+      const curStart = Math.max(0, Math.min(maxStart, track.startSec || 0));
+      track.startSec = curStart;
+
+      el.mp3WindowSlider.max = String(maxStart);
+      el.mp3WindowSlider.value = String(curStart);
+
+      const isBurned = state.phase === 'BURNED';
+      const noRoomToSlide = maxStart <= 0;
+      el.mp3WindowSlider.disabled = isBurned || noRoomToSlide;
+      el.winStartResetBtn.disabled = isBurned || noRoomToSlide;
+      el.winDownBtn.disabled = isBurned || noRoomToSlide;
+      el.winUpBtn.disabled = isBurned || noRoomToSlide;
+
+      const pct = maxStart > 0 ? (curStart / maxStart) * 100 : 0;
+      el.mp3WindowSlider.style.background = `linear-gradient(90deg, #06b6d4 0%, #22d3ee ${pct}%, #060a10 ${pct}%, #060a10 100%)`;
+
+      if (totalDur < DURATION_SEC) {
+        el.mp3WindowReadout.textContent = `0:00.0 – 0:10.0 (Looped ${totalDur.toFixed(1)}s file)`;
+      } else {
+        const endSec = Math.min(totalDur, curStart + DURATION_SEC);
+        el.mp3WindowReadout.textContent = `${formatMinSec(curStart)} – ${formatMinSec(endSec)} (of ${formatMinSec(totalDur)})`;
+      }
+    }
+
+    async function applyMp3WindowOffset(newStartSec) {
+      const track = state.currentArchetype;
+      if (!track || !track.decodedBuffer || state.phase === 'BURNED') return;
+
+      const wasPlaying = state.isPlaying;
       stopPlayback();
 
+      const maxStart = Math.max(0, Math.floor((track.decodedBuffer.duration - DURATION_SEC) * 2) / 2);
+      track.startSec = Math.max(0, Math.min(maxStart, Math.round(newStartSec * 2) / 2));
 
-      const pool = TRACK_ARCHETYPES.filter((a) => a !== state.currentArchetype);
-      const chosen = pool[Math.floor(Math.random() * pool.length)] || TRACK_ARCHETYPES[0];
+      updateMp3WindowUI(track);
+
+      state.analogSamples = await extractTenSecondWindow(
+        track.decodedBuffer,
+        track.startSec,
+        track.loopShort !== false
+      );
+      const scan = computePeakSpectrum(state.analogSamples);
+      state.peakSpectrumDb = scan.peakDb;
+      state.effectiveF95Hz = (track.f95Hz === 'auto' || !track.f95Hz) ? scan.autoF95Hz : track.f95Hz;
+
+      drawStaticMeters();
+      if (wasPlaying) {
+        startPlayback(0);
+      }
+    }
+
+    async function loadSelectedOrRandomCut(specificIndex = null) {
+      stopPlayback();
+
+      let chosen;
+      if (specificIndex !== null && TRACK_ARCHETYPES[specificIndex]) {
+        chosen = TRACK_ARCHETYPES[specificIndex];
+      } else {
+        const pool = TRACK_ARCHETYPES.filter((a) => a !== state.currentArchetype);
+        chosen = pool[Math.floor(Math.random() * pool.length)] || TRACK_ARCHETYPES[0];
+      }
+
       state.currentArchetype = chosen;
-
+      const chosenIdx = TRACK_ARCHETYPES.indexOf(chosen);
+      if (chosenIdx >= 0) {
+        el.trackPickerSelect.value = String(chosenIdx);
+      }
 
       state.phase = 'AUDITION';
       state.monitorMode = 'ANALOG';
       state.srKhz = 12.0;
       state.bits = 6.0;
       state.digitalSamples = null;
-
-
-      state.analogSamples = generateAnalogCut(chosen);
-      state.peakSpectrumDb = computePeakSpectrum(state.analogSamples);
-
+      state.lastScore = null;
 
       updatePhaseUI();
-      refreshKnobsAndBudgetUI();
+
+      if (chosen.decodedBuffer) {
+        // Already decoded local or external audio buffer
+        state.analogSamples = await extractTenSecondWindow(
+          chosen.decodedBuffer,
+          chosen.startSec || 0,
+          chosen.loopShort !== false
+        );
+      } else if (chosen.audioUrl) {
+        el.trackTitle.textContent = `${chosen.name} (Loading Audio...)`;
+        try {
+          chosen.decodedBuffer = await decodeAudioBufferFromUrl(chosen.audioUrl);
+          if (typeof chosen.startSec !== 'number') chosen.startSec = 0; // Default from beginning
+          state.analogSamples = await extractTenSecondWindow(
+            chosen.decodedBuffer,
+            chosen.startSec,
+            chosen.loopShort !== false
+          );
+        } catch (err) {
+          console.warn('Could not load audioUrl, falling back to synth recipe:', err);
+          state.analogSamples = generateAnalogCutFromRecipe(chosen);
+        }
+      } else {
+        state.analogSamples = generateAnalogCutFromRecipe(chosen);
+      }
+
+      const scan = computePeakSpectrum(state.analogSamples);
+      state.peakSpectrumDb = scan.peakDb;
+      state.effectiveF95Hz = (chosen.f95Hz === 'auto' || !chosen.f95Hz)
+        ? scan.autoF95Hz
+        : chosen.f95Hz;
+
+      updatePhaseUI();
+      updateMp3WindowUI(chosen);
+      refreshSlidersAndBudgetUI();
       resetScoreboardUI();
     }
 
-
     function finalizeAndBurnToCD() {
-      if (state.phase === 'BURNED') return;
+      if (state.phase === 'BURNED' || !state.analogSamples) return;
       stopPlayback();
-
 
       const dspResult = synthesizeCompressedCut(
         state.analogSamples,
@@ -2407,18 +2566,15 @@
       state.phase = 'BURNED';
       state.monitorMode = 'DIGITAL';
 
-
       const score = evaluateMasterScore();
       state.lastScore = score;
 
-
       updatePhaseUI();
+      updateMp3WindowUI(state.currentArchetype);
       renderScoreboard(score);
-
 
       startPlayback(0);
     }
-
 
     function retrySameCut() {
       stopPlayback();
@@ -2426,41 +2582,35 @@
       state.monitorMode = 'ANALOG';
       state.digitalSamples = null;
       updatePhaseUI();
-      refreshKnobsAndBudgetUI();
+      updateMp3WindowUI(state.currentArchetype);
+      refreshSlidersAndBudgetUI();
     }
-
 
     function updatePhaseUI() {
       const arch = state.currentArchetype;
-      el.trackArchetypeTag.textContent = arch.tag;
-      el.trackTitle.textContent = arch.name;
-      el.trackHint.textContent = arch.hint;
-
+      el.trackArchetypeTag.textContent = arch.tag || 'CUSTOM CUT';
+      el.trackTitle.textContent = arch.name || 'Untitled Cut';
+      el.trackHint.textContent = arch.hint || '';
 
       const isBurned = state.phase === 'BURNED';
-      el.phaseBadge.textContent = isBurned
-        ? 'PHASE 2: CD BURNED • A/B REVIEW'
-        : 'PHASE 1: AUDITION & DIAL-IN';
-      el.phaseBadge.classList.toggle('burned', isBurned);
       el.statusLed.style.background = isBurned ? 'var(--cyan-bright)' : 'var(--gold)';
       el.statusLed.style.boxShadow = isBurned ? '0 0 10px var(--cyan-bright)' : '0 0 10px var(--gold)';
-
 
       el.abToggleBtn.disabled = !isBurned;
       el.abToggleBtn.textContent = state.monitorMode === 'DIGITAL'
         ? '🎧 Monitor: DIGITAL CUT (Click for A/B)'
         : '🎧 Monitor: ANALOG MASTER (Click for A/B)';
 
-
       el.burnBtn.disabled = isBurned;
       el.retryCutBtn.style.display = isBurned ? 'inline-flex' : 'none';
+      el.srSliderInput.disabled = isBurned;
+      el.bdSliderInput.disabled = isBurned;
       el.srDownBtn.disabled = isBurned;
       el.srUpBtn.disabled = isBurned;
       el.bdDownBtn.disabled = isBurned;
       el.bdUpBtn.disabled = isBurned;
       el.aaFilterToggle.disabled = isBurned;
     }
-
 
     function resetScoreboardUI() {
       el.spectralScoreText.textContent = '— / 500 pts';
@@ -2470,27 +2620,25 @@
       el.efficiencyScoreText.textContent = '—';
       el.efficiencyBar.style.width = '0%';
       el.totalScoreText.textContent = 'READY';
+      el.shareScoreBtn.disabled = true;
+      el.shareScoreBtn.textContent = '📤 Share Score & Track';
       el.scoreVerdictText.innerHTML =
-        'Audition the 10s analog master, dial in your Sampling Rate &amp; Bit Depth, then click <strong>Finalize &amp; Burn to CD</strong> to hear and score your digital cut.';
+        'Audition the 10s analog master, adjust your Sampling Rate &amp; Bit Depth sliders under each screen, then click <strong>Finalize &amp; Burn to CD</strong>.';
     }
-
 
     function renderScoreboard(score) {
       el.spectralScoreText.textContent = `${score.spectralPts} / 500 pts`;
       el.spectralBar.style.width = `${(score.spectralPts / 500) * 100}%`;
 
-
       el.dynamicScoreText.textContent = `${score.dynamicPts} / 500 pts (${score.sqnrDb.toFixed(1)} dB SQNR)`;
       el.dynamicBar.style.width = `${(score.dynamicPts / 500) * 100}%`;
-
 
       const savedPct = (score.savedKb / MAX_BUDGET_KB) * 100;
       el.efficiencyScoreText.textContent = `×${score.bonusMultiplier.toFixed(2)} (${score.savedKb.toFixed(0)} kb saved)`;
       el.efficiencyBar.style.width = `${Math.min(100, savedPct * 1.4)}%`;
 
-
       el.totalScoreText.textContent = `${score.totalScore.toLocaleString()} PTS`;
-
+      el.shareScoreBtn.disabled = false;
 
       let verdict = '';
       if (score.totalScore >= 1050) {
@@ -2505,69 +2653,156 @@
       el.scoreVerdictText.innerHTML = verdict;
     }
 
+    async function shareCurrentScore() {
+      if (!state.lastScore || !state.currentArchetype) return;
+      const s = state.lastScore;
+      const arch = state.currentArchetype;
 
-    /* =========================================================================
-       9. INTERACTIVE CONTROLS & MODAL EVENT LISTENERS
-       ========================================================================= */
-    function bindRotaryKnob(dialElem, paramName, minVal, maxVal, sensitivity) {
-      let dragging = false;
-      let startY = 0;
-      let startVal = 0;
+      let windowInfo = '';
+      if (arch.decodedBuffer && arch.decodedBuffer.duration >= DURATION_SEC) {
+        const st = arch.startSec || 0;
+        windowInfo = ` [${formatMinSec(st)}–${formatMinSec(st + DURATION_SEC)}]`;
+      }
 
+      const gameUrl = window.location.href.startsWith('http')
+        ? window.location.href
+        : 'https://github.com/behemmer';
 
-      dialElem.addEventListener('pointerdown', (e) => {
-        if (state.phase === 'BURNED') return;
-        dragging = true;
-        startY = e.clientY;
-        startVal = paramName === 'sr' ? state.srKhz : state.bits;
-        dialElem.setPointerCapture(e.pointerId);
-      });
+      const shareText = [
+        `💿 Nyquist Studio: CD Mastering Lab`,
+        `🎵 Music Selection: ${arch.name}${windowInfo} (${arch.tag})`,
+        `🎛️ Settings: ${state.srKhz.toFixed(1)} kHz | ${state.bits.toFixed(1)} bits (${s.usedKb.toFixed(0)}/${MAX_BUDGET_KB} kb used)`,
+        `1️⃣ Spectral Integrity: ${s.spectralPts} / 500 pts`,
+        `2️⃣ Dynamic Cleanliness: ${s.dynamicPts} / 500 pts (${s.sqnrDb.toFixed(1)} dB SQNR)`,
+        `3️⃣ Bit-Saver Efficiency: ×${s.bonusMultiplier.toFixed(2)} (${s.savedKb.toFixed(0)} kb saved)`,
+        `🏆 Master Score: ${s.totalScore.toLocaleString()} PTS`,
+        `🔗 Play here: ${gameUrl}`
+      ].join('\n');
 
+      // Copy to clipboard first so desktop users always get an immediate copy
+      let copied = false;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        try {
+          await navigator.clipboard.writeText(shareText);
+          copied = true;
+        } catch (e) {}
+      }
 
-      dialElem.addEventListener('pointermove', (e) => {
-        if (!dragging || state.phase === 'BURNED') return;
-        const dy = startY - e.clientY;
-        const delta = (dy / sensitivity) * (maxVal - minVal);
-        updateKnobParameters(paramName, startVal + delta);
-      });
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: 'Nyquist Studio: CD Mastering Lab',
+            text: shareText,
+            url: gameUrl
+          });
+          el.shareScoreBtn.textContent = '✅ Shared!';
+          setTimeout(() => { el.shareScoreBtn.textContent = '📤 Share Score & Track'; }, 2500);
+          return;
+        } catch (err) {
+          // User cancelled native share sheet; fall through to clipboard confirmation
+        }
+      }
 
-
-      dialElem.addEventListener('pointerup', () => {
-        dragging = false;
-      });
-
-
-      dialElem.addEventListener('wheel', (e) => {
-        e.preventDefault();
-        if (state.phase === 'BURNED') return;
-        const step = paramName === 'sr' ? 0.5 : 0.5;
-        const dir = e.deltaY < 0 ? 1 : -1;
-        const cur = paramName === 'sr' ? state.srKhz : state.bits;
-        updateKnobParameters(paramName, cur + dir * step);
-      }, { passive: false });
+      if (copied) {
+        el.shareScoreBtn.textContent = '✅ Score & Link Copied!';
+        setTimeout(() => { el.shareScoreBtn.textContent = '📤 Share Score & Track'; }, 2500);
+      } else {
+        prompt('Copy your Nyquist Studio score summary:', shareText);
+      }
     }
 
+    /* =========================================================================
+       9. INTERACTIVE SLIDER CONTROLS, MP3 WINDOW PICKER & MODAL LISTENERS
+       ========================================================================= */
+    el.srSliderInput.addEventListener('input', (e) => {
+      updateSliderParameters('sr', parseFloat(e.target.value));
+    });
 
-    bindRotaryKnob(el.srKnobDial, 'sr', MIN_SR_KHZ, MAX_SR_KHZ, 150);
-    bindRotaryKnob(el.bdKnobDial, 'bits', MIN_BITS, MAX_BITS, 150);
+    el.bdSliderInput.addEventListener('input', (e) => {
+      updateSliderParameters('bits', parseFloat(e.target.value));
+    });
 
+    el.srDownBtn.addEventListener('click', () => updateSliderParameters('sr', state.srKhz - 0.5));
+    el.srUpBtn.addEventListener('click', () => updateSliderParameters('sr', state.srKhz + 0.5));
+    el.bdDownBtn.addEventListener('click', () => updateSliderParameters('bits', state.bits - 0.5));
+    el.bdUpBtn.addEventListener('click', () => updateSliderParameters('bits', state.bits + 0.5));
 
-    el.srDownBtn.addEventListener('click', () => updateKnobParameters('sr', state.srKhz - 1.0));
-    el.srUpBtn.addEventListener('click', () => updateKnobParameters('sr', state.srKhz + 1.0));
-    el.bdDownBtn.addEventListener('click', () => updateKnobParameters('bits', state.bits - 0.5));
-    el.bdUpBtn.addEventListener('click', () => updateKnobParameters('bits', state.bits + 0.5));
+    // Local MP3 / WAV File Upload Handler (Defaults to 0:00.0 start window)
+    el.uploadMp3Btn.addEventListener('click', () => {
+      el.localMp3Input.click();
+    });
 
+    el.localMp3Input.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      stopPlayback();
+      const cleanName = file.name.replace(/\.[^/.]+$/, '');
+      el.trackTitle.textContent = `${cleanName} (Decoding Local Audio...)`;
+
+      try {
+        const objectUrl = URL.createObjectURL(file);
+        const decodedBuffer = await decodeAudioBufferFromUrl(objectUrl);
+
+        const customTrack = {
+          id: 'local_upload_' + Date.now(),
+          tag: 'LOCAL USER MP3',
+          name: cleanName,
+          hint: 'Loaded from your local file. Use the "10s MP3 Window" slider below to pick any 10-second section (defaults to 0:00 from the beginning).',
+          audioUrl: objectUrl,
+          decodedBuffer: decodedBuffer,
+          startSec: 0, // Default is from the beginning
+          f95Hz: 'auto',
+          dynamicSensitivity: 1.05,
+          highFreqWeight: 1.15
+        };
+
+        TRACK_ARCHETYPES.push(customTrack);
+        populateTrackDropdown();
+        const newIndex = TRACK_ARCHETYPES.length - 1;
+        await loadSelectedOrRandomCut(newIndex);
+        el.localMp3Input.value = '';
+      } catch (err) {
+        console.error('Failed to decode local audio file:', err);
+        alert('Could not decode that audio file. Please try a standard MP3, WAV, OGG, or M4A file.');
+        loadSelectedOrRandomCut(null);
+      }
+    });
+
+    // 10s MP3 Window Slider & Step Listeners
+    el.mp3WindowSlider.addEventListener('input', (e) => {
+      const track = state.currentArchetype;
+      if (!track || !track.decodedBuffer) return;
+      const previewStart = parseFloat(e.target.value);
+      const totalDur = track.decodedBuffer.duration;
+      const endSec = Math.min(totalDur, previewStart + DURATION_SEC);
+      el.mp3WindowReadout.textContent = `${formatMinSec(previewStart)} – ${formatMinSec(endSec)} (of ${formatMinSec(totalDur)})`;
+    });
+
+    el.mp3WindowSlider.addEventListener('change', (e) => {
+      applyMp3WindowOffset(parseFloat(e.target.value));
+    });
+
+    el.winStartResetBtn.addEventListener('click', () => applyMp3WindowOffset(0));
+    el.winDownBtn.addEventListener('click', () => {
+      const cur = (state.currentArchetype && state.currentArchetype.startSec) || 0;
+      applyMp3WindowOffset(cur - 1.0);
+    });
+    el.winUpBtn.addEventListener('click', () => {
+      const cur = (state.currentArchetype && state.currentArchetype.startSec) || 0;
+      applyMp3WindowOffset(cur + 1.0);
+    });
+
+    el.shareScoreBtn.addEventListener('click', shareCurrentScore);
 
     el.meterCuesToggle.addEventListener('change', (e) => {
       state.showMeterCues = e.target.checked;
       drawStaticMeters();
     });
 
-
     el.aaFilterToggle.addEventListener('change', (e) => {
       state.useAAFilter = e.target.checked;
     });
-
 
     el.playMasterBtn.addEventListener('click', () => {
       if (state.isPlaying) {
@@ -2576,7 +2811,6 @@
         startPlayback(0);
       }
     });
-
 
     el.abToggleBtn.addEventListener('click', () => {
       if (state.phase !== 'BURNED') return;
@@ -2590,18 +2824,23 @@
       }
     });
 
-
     el.peakScanBtn.addEventListener('click', () => {
       state.showPeakEnvelope = !state.showPeakEnvelope;
       el.peakScanBtn.classList.toggle('btn-cyan', state.showPeakEnvelope);
       drawStaticMeters();
     });
 
-
     el.burnBtn.addEventListener('click', finalizeAndBurnToCD);
     el.retryCutBtn.addEventListener('click', retrySameCut);
-    el.newCutBtn.addEventListener('click', loadNewRandomCut);
+    el.newCutBtn.addEventListener('click', () => loadSelectedOrRandomCut(null));
 
+    el.trackPickerSelect.addEventListener('change', (e) => {
+      if (e.target.value === 'random') {
+        loadSelectedOrRandomCut(null);
+      } else {
+        loadSelectedOrRandomCut(parseInt(e.target.value, 10));
+      }
+    });
 
     el.openGuideBtn.addEventListener('click', () => {
       el.guideModalBackdrop.classList.add('open');
@@ -2615,8 +2854,8 @@
       }
     });
 
-
-    loadNewRandomCut();
+    populateTrackDropdown();
+    loadSelectedOrRandomCut(null);
   </script>
 </body>
 </html>
