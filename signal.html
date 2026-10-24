@@ -1,8 +1,3 @@
-<!-- 
-  Copyright (c) 2026 Barry Hemmerdinger. All Rights Reserved.
-  Unauthorized copying, modification, distribution, or reverse engineering 
-  of this code via any medium is strictly prohibited.
--->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -327,7 +322,7 @@
 
                     <!-- Fixed-Height (28px) Live Word Stream Bar -->
                     <div id="live-packet-bar" class="h-[28px] w-full bg-slate-950 rounded-b-xl border border-t-0 border-cyan-500/40 px-2.5 flex items-center gap-1.5 overflow-x-auto whitespace-nowrap no-scrollbar font-mono-tech text-xs">
-                        <span class="text-slate-400 italic text-[11px]">Packet Stream Ready — select Tier 1, 2, or 3 below and press Push-To-Talk...</span>
+                        <span class="text-slate-400 italic text-[11px]">Packet Stream Ready — select msg 1, 2, or 3 below and press Push-To-Talk...</span>
                     </div>
                 </div>
 
@@ -360,7 +355,7 @@
                                 2x REPEAT <span id="coding-sub-repeat" class="font-mono-tech text-[9px] text-emerald-300">(+5.0dB, 1.7x)</span>
                             </button>
                             <button type="button" data-fec="parity" class="fec-mode-btn px-2.5 py-1 rounded-lg bg-slate-800 text-[11px] font-arcade font-bold text-slate-300 border border-white/10 cursor-pointer">
-                                PARITY FEC <span id="coding-sub-parity" class="font-mono-tech text-[9px] text-cyan-300">(+2.5dB, 1.25x)</span>
+                                FWD ERROR CORRECT <span id="coding-sub-parity" class="font-mono-tech text-[9px] text-cyan-300">(+2.5dB, 1.25x)</span>
                             </button>
                         </div>
 
@@ -376,13 +371,13 @@
                     <!-- Prominent 2-Line Capable Instruction Header + Quick-Select Tabs below/beside -->
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 mb-1.5 px-1">
                         <div class="font-arcade text-sm sm:text-base font-black text-amber-300 tracking-wide leading-tight drop-shadow">
-                            🎯 SELECT MESSAGE COMPLEXITY TIER <span class="text-cyan-200 block sm:inline">(SWIPE OR CLICK TABS BELOW)</span>
+                            🎯 SELECT MESSAGE COMPLEXITY<span class="text-cyan-200 block sm:inline"> (SWIPE OR CLICK TABS BELOW)</span>
                         </div>
                         <div class="flex items-center gap-1 shrink-0 self-start sm:self-auto">
                             <button type="button" id="carousel-prev-btn" class="w-6 h-6 rounded-lg bg-slate-800 hover:bg-slate-700 border border-white/15 text-xs font-bold text-white flex items-center justify-center cursor-pointer">&lt;</button>
-                            <button type="button" id="tab-t1-btn" class="px-2.5 py-1 rounded-lg font-arcade text-[10px] sm:text-[11px] font-bold bg-slate-800 text-slate-300 border border-white/10 transition cursor-pointer">T1: BREVITY</button>
-                            <button type="button" id="tab-t2-btn" class="px-2.5 py-1 rounded-lg font-arcade text-[10px] sm:text-[11px] font-bold bg-cyan-500/30 text-cyan-200 border border-cyan-400 transition cursor-pointer">T2: TACTICAL</button>
-                            <button type="button" id="tab-t3-btn" class="px-2.5 py-1 rounded-lg font-arcade text-[10px] sm:text-[11px] font-bold bg-slate-800 text-slate-300 border border-white/10 transition cursor-pointer">T3: SITREP</button>
+                            <button type="button" id="tab-t1-btn" class="px-2.5 py-1 rounded-lg font-arcade text-[10px] sm:text-[11px] font-bold bg-slate-800 text-slate-300 border border-white/10 transition cursor-pointer">#1: BREVITY</button>
+                            <button type="button" id="tab-t2-btn" class="px-2.5 py-1 rounded-lg font-arcade text-[10px] sm:text-[11px] font-bold bg-cyan-500/30 text-cyan-200 border border-cyan-400 transition cursor-pointer">#2: TACTICAL</button>
+                            <button type="button" id="tab-t3-btn" class="px-2.5 py-1 rounded-lg font-arcade text-[10px] sm:text-[11px] font-bold bg-slate-800 text-slate-300 border border-white/10 transition cursor-pointer">#3: SITREP</button>
                             <button type="button" id="carousel-next-btn" class="w-6 h-6 rounded-lg bg-slate-800 hover:bg-slate-700 border border-white/15 text-xs font-bold text-white flex items-center justify-center cursor-pointer">&gt;</button>
                         </div>
                     </div>
@@ -390,10 +385,10 @@
                     <!-- Horizontal Snap Strip -->
                     <div id="tier-carousel" class="tier-carousel w-full rounded-xl bg-slate-900/95 border border-white/15 p-1.5 gap-2.5">
                         
-                        <!-- TIER 1 CARD (BREVITY CODE - 2 Words, ~0.9s, +13m) -->
+                        <!-- #1 CARD (BREVITY CODE - 2 Words, ~0.9s, +13m) -->
                         <div id="slide-tier-1" data-tier="1" class="tier-card rounded-xl px-3 py-2 bg-slate-950/95 border-2 border-white/10 cursor-pointer flex flex-col justify-between gap-1">
                             <div class="flex items-center justify-between gap-2 whitespace-nowrap">
-                                <span class="font-arcade text-xs sm:text-sm font-black text-emerald-300">TIER 1 • BREVITY CODE</span>
+                                <span class="font-arcade text-xs sm:text-sm font-black text-emerald-300">#1 • BREVITY CODE</span>
                                 <div class="flex items-center gap-1.5">
                                     <span id="t1-survival-badge" class="font-mono-tech text-[10px] font-extrabold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/40">96% Est. Clean</span>
                                     <span id="t1-airtime-badge" class="font-mono-tech text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-200 border border-white/10">0.9s • 2 Words</span>
@@ -411,7 +406,7 @@
                         <!-- TIER 2 CARD (TACTICAL ROUTE - 5 Words, ~1.9s, +26m) -->
                         <div id="slide-tier-2" data-tier="2" class="tier-card active-tier rounded-xl px-3 py-2 bg-slate-950/95 border-2 border-white/10 cursor-pointer flex flex-col justify-between gap-1">
                             <div class="flex items-center justify-between gap-2 whitespace-nowrap">
-                                <span class="font-arcade text-xs sm:text-sm font-black text-cyan-300">TIER 2 • TACTICAL ROUTE</span>
+                                <span class="font-arcade text-xs sm:text-sm font-black text-cyan-300">#2 • TACTICAL ROUTE</span>
                                 <div class="flex items-center gap-1.5">
                                     <span id="t2-survival-badge" class="font-mono-tech text-[10px] font-extrabold px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-200 border border-cyan-400/40">90% Est. Clean</span>
                                     <span id="t2-airtime-badge" class="font-mono-tech text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-200 border border-white/10">1.9s • 5 Words</span>
@@ -429,7 +424,7 @@
                         <!-- TIER 3 CARD (FULL SITREP - 8 Words, ~3.1s, +44m) -->
                         <div id="slide-tier-3" data-tier="3" class="tier-card rounded-xl px-3 py-2 bg-slate-950/95 border-2 border-white/10 cursor-pointer flex flex-col justify-between gap-1">
                             <div class="flex items-center justify-between gap-2 whitespace-nowrap">
-                                <span class="font-arcade text-xs sm:text-sm font-black text-amber-300">TIER 3 • FULL SITREP SHORTCUT</span>
+                                <span class="font-arcade text-xs sm:text-sm font-black text-amber-300">#3 • FULL SITREP SHORTCUT</span>
                                 <div class="flex items-center gap-1.5">
                                     <span id="t3-survival-badge" class="font-mono-tech text-[10px] font-extrabold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-400/40">82% Est. Clean</span>
                                     <span id="t3-airtime-badge" class="font-mono-tech text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-200 border border-white/10">3.1s • 8 Words</span>
@@ -454,7 +449,7 @@
                     class="tut-region w-full py-2.5 sm:py-3 px-4 rounded-xl bg-gradient-to-r from-rose-600 via-red-500 to-orange-500 hover:from-rose-500 hover:to-orange-400 active:scale-[0.99] transition text-white font-arcade font-black text-xs sm:text-sm tracking-wider shadow-xl shadow-rose-600/30 border border-rose-300/50 flex items-center justify-center gap-2 shrink-0 cursor-pointer"
                 >
                     <span class="w-2.5 h-2.5 rounded-full bg-white animate-ping"></span>
-                    <span id="ptt-button-text">PUSH TO TALK — TRANSMIT TIER 2 [10.0s]</span>
+                    <span id="ptt-button-text">PUSH TO TALK — TRANSMIT MSG 2 [10.0s]</span>
                 </button>
             </section>
         </main>
@@ -515,7 +510,7 @@
                     SIGNAL OPS: NOISY CHANNEL ESCAPE
                 </h1>
                 <p class="text-[11px] sm:text-xs text-slate-300 mt-0.5 leading-relaxed">
-                    Guide your friend <strong class="text-cyan-300">Leo</strong> from <span class="text-white font-semibold">0m (Main Office)</span> to <span class="text-emerald-300 font-semibold">100m (West Exit)</span> across 4 school sectors before the Principal catches him (~14m/turn). Time your <span class="text-amber-300 font-semibold">Push-To-Talk</span> between static bursts!
+                    Guide your friend <strong class="text-cyan-300">Leo</strong> on a 100 meter sprint, from <span class="text-white font-semibold">0m (Main Office)</span> to <span class="text-emerald-300 font-semibold">100m (West Exit)</span> across 4 school sectors before the Principal catches him (~14m/turn). Time your <span class="text-amber-300 font-semibold">Push-To-Talk</span> between static bursts!
                 </p>
 
                 <!-- MODE SELECTOR CARDS (Standard Mode vs Advanced RF Mode) -->
@@ -530,7 +525,7 @@
                             <span id="std-card-pill" class="text-[9px] font-arcade font-bold px-2 py-0.5 rounded bg-emerald-400 text-slate-950">SELECTED</span>
                         </div>
                         <p class="text-[10px] text-slate-300 mt-1 leading-snug">
-                            Read the live SNR scope, pick Message Tiers 1–3, and time your Push-To-Talk. (Auto-scales ~75% on mobile).
+                            Read the live Signal to Noise Ratio (SNR) scope, pick Message 1–3, and time your Push-To-Talk.
                         </p>
                     </button>
 
@@ -544,7 +539,7 @@
                             <span id="adv-card-pill" class="text-[9px] font-arcade font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-400">SELECT</span>
                         </div>
                         <p id="adv-card-desc" class="text-[10px] text-slate-300 mt-1 leading-snug">
-                            Adds <strong>TX Power (0.5W/2W/5W)</strong>, faster battery drain &amp; <strong>Error Coding (1x/2x/Parity FEC)</strong>!
+                            Adds <strong>TX Power (0.5W/2W/5W)</strong>, faster battery drain &amp; <strong>Error Coding - 1x/2x/Forward Error Correction (FEC)</strong>!
                         </p>
                     </button>
                 </div>
@@ -607,7 +602,7 @@
                         type="button"
                         class="py-2.5 px-3 rounded-2xl bg-slate-800 hover:bg-slate-700 active:scale-95 transition border border-amber-400/60 text-amber-300 font-arcade font-bold text-[11px] flex items-center justify-center gap-1.5 sm:w-36 cursor-pointer"
                     >
-                        <span>🔊 SQUELCH</span>
+                        <span>🔊 SQUELCH (TEST SPEAKER)</span>
                     </button>
                     <button
                         id="start-tutorial-btn"
@@ -1172,7 +1167,7 @@
                 id: 'map',
                 phaseTag: 'Part 1: Screen Walkthrough',
                 title: '2. School Blueprint & Propagation Map',
-                body: 'Shows Leo (cyan blip) escaping from 0m to 100m across 4 school sectors while the Principal (red radar cone) chases him. Each concrete wall between your antenna and Leo attenuates your radio signal by -3.8 dB!',
+                body: 'Shows Leo (cyan blip) escaping from 0m to 100m across 4 school sectors while the Principal (red radar cone) chases him. Each concrete wall between your antenna and Leo attenuates your radio signal by 3.8 dB (that is more than half the power)!',
                 targetId: 'top-blueprint-window',
                 cardPos: 'bottom',
                 hint: 'Click NEXT to inspect the Sitrep & Comms panel'
@@ -1190,7 +1185,7 @@
                 id: 'scope',
                 phaseTag: 'Part 1: Screen Walkthrough',
                 title: '4. Live RF Spectrum Analyzer (Scope)',
-                body: 'Green is your Carrier Signal; Red is the Noise Floor & Static Bursts. Also displays the active RF Forecast weather profile! Watch SNR and BER, and transmit when the Green wave swells high.',
+                body: 'Green is your Carrier Signal; Red is the Noise Floor & Static Bursts. Also displays the active RF Forecast weather profile! Watch Signal to Noise Ratio (SNR) and Bit Error Rate (BER), and transmit when the Green wave swells high.',
                 targetId: 'rf-scope-panel',
                 cardPos: 'bottom',
                 hint: 'Click NEXT to inspect the Advanced TX Options'
@@ -1199,17 +1194,17 @@
                 id: 'tx_options',
                 phaseTag: 'Part 1: Screen Walkthrough',
                 title: '5. TX Power & Error Coding Options (Advanced Mode)',
-                body: 'In Advanced RF Mode, this bar unlocks TX Power (0.5W saves battery; 5.0W boosts SNR by +5.0dB but drains 44% battery and risks a Scanner Alert) and Error Coding (2x Repeat & Parity FEC salvage words hit by static).',
+                body: 'In Advanced RF Mode, this bar unlocks TX Power (0.5W saves battery; 5.0W boosts SNR by +5.0dB but drains 44% battery and risks a Scanner Alert) and Error Coding (2x Repeat & Forward Error Correction (FEC) salvage words hit by static).',
                 targetId: 'advanced-controls-bar',
                 cardPos: 'top',
                 forceShowAdv: true,
-                hint: 'Click NEXT to inspect the Message Complexity Tiers'
+                hint: 'Click NEXT to inspect the Message Complexity'
             },
             {
                 id: 'message_options',
                 phaseTag: 'Part 1: Screen Walkthrough',
-                title: '6. Message Complexity Tiers (T1, T2, T3)',
-                body: 'Every turn, choose your risk vs. reward: Tier 1 (Brevity) is fast (0.9s, +13m) but has a 35% ambiguity guess risk. Tier 2 (Tactical) moves +26m safely with 0% ambiguity. Tier 3 (Sitrep) unlocks a +44m shortcut, but static spikes can cause a comedic bit-flip setback (-6m)!',
+                title: '6. Message Complexity (#1, #2, #3)',
+                body: 'Every turn, choose your risk vs. reward:  1 (Brevity) is fast (0.9s, +13m) but has a 35% ambiguity guess risk.  2 (Tactical) moves +26m safely with 0% ambiguity.  3 (Sitrep) unlocks a +44m shortcut, but static spikes can cause a comedic bit-flip setback (-6m)!',
                 targetId: 'message-options-section',
                 cardPos: 'top',
                 hint: 'Click NEXT to inspect the Push-To-Talk button'
@@ -1218,7 +1213,7 @@
                 id: 'ptt_explain',
                 phaseTag: 'Part 1: Screen Walkthrough',
                 title: '7. Push-To-Talk (PTT) Transmit Button',
-                body: 'Once you\'ve picked your Message Tier and watched the RF Scope for a clean signal window, press PUSH TO TALK (or Spacebar) to stream your packet across the noisy hallway channel.',
+                body: 'Once you\'ve picked your Message and watched the RF Scope for a clean signal window, press PUSH TO TALK (or Spacebar) to stream your packet across the noisy hallway channel.',
                 targetId: 'ptt-button',
                 cardPos: 'top',
                 hint: 'Click NEXT to try a live Guided Practice Round!'
@@ -1226,11 +1221,11 @@
             {
                 id: 'round_select_tier',
                 phaseTag: 'Part 2: Guided Round Walkthrough',
-                title: '8. Practice Round: Select a Message Tier',
-                body: 'Let\'s play a round! Click on the T1, T2, or T3 tabs (or swipe the cards below) to highlight the message you want to send—such as TIER 2: TACTICAL ROUTE ("LEFT CORNER DUCK BLUE LOCKER")—then click NEXT.',
+                title: '8. Practice Round: Select a Message',
+                body: 'Let\'s play a round! Click on the 1, 2, or 3 tabs (or swipe the cards below) to highlight the message you want to send—such as 2: TACTICAL ROUTE ("LEFT CORNER DUCK BLUE LOCKER")—then click NEXT.',
                 targetId: 'message-options-section',
                 cardPos: 'top',
-                hint: 'Select Tier 1, 2, or 3 below, then click NEXT →'
+                hint: 'Select 1, 2, or 3 below, then click NEXT →'
             },
             {
                 id: 'round_press_ptt',
@@ -1622,7 +1617,7 @@
                 readout.textContent = 'PRACTICE';
                 readout.className = 'font-arcade text-[10px] font-black text-cyan-200 w-[58px] text-right';
                 if (state.phase === 'playing') {
-                    pttText.textContent = `PUSH TO TALK — TRANSMIT TIER ${state.selectedTier} [PRACTICE]`;
+                    pttText.textContent = `PUSH TO TALK — TRANSMIT MSG ${state.selectedTier} [PRACTICE]`;
                 }
                 return;
             }
@@ -1637,7 +1632,7 @@
                 label.className = 'text-[9px] uppercase tracking-wider text-amber-300 font-bold';
                 readout.textContent = oStr;
                 readout.className = 'font-mono-tech text-xs sm:text-sm font-extrabold text-amber-200 w-[46px] text-right';
-                pttText.textContent = `PUSH TO TALK — TRANSMIT TIER ${state.selectedTier} [PREP ${oStr}]`;
+                pttText.textContent = `PUSH TO TALK — TRANSMIT MSG ${state.selectedTier} [PREP ${oStr}]`;
                 return;
             } else if (orientBanner) {
                 orientBanner.classList.add('hidden');
@@ -1663,7 +1658,7 @@
             }
 
             if (state.phase === 'playing') {
-                pttText.textContent = `PUSH TO TALK — TRANSMIT TIER ${state.selectedTier} [${tStr}]`;
+                pttText.textContent = `PUSH TO TALK — TRANSMIT MSG ${state.selectedTier} [${tStr}]`;
             }
         }
 
@@ -1797,7 +1792,7 @@
             document.getElementById('leo-outcome-pill').className = 'text-[10px] font-mono-tech font-extrabold px-2.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 shrink-0';
             document.getElementById('leo-transcript-text').textContent = 'Leo: "Got my phone back from the office! Waiting for your first radio call!"';
             document.getElementById('leo-action-result').textContent = 'Tutorial Mode: Follow the highlighted steps to learn the console.';
-            document.getElementById('live-packet-bar').innerHTML = '<span class="text-slate-400 italic text-[11px]">Packet Stream Ready — select Tier 1, 2, or 3 below and press Push-To-Talk...</span>';
+            document.getElementById('live-packet-bar').innerHTML = '<span class="text-slate-400 italic text-[11px]">Packet Stream Ready — select 1, 2, or 3 below and press Push-To-Talk...</span>';
 
             selectTier(2, true);
             renderTutorialStep();
@@ -1860,7 +1855,7 @@
 
             const pttBtn = document.getElementById('ptt-button');
             pttBtn.classList.add('ptt-transmitting');
-            document.getElementById('ptt-button-text').textContent = `TRANSMITTING TIER ${state.selectedTier} (LIVE DEMO)...`;
+            document.getElementById('ptt-button-text').textContent = `TRANSMITTING MSG ${state.selectedTier} (LIVE DEMO)...`;
 
             const streamBar = document.getElementById('live-packet-bar');
             streamBar.innerHTML = '';
@@ -2133,7 +2128,7 @@
 
             const pttBtn = document.getElementById('ptt-button');
             pttBtn.classList.add('ptt-transmitting');
-            document.getElementById('ptt-button-text').textContent = `TRANSMITTING TIER ${state.selectedTier} (${totalAirTime.toFixed(1)}s)...`;
+            document.getElementById('ptt-button-text').textContent = `TRANSMITTING MSG ${state.selectedTier} (${totalAirTime.toFixed(1)}s)...`;
 
             const streamBar = document.getElementById('live-packet-bar');
             streamBar.innerHTML = '';
@@ -2359,7 +2354,7 @@
                 }
             } else {
                 headEl.textContent = 'BUSTED BY THE PRINCIPAL!';
-                descEl.textContent = `The Principal caught up to Leo at ${Math.round(state.leoDist)}m! Balance Tier 2/3 speed against static spikes.`;
+                descEl.textContent = `The Principal caught up to Leo at ${Math.round(state.leoDist)}m! Balance Msg 2/3 speed against static spikes.`;
                 rankEl.textContent = '🚨 DETENTION (SIGNAL LOST)';
                 rankEl.className = 'px-2.5 py-0.5 rounded-lg font-arcade text-[11px] font-black bg-rose-500/25 text-rose-300 border border-rose-400/40';
             }
