@@ -461,6 +461,10 @@
           <button class="secondary-btn" onclick="shareScore()" id="share-btn">📤 SHARE</button>
         </div>
         <div class="overlay-copyright">© 2026 Barry Hemmerdinger. All Rights Reserved.</div>
+        <p id="game-url"></p>
+        <script>
+         document.getElementById("game-url").textContent = window.location.href;
+        </script>
       </div>
     </div>
 
@@ -816,7 +820,7 @@
       const status = gameState === 'win'
         ? `🌊 Reached the 60m Ocean Surf with ${lives}❤️ left!`
         : `🔥 Burned out ${metersLeft}m from the ocean!`;
-      const text = `☀️ Scorching Sand: Thermal Hop Lab\n${status}\n${COPYRIGHT_NOTICE}`;
+      const text = `☀️ Scorching Sand: Thermal Hop Lab\n${status}\n${COPYRIGHT_NOTICE}\n{game URL: ${window.location.href}}`;
 
       if (navigator.share) {
         navigator.share({ title: 'Scorching Sand: Thermal Hop Lab', text }).catch(() => {});
