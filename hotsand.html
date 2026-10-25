@@ -1,0 +1,1793 @@
+<!DOCTYPE html>
+<!--
+  ==============================================================================
+  Scorching Sand: Thermal Hop Lab (hotsand.html)
+  Copyright (c) 2026 Barry Hemmerdinger. All Rights Reserved.
+  
+  NOTICE: This software, source code, game mechanics, and visual design are the
+  exclusive intellectual property of Barry Hemmerdinger. Unauthorized copying,
+  reproduction, modification, distribution, or reverse engineering is strictly
+  prohibited by law.
+  ==============================================================================
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="author" content="Barry Hemmerdinger" />
+  <meta name="copyright" content="© 2026 Barry Hemmerdinger. All Rights Reserved." />
+  <title>Scorching Sand: Thermal Hop Lab</title>
+  <style>
+    :root {
+      --bg-dark: #07101e;
+      --panel-bg: rgba(16, 28, 48, 0.92);
+      --border-col: #2b426b;
+      --accent-cyan: #38bdf8;
+      --accent-amber: #f59e0b;
+      --accent-red: #ef4444;
+      --accent-green: #10b981;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at 50% 0%, #1d3557 0%, #091326 60%, #040914 100%);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      overflow: hidden;
+      touch-action: none;
+    }
+
+    #app-wrapper {
+      width: 100%;
+      max-width: 440px;
+      height: 100vh;
+      height: 100dvh;
+      max-height: 870px;
+      display: flex;
+      flex-direction: column;
+      padding: 8px 10px 12px 10px;
+      gap: 6px;
+      position: relative;
+    }
+
+    /* Top Header & Lives */
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: linear-gradient(180deg, #172a46 0%, #0f1c31 100%);
+      border: 1px solid var(--border-col);
+      border-radius: 12px;
+      padding: 6px 12px;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      flex-shrink: 0;
+    }
+
+    .brand-title {
+      font-size: 0.88rem;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+      background: linear-gradient(90deg, #fef08a, #f59e0b, #fb7185);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      text-shadow: 0 2px 8px rgba(245, 158, 11, 0.25);
+    }
+
+    .stats-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+
+    .lives-box {
+      letter-spacing: 2px;
+      font-size: 0.95rem;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+    }
+
+    .dist-badge {
+      background: linear-gradient(180deg, #0f2942 0%, #0a192f 100%);
+      border: 1px solid #0284c7;
+      padding: 3px 9px;
+      border-radius: 8px;
+      color: #7dd3fc;
+      font-variant-numeric: tabular-nums;
+      box-shadow: inset 0 0 8px rgba(56, 189, 248, 0.2);
+    }
+
+    /* Thermal Gauge & Telemetry HUD */
+    .thermal-hud {
+      background: linear-gradient(180deg, #162642 0%, #0e192d 100%);
+      border: 1px solid var(--border-col);
+      border-radius: 12px;
+      padding: 6px 11px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+      flex-shrink: 0;
+    }
+
+    .thermal-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.75rem;
+    }
+
+    .temp-readout {
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      font-size: 0.82rem;
+      transition: color 0.15s;
+    }
+
+    .telemetry-pill {
+      color: #cbd5e1;
+      font-size: 0.69rem;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      background: rgba(15, 23, 42, 0.65);
+      padding: 2px 7px;
+      border-radius: 6px;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+    }
+
+    .gauge-track {
+      width: 100%;
+      height: 11px;
+      background: #070d19;
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid #293e66;
+      position: relative;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.7);
+    }
+
+    .gauge-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #38bdf8 0%, #34d399 30%, #facc15 60%, #f97316 80%, #ef4444 100%);
+      border-radius: 999px;
+      transition: width 0.06s linear;
+      box-shadow: 0 0 10px rgba(249, 115, 22, 0.6);
+    }
+
+    /* Canvas Container */
+    .canvas-wrap {
+      flex: 1;
+      min-height: 0;
+      position: relative;
+      border-radius: 14px;
+      overflow: hidden;
+      border: 2px solid #365387;
+      background: #e9c47a;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.65);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* Overlay Screens */
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at center, rgba(13, 25, 43, 0.84) 0%, rgba(5, 11, 22, 0.94) 100%);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      text-align: center;
+      z-index: 20;
+    }
+
+    .overlay.hidden {
+      display: none;
+    }
+
+    .title-badge {
+      font-size: 0.68rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #38bdf8;
+      background: rgba(56, 189, 248, 0.14);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      padding: 3px 10px;
+      border-radius: 999px;
+      margin-bottom: 6px;
+    }
+
+    .overlay h1 {
+      font-size: 1.48rem;
+      font-weight: 900;
+      background: linear-gradient(180deg, #fffbeb 0%, #fde047 50%, #f59e0b 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 6px;
+      filter: drop-shadow(0 2px 8px rgba(245, 158, 11, 0.35));
+    }
+
+    .overlay p {
+      font-size: 0.81rem;
+      color: #e2e8f0;
+      line-height: 1.42;
+      margin-bottom: 12px;
+      max-width: 345px;
+    }
+
+    .char-select {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .char-btn {
+      background: rgba(30, 41, 59, 0.9);
+      border: 2px solid #334155;
+      color: var(--text-main);
+      padding: 8px 15px;
+      border-radius: 12px;
+      font-weight: 800;
+      font-size: 0.82rem;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .char-btn.active {
+      border-color: #fde047;
+      background: linear-gradient(180deg, #2b426b 0%, #1b2b48 100%);
+      box-shadow: 0 0 15px rgba(253, 224, 71, 0.38);
+      transform: translateY(-1px);
+    }
+
+    .legend-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+      width: 100%;
+      max-width: 356px;
+      margin-bottom: 14px;
+      text-align: left;
+      font-size: 0.72rem;
+    }
+
+    .legend-item {
+      background: rgba(15, 27, 46, 0.88);
+      border: 1px solid #2e4770;
+      padding: 7px 9px;
+      border-radius: 9px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+    }
+
+    .legend-item strong {
+      display: block;
+      color: #fef08a;
+      margin-bottom: 2px;
+      font-size: 0.74rem;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .primary-btn {
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 45%, #ea580c 100%);
+      color: #ffffff;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+      border: 1px solid rgba(255,255,255,0.3);
+      padding: 11px 28px;
+      border-radius: 999px;
+      font-size: 0.94rem;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(234, 88, 12, 0.55), inset 0 1px 0 rgba(255,255,255,0.4);
+      transition: transform 0.1s, box-shadow 0.15s;
+    }
+
+    .secondary-btn {
+      background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+      color: #38bdf8;
+      border: 1px solid #38bdf8;
+      padding: 11px 18px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+
+    .primary-btn:active, .secondary-btn:active {
+      transform: scale(0.96);
+    }
+
+    .overlay-copyright {
+      margin-top: 14px;
+      font-size: 0.68rem;
+      color: #94a3b8;
+      letter-spacing: 0.3px;
+    }
+
+    /* Ergonomic Mobile Control Bar */
+    .controls-bar {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      height: 48px;
+      flex-shrink: 0;
+    }
+
+    .ctrl-btn {
+      background: linear-gradient(180deg, #1c2f4f 0%, #111d33 100%);
+      border: 1px solid #334e7b;
+      border-radius: 11px;
+      color: var(--text-main);
+      font-size: 0.92rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1);
+      transition: transform 0.05s, background 0.1s;
+    }
+
+    .ctrl-btn:active {
+      background: #27406b;
+      transform: translateY(2px);
+    }
+
+    .ctrl-up {
+      background: linear-gradient(180deg, #0284c7 0%, #0369a1 100%);
+      border-color: #7dd3fc;
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.4), inset 0 1px 0 rgba(255,255,255,0.3);
+    }
+
+    /* Persistent Copyright Footer */
+    .copyright-footer {
+      text-align: center;
+      font-size: 0.68rem;
+      color: #64748b;
+      padding-top: 2px;
+      letter-spacing: 0.3px;
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+  <div id="app-wrapper">
+    <!-- Top Status Bar -->
+    <div class="top-bar">
+      <div class="brand-title">☀️ SCORCHING SAND</div>
+      <div class="stats-row">
+        <div class="lives-box" id="lives-display">❤️❤️❤️</div>
+        <div class="dist-badge" id="dist-display">60m to Surf</div>
+      </div>
+    </div>
+
+    <!-- Sole Thermal Gauge & Live Physics Telemetry -->
+    <div class="thermal-hud">
+      <div class="thermal-top">
+        <span class="temp-readout" id="temp-readout">Sole Temp: 33.0°C (0%)</span>
+        <span class="telemetry-pill" id="telemetry-readout">Blanket • k=0.04 W/m·K</span>
+      </div>
+      <div class="gauge-track">
+        <div class="gauge-fill" id="gauge-fill"></div>
+      </div>
+    </div>
+
+    <!-- Main Frogger Grid Canvas -->
+    <div class="canvas-wrap" id="canvas-wrap">
+      <canvas id="game-canvas" width="385" height="605"></canvas>
+
+      <!-- Start / Rules Overlay -->
+      <div class="overlay" id="start-overlay">
+        <div class="title-badge">THERMODYNAMICS ARCADE LAB</div>
+        <h1>Scorching Sand Sprint</h1>
+        <p>Sprint <strong>60m</strong> to the surf! Sun-baked sand heats bare feet to the <strong>50°C burn threshold in 3.0s</strong>. Hop across cooling oases before the scrolling shoreline pulls you under!</p>
+
+        <div class="char-select">
+          <button class="char-btn active" id="btn-man" onclick="selectChar('man')">🕶️ Beach Man</button>
+          <button class="char-btn" id="btn-woman" onclick="selectChar('woman')">🌺 Beach Woman</button>
+        </div>
+
+        <div class="legend-grid">
+          <div class="legend-item">
+            <strong>🟨 Golden Sand (+33%/s)</strong>
+            3.0s to 50°C burn! High solar flux &amp; conduction.
+          </div>
+          <div class="legend-item">
+            <strong>💧 Tide Pool (-95%/s)</strong>
+            Evaporative cooling + 2 steam-buffered hops!
+          </div>
+          <div class="legend-item">
+            <strong>🏖️ Blanket / ⛱️ Shade</strong>
+            Insulator &amp; UV shield. Towels warm if camped!
+          </div>
+          <div class="legend-item">
+            <strong>🌋 Basalt Rock / 🦀 Crab</strong>
+            Instant 72°C burn (-1❤️) or sideways crab shove!
+          </div>
+        </div>
+
+        <button class="primary-btn" onclick="startGame()">START SPRINT</button>
+        <div class="overlay-copyright">© 2026 Barry Hemmerdinger. All Rights Reserved.</div>
+      </div>
+
+      <!-- Game Over / Victory Overlay -->
+      <div class="overlay hidden" id="end-overlay">
+        <div class="title-badge" id="end-badge">THERMAL REPORT</div>
+        <h1 id="end-title">YEEEOUCH!</h1>
+        <p id="end-desc">Your feet couldn't handle the conductive heat transfer!</p>
+        <div class="btn-row">
+          <button class="primary-btn" onclick="startGame()">PLAY AGAIN</button>
+          <button class="secondary-btn" onclick="shareScore()" id="share-btn">📤 SHARE</button>
+        </div>
+        <div class="overlay-copyright">© 2026 Barry Hemmerdinger. All Rights Reserved.</div>
+      </div>
+    </div>
+
+    <!-- Mobile Touch D-Pad Controls -->
+    <div class="controls-bar">
+      <button class="ctrl-btn" onpointerdown="handleMove(-1, 0)">◀ LEFT</button>
+      <button class="ctrl-btn ctrl-up" onpointerdown="handleMove(0, 1)">▲ HOP</button>
+      <button class="ctrl-btn" onpointerdown="handleMove(0, -1)">▼ BACK</button>
+      <button class="ctrl-btn" onpointerdown="handleMove(1, 0)">RIGHT ▶</button>
+    </div>
+
+    <!-- Persistent Copyright Notice -->
+    <div class="copyright-footer">
+      © 2026 Barry Hemmerdinger. All Rights Reserved.
+    </div>
+  </div>
+
+  <script>
+    /**
+     * Scorching Sand: Thermal Hop Lab
+     * Copyright (c) 2026 Barry Hemmerdinger. All Rights Reserved.
+     */
+    const COPYRIGHT_NOTICE = "© 2026 Barry Hemmerdinger. All Rights Reserved.";
+
+    // --- GRID & PHYSICS CONSTANTS ---
+    const COLS = 7;
+    const VISIBLE_ROWS = 11;
+    const TILE_SIZE = 55; // 7 * 55 = 385px width, 11 * 55 = 605px height
+    const GOAL_ROW = 65;  // 60 meters from start row (row 5)
+
+    // Tile Types
+    const T_SAND = 0;      // Dry Yellow Sand (+33.3% heat/sec -> 3.0s burn)
+    const T_TOWEL = 1;     // Beach Blanket Insulator (-38% heat/sec, warms up if camped)
+    const T_SHADE = 2;     // Umbrella Shade (-55% heat/sec)
+    const T_POLE = 3;      // Umbrella Center Pole (Solid obstacle + 8-wedge canopy)
+    const T_WET = 4;       // Wet Sand Tide Pool (-95% heat/sec + 2 Wet Foot hops)
+    const T_BLACK = 5;     // Scorching Black Basalt Rock (Instant Burn -1 Life)
+    const T_OCEAN = 6;     // Cool Ocean Surf (Goal!)
+    const T_RESPAWN = 7;   // Emergency Flip-Flop Cooling Pad
+
+    const canvas = document.getElementById('game-canvas');
+    const ctx = canvas.getContext('2d');
+
+    let audioCtx = null;
+    let selectedAvatar = 'man';
+    let gameState = 'menu'; // 'menu', 'playing', 'screaming', 'gameover', 'win'
+    let animClock = 0;
+
+    // Game State Variables
+    let rows = [];
+    let crabs = [];
+    let particles = [];
+    let footprints = [];
+    let cameraRow = 0;      // Floating row index at bottom of screen
+    let scrollSpeed = 1.05; // Rows per second
+    let lives = 3;
+    let heat = 0;           // 0 to 100 (33.0°C to 50.0°C)
+    let wetCharges = 0;     // Steam-protected steps on hot sand
+    let screamTimer = 0;
+    let screamReason = '';
+    let sizzleTick = 0;
+    let lastTime = performance.now();
+
+    let player = {
+      col: 3,
+      row: 3,
+      hopAnim: 0,
+      facingX: 0,
+      facingY: 1
+    };
+
+    // Deterministic pseudo-random helper for rich tile details
+    function pseudoRand(seed) {
+      const x = Math.sin(seed * 12.9898 + 78.233) * 43758.5453;
+      return x - Math.floor(x);
+    }
+
+    // --- WEB AUDIO SYNTHESIZER ---
+    function initAudio() {
+      if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContext();
+      }
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    function playSound(type) {
+      if (!audioCtx) return;
+      const now = audioCtx.currentTime;
+
+      if (type === 'hop') {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(250, now);
+        osc.frequency.exponentialRampToValueAtTime(510, now + 0.075);
+        gain.gain.setValueAtTime(0.13, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.075);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 0.075);
+      } else if (type === 'steam') {
+        const bufferSize = audioCtx.sampleRate * 0.14;
+        const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+        const noise = audioCtx.createBufferSource();
+        noise.buffer = buffer;
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.value = 1900;
+        const gain = audioCtx.createGain();
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.14);
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(audioCtx.destination);
+        noise.start(now);
+      } else if (type === 'sizzle') {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(540 + heat * 4, now);
+        gain.gain.setValueAtTime(0.05, now);
+        gain.gain.linearRampToValueAtTime(0.005, now + 0.05);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 0.05);
+      } else if (type === 'scream') {
+        const osc = audioCtx.createOscillator();
+        const lfo = audioCtx.createOscillator();
+        const lfoGain = audioCtx.createGain();
+        const gain = audioCtx.createGain();
+
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(420, now);
+        osc.frequency.exponentialRampToValueAtTime(1180, now + 0.25);
+        osc.frequency.exponentialRampToValueAtTime(310, now + 0.78);
+
+        lfo.frequency.value = 28;
+        lfoGain.gain.value = 70;
+        lfo.connect(lfoGain);
+        lfoGain.connect(osc.frequency);
+
+        gain.gain.setValueAtTime(0.26, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.8);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        lfo.start(now);
+        osc.stop(now + 0.8);
+        lfo.stop(now + 0.8);
+      } else if (type === 'win') {
+        [523.25, 659.25, 783.99, 1046.5].forEach((freq, idx) => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, now + idx * 0.1);
+          gain.gain.setValueAtTime(0.18, now + idx * 0.1);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.1 + 0.3);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now + idx * 0.1);
+          osc.stop(now + idx * 0.1 + 0.3);
+        });
+      }
+    }
+
+    function selectChar(type) {
+      selectedAvatar = type;
+      document.getElementById('btn-man').classList.toggle('active', type === 'man');
+      document.getElementById('btn-woman').classList.toggle('active', type === 'woman');
+    }
+
+    // --- LEVEL GENERATION ---
+    function generateLevel() {
+      rows = [];
+      crabs = [];
+      footprints = [];
+
+      const umbrellaThemes = [
+        ['#ef4444', '#ffffff'],
+        ['#0284c7', '#fef08a'],
+        ['#f97316', '#ffffff'],
+        ['#ec4899', '#fdf2f8'],
+        ['#10b981', '#ffffff']
+      ];
+
+      for (let r = 0; r <= GOAL_ROW + 8; r++) {
+        let rowTiles = [];
+        for (let c = 0; c < COLS; c++) {
+          const seed = r * 31 + c * 17;
+          const decorRoll = pseudoRand(seed + 5);
+          rowTiles.push({
+            type: T_SAND,
+            color: (r + c) % 2 === 0 ? '#ecc983' : '#e4be74',
+            towelColor: '#ec4899',
+            towelStripe: '#fdf2f8',
+            umbrellaColors: umbrellaThemes[(r + c) % umbrellaThemes.length],
+            tileHeat: 0,
+            seed: seed,
+            decor: decorRoll < 0.08 ? 'shell' : (decorRoll < 0.13 ? 'starfish' : null)
+          });
+        }
+        rows.push(rowTiles);
+      }
+
+      // Starting Beach Blanket (Rows 2-3, Cols 2-4)
+      for (let r = 2; r <= 3; r++) {
+        for (let c = 2; c <= 4; c++) {
+          rows[r][c].type = T_TOWEL;
+          rows[r][c].towelColor = '#0284c7';
+          rows[r][c].towelStripe = '#e0f2fe';
+        }
+      }
+
+      // Ocean Surf Goal (Rows GOAL_ROW and above)
+      for (let r = GOAL_ROW; r <= GOAL_ROW + 8; r++) {
+        for (let c = 0; c < COLS; c++) {
+          rows[r][c].type = T_OCEAN;
+        }
+      }
+
+      const towelThemes = [
+        { main: '#ec4899', stripe: '#fce7f3' },
+        { main: '#8b5cf6', stripe: '#ede9fe' },
+        { main: '#10b981', stripe: '#d1fae5' },
+        { main: '#f97316', stripe: '#ffedd5' },
+        { main: '#06b6d4', stripe: '#cffafe' }
+      ];
+
+      let r = 5;
+      while (r < GOAL_ROW - 1) {
+        const oasisChoice = Math.random();
+        const startCol = Math.floor(Math.random() * (COLS - 1));
+
+        if (oasisChoice < 0.42) {
+          const theme = towelThemes[r % towelThemes.length];
+          const width = Math.min(2, COLS - startCol);
+          for (let dc = 0; dc < width; dc++) {
+            rows[r][startCol + dc].type = T_TOWEL;
+            rows[r][startCol + dc].towelColor = theme.main;
+            rows[r][startCol + dc].towelStripe = theme.stripe;
+          }
+        } else if (oasisChoice < 0.72) {
+          const poleCol = Math.max(1, Math.min(COLS - 2, startCol));
+          rows[r][poleCol].type = T_POLE;
+          rows[r][poleCol - 1].type = T_SHADE;
+          rows[r][poleCol + 1].type = T_SHADE;
+          if (r + 1 < GOAL_ROW) rows[r + 1][poleCol].type = T_SHADE;
+        } else {
+          rows[r][startCol].type = T_WET;
+          if (startCol + 1 < COLS) rows[r][startCol + 1].type = T_WET;
+        }
+
+        const blackCount = r > 30 ? 2 : 1;
+        for (let b = 0; b < blackCount; b++) {
+          const bc = Math.floor(Math.random() * COLS);
+          if (rows[r][bc].type === T_SAND) {
+            rows[r][bc].type = T_BLACK;
+          }
+        }
+
+        if (r > 8 && Math.random() < 0.3) {
+          crabs.push({
+            row: r - 1,
+            x: Math.random() * (COLS - 1),
+            dir: Math.random() < 0.5 ? 1 : -1,
+            speed: 1.2 + Math.random() * 1.15,
+            legPhase: Math.random() * 10
+          });
+        }
+
+        r += Math.random() < 0.65 ? 2 : 3;
+      }
+    }
+
+    // --- START & LIFE MANAGEMENT ---
+    function startGame() {
+      initAudio();
+      generateLevel();
+      lives = 3;
+      heat = 0;
+      wetCharges = 0;
+      cameraRow = 0;
+      player.col = 3;
+      player.row = 3;
+      player.hopAnim = 0;
+      player.facingX = 0;
+      player.facingY = 1;
+      particles = [];
+      footprints = [];
+      gameState = 'playing';
+
+      document.getElementById('start-overlay').classList.add('hidden');
+      document.getElementById('end-overlay').classList.add('hidden');
+      updateHUD();
+    }
+
+    function triggerBurnOrFall(reason) {
+      if (gameState !== 'playing') return;
+      gameState = 'screaming';
+      screamReason = reason;
+      screamTimer = 1.15;
+      lives--;
+      playSound('scream');
+
+      for (let i = 0; i < 24; i++) {
+        particles.push({
+          x: (player.col + 0.5) * TILE_SIZE,
+          y: player.row,
+          vx: (Math.random() - 0.5) * 130,
+          vy: (Math.random() - 0.2) * 3.5,
+          size: 3 + Math.random() * 4,
+          life: 0.75 + Math.random() * 0.45,
+          color: i % 3 === 0 ? '#fde047' : (i % 2 === 0 ? '#ef4444' : '#f97316')
+        });
+      }
+      updateHUD();
+    }
+
+    function respawnPlayer() {
+      if (lives <= 0) {
+        gameState = 'gameover';
+        document.getElementById('end-badge').textContent = 'THERMAL OVERLOAD';
+        document.getElementById('end-title').textContent = 'OUT OF LIVES! 🔥';
+        document.getElementById('end-desc').textContent =
+          `${screamReason} Your soles hit the 50°C thermal pain threshold with ${Math.max(0, GOAL_ROW - player.row)}m left to the surf.`;
+        document.getElementById('end-overlay').classList.remove('hidden');
+        return;
+      }
+
+      const safeRow = Math.min(GOAL_ROW - 2, Math.floor(cameraRow + 4));
+      const safeCol = 3;
+      rows[safeRow][safeCol].type = T_RESPAWN;
+      rows[safeRow][safeCol].tileHeat = 0;
+
+      player.row = safeRow;
+      player.col = safeCol;
+      player.facingX = 0;
+      player.facingY = 1;
+      heat = 0;
+      wetCharges = 0;
+      gameState = 'playing';
+      updateHUD();
+    }
+
+    function shareScore() {
+      const metersLeft = Math.max(0, GOAL_ROW - player.row);
+      const status = gameState === 'win'
+        ? `🌊 Reached the 60m Ocean Surf with ${lives}❤️ left!`
+        : `🔥 Burned out ${metersLeft}m from the ocean!`;
+      const text = `☀️ Scorching Sand: Thermal Hop Lab\n${status}\n${COPYRIGHT_NOTICE}`;
+
+      if (navigator.share) {
+        navigator.share({ title: 'Scorching Sand: Thermal Hop Lab', text }).catch(() => {});
+      } else {
+        const tempInput = document.createElement('textarea');
+        tempInput.value = text;
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        document.execCommand('copy');
+        document.body.removeChild(tempInput);
+        const btn = document.getElementById('share-btn');
+        btn.textContent = '✅ COPIED';
+        setTimeout(() => { btn.textContent = '📤 SHARE'; }, 1800);
+      }
+    }
+
+    // --- MOVEMENT & INPUT ---
+    function handleMove(dc, dr) {
+      if (gameState !== 'playing') return;
+      initAudio();
+
+      const targetCol = player.col + dc;
+      const targetRow = player.row + dr;
+
+      if (targetCol < 0 || targetCol >= COLS) return;
+      if (targetRow < Math.floor(cameraRow) || targetRow > GOAL_ROW + 2) return;
+
+      const targetTile = rows[targetRow][targetCol];
+      if (targetTile.type === T_POLE) return;
+
+      // Leave footprint on previous tile
+      footprints.push({
+        col: player.col,
+        row: player.row,
+        dx: dc,
+        dy: dr,
+        wet: wetCharges > 0 || rows[player.row][player.col].type === T_WET,
+        life: 4.0
+      });
+
+      player.col = targetCol;
+      player.row = targetRow;
+      player.hopAnim = 1.0;
+      player.facingX = dc;
+      player.facingY = dr;
+
+      if (targetTile.type === T_SAND && wetCharges > 0) {
+        wetCharges--;
+        playSound('steam');
+        for (let i = 0; i < 12; i++) {
+          particles.push({
+            x: (player.col + 0.5) * TILE_SIZE,
+            y: player.row,
+            vx: (Math.random() - 0.5) * 65,
+            vy: 0.6 + Math.random() * 1.8,
+            size: 3 + Math.random() * 3,
+            life: 0.5,
+            color: i % 2 === 0 ? '#e0f2fe' : '#7dd3fc'
+          });
+        }
+      } else {
+        playSound('hop');
+        // Small sand kick particles
+        if (targetTile.type === T_SAND) {
+          for (let i = 0; i < 5; i++) {
+            particles.push({
+              x: (player.col + 0.5) * TILE_SIZE,
+              y: player.row,
+              vx: (Math.random() - 0.5) * 45,
+              vy: (Math.random() - 0.5) * 1.2,
+              size: 2.5,
+              life: 0.3,
+              color: '#d97706'
+            });
+          }
+        }
+      }
+
+      if (targetTile.type === T_WET) {
+        wetCharges = 2;
+        playSound('steam');
+        for (let i = 0; i < 10; i++) {
+          particles.push({
+            x: (player.col + 0.5) * TILE_SIZE,
+            y: player.row,
+            vx: (Math.random() - 0.5) * 60,
+            vy: (Math.random() - 0.5) * 1.5,
+            size: 3,
+            life: 0.45,
+            color: '#38bdf8'
+          });
+        }
+      }
+
+      if (targetTile.type === T_BLACK) {
+        heat = 100;
+        triggerBurnOrFall('Landed on Scorching Black Basalt (72°C)!');
+        return;
+      }
+
+      if (targetTile.type === T_OCEAN) {
+        gameState = 'win';
+        heat = 0;
+        playSound('win');
+        updateHUD();
+        document.getElementById('end-badge').textContent = 'CONVECTIVE VICTORY';
+        document.getElementById('end-title').textContent = 'OCEAN REACHED! 🌊';
+        document.getElementById('end-desc').textContent =
+          'Ahhhhh! Rapid convective and evaporative ocean water cooling drops your sole temperature back to a refreshing 24°C!';
+        document.getElementById('end-overlay').classList.remove('hidden');
+      }
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') handleMove(0, 1);
+      else if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') handleMove(0, -1);
+      else if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') handleMove(-1, 0);
+      else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') handleMove(1, 0);
+    });
+
+    let touchStartX = 0;
+    let touchStartY = 0;
+    canvas.addEventListener('pointerdown', (e) => {
+      touchStartX = e.clientX;
+      touchStartY = e.clientY;
+    });
+
+    canvas.addEventListener('pointerup', (e) => {
+      if (gameState !== 'playing') return;
+      const dx = e.clientX - touchStartX;
+      const dy = e.clientY - touchStartY;
+      const dist = Math.hypot(dx, dy);
+
+      if (dist < 18) {
+        handleMove(0, 1);
+      } else if (Math.abs(dx) > Math.abs(dy)) {
+        handleMove(dx > 0 ? 1 : -1, 0);
+      } else {
+        handleMove(0, dy < 0 ? 1 : -1);
+      }
+    });
+
+    // --- MAIN UPDATE LOOP ---
+    function update(dt) {
+      animClock += dt;
+
+      if (player.hopAnim > 0) player.hopAnim = Math.max(0, player.hopAnim - dt * 5.8);
+
+      // Update Particles
+      for (let i = particles.length - 1; i >= 0; i--) {
+        particles[i].x += particles[i].vx * dt;
+        particles[i].y += particles[i].vy * dt;
+        particles[i].life -= dt;
+        if (particles[i].life <= 0) particles.splice(i, 1);
+      }
+
+      // Fade Footprints
+      for (let i = footprints.length - 1; i >= 0; i--) {
+        footprints[i].life -= dt;
+        if (footprints[i].life <= 0) footprints.splice(i, 1);
+      }
+
+      if (gameState === 'screaming') {
+        screamTimer -= dt;
+        if (screamTimer <= 0) respawnPlayer();
+        return;
+      }
+
+      if (gameState !== 'playing') return;
+
+      // Scroll Camera
+      cameraRow += scrollSpeed * dt;
+      if (player.row - cameraRow > VISIBLE_ROWS - 3.2) {
+        cameraRow += (player.row - (cameraRow + VISIBLE_ROWS - 3.2)) * 5 * dt;
+      }
+
+      if (player.row < cameraRow - 0.35) {
+        triggerBurnOrFall('Fell off the bottom of the scrolling beach!');
+        return;
+      }
+
+      // Update Crabs
+      for (let crab of crabs) {
+        crab.x += crab.dir * crab.speed * dt;
+        crab.legPhase += dt * 14;
+        if (crab.x <= 0.2) { crab.x = 0.2; crab.dir = 1; }
+        if (crab.x >= COLS - 1.2) { crab.x = COLS - 1.2; crab.dir = -1; }
+
+        if (crab.row === player.row && Math.abs(crab.x - player.col) < 0.55) {
+          const pushCol = Math.max(0, Math.min(COLS - 1, player.col + crab.dir));
+          if (rows[player.row][pushCol].type !== T_POLE) {
+            player.col = pushCol;
+            player.hopAnim = 0.7;
+            playSound('hop');
+            if (rows[player.row][pushCol].type === T_BLACK) {
+              heat = 100;
+              triggerBurnOrFall('A beach crab shoved you onto Scorching Black Rock!');
+              return;
+            }
+          }
+        }
+      }
+
+      // Calculate Heat Transfer on Current Tile
+      const currentTile = rows[player.row][player.col];
+      let telemetryText = '';
+
+      if (currentTile.type === T_SAND) {
+        if (wetCharges > 0) {
+          heat = Math.max(0, heat - 10 * dt);
+          telemetryText = `Wet Steam Shield (${wetCharges}) • q"=0.0 kW/m²`;
+        } else {
+          heat += 33.33 * dt;
+          telemetryText = `Dry Sand • k=0.25 W/m·K • q"=+1.8 kW/m²`;
+        }
+      } else if (currentTile.type === T_TOWEL || currentTile.type === T_RESPAWN) {
+        if (currentTile.type === T_TOWEL) currentTile.tileHeat += dt;
+        if (currentTile.tileHeat < 2.6) {
+          heat = Math.max(0, heat - 38 * dt);
+          telemetryText = `Blanket Insulator • k=0.04 W/m·K (Cooling)`;
+        } else {
+          heat += 12 * dt;
+          telemetryText = `Towel Warmed Up! Step to a fresh square!`;
+        }
+      } else if (currentTile.type === T_SHADE) {
+        heat = Math.max(0, heat - 55 * dt);
+        telemetryText = `Umbrella Shade • Solar Flux Blocked`;
+      } else if (currentTile.type === T_WET) {
+        heat = Math.max(0, heat - 95 * dt);
+        telemetryText = `Wet Sand • Evaporative Cooling (-95%/s)`;
+      }
+
+      if (heat > 65) {
+        sizzleTick += dt;
+        if (sizzleTick > 0.22) {
+          sizzleTick = 0;
+          playSound('sizzle');
+        }
+      }
+
+      if (heat >= 100) {
+        heat = 100;
+        triggerBurnOrFall('3-Second Dry Sand Burn (50.0°C Reached)!');
+        return;
+      }
+
+      updateHUD(telemetryText);
+    }
+
+    function updateHUD(telemetryText) {
+      document.getElementById('lives-display').textContent =
+        '❤️'.repeat(Math.max(0, lives)) + '🖤'.repeat(Math.max(0, 3 - lives));
+
+      const metersLeft = Math.max(0, GOAL_ROW - player.row);
+      document.getElementById('dist-display').textContent = `${metersLeft}m to Surf`;
+
+      const tempC = (33.0 + (heat / 100) * 17.0).toFixed(1);
+      const tempEl = document.getElementById('temp-readout');
+      tempEl.textContent = `Sole Temp: ${tempC}°C (${Math.round(heat)}%)`;
+      tempEl.style.color = heat > 75 ? '#ef4444' : heat > 40 ? '#fde047' : '#38bdf8';
+
+      document.getElementById('gauge-fill').style.width = `${Math.min(100, heat)}%`;
+      if (telemetryText) {
+        document.getElementById('telemetry-readout').textContent = telemetryText;
+      }
+    }
+
+    // --- ILLUSTRATED 2.5D RENDERING ---
+    function rowToScreenY(r) {
+      return canvas.height - (r - cameraRow + 1) * TILE_SIZE;
+    }
+
+    function drawSandTile(x, y, tile, r, c) {
+      // Warm Golden Sand Gradient
+      ctx.fillStyle = tile.color;
+      ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+
+      // Subtle wind-swept dune ripple arc
+      ctx.strokeStyle = 'rgba(180, 125, 50, 0.22)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(x + 6, y + 38);
+      ctx.quadraticCurveTo(x + TILE_SIZE * 0.5, y + 32, x + TILE_SIZE - 6, y + 40);
+      ctx.stroke();
+
+      // Pre-seeded sand grains
+      for (let i = 0; i < 4; i++) {
+        const gx = x + 6 + pseudoRand(tile.seed + i * 3) * (TILE_SIZE - 12);
+        const gy = y + 6 + pseudoRand(tile.seed + i * 7 + 1) * (TILE_SIZE - 12);
+        ctx.fillStyle = i % 2 === 0 ? 'rgba(146, 94, 32, 0.35)' : 'rgba(255, 245, 210, 0.45)';
+        ctx.fillRect(gx, gy, 2, 2);
+      }
+
+      // Decorative Seashell or Starfish
+      if (tile.decor === 'shell' && tile.type === T_SAND) {
+        const sx = x + 16 + pseudoRand(tile.seed + 9) * 22;
+        const sy = y + 16 + pseudoRand(tile.seed + 11) * 22;
+        ctx.fillStyle = '#fff1f2';
+        ctx.beginPath();
+        ctx.arc(sx, sy, 4.5, Math.PI, 0);
+        ctx.lineTo(sx, sy + 3);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#f43f5e';
+        ctx.lineWidth = 0.8;
+        ctx.stroke();
+      } else if (tile.decor === 'starfish' && tile.type === T_SAND) {
+        const sx = x + 18 + pseudoRand(tile.seed + 13) * 20;
+        const sy = y + 18 + pseudoRand(tile.seed + 17) * 20;
+        ctx.strokeStyle = '#fb7185';
+        ctx.lineWidth = 2;
+        for (let a = 0; a < 5; a++) {
+          const ang = (a * Math.PI * 2) / 5 - Math.PI / 2;
+          ctx.beginPath();
+          ctx.moveTo(sx, sy);
+          ctx.lineTo(sx + Math.cos(ang) * 5, sy + Math.sin(ang) * 5);
+          ctx.stroke();
+        }
+      }
+
+      // Rising Wavy Heat Shimmer on Dry Sand
+      if (tile.type === T_SAND && (r + c) % 2 === 0) {
+        const shimmerOffset = (animClock * 18 + r * 7 + c * 13) % 24;
+        const alpha = Math.sin((shimmerOffset / 24) * Math.PI) * 0.28;
+        ctx.strokeStyle = `rgba(254, 240, 138, ${alpha})`;
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        const sy = y + 36 - shimmerOffset;
+        ctx.moveTo(x + 14, sy);
+        ctx.bezierCurveTo(x + 22, sy - 4, x + 32, sy + 4, x + 41, sy);
+        ctx.stroke();
+      }
+    }
+
+    function drawPlushTowel(x, y, tile) {
+      const pad = 4;
+      const w = TILE_SIZE - pad * 2;
+      const h = TILE_SIZE - pad * 2;
+
+      // Soft Drop Shadow
+      ctx.fillStyle = 'rgba(69, 42, 14, 0.32)';
+      ctx.beginPath();
+      ctx.roundRect(x + pad + 2, y + pad + 3, w, h, 7);
+      ctx.fill();
+
+      // White Fringe Tassels on Left & Right
+      ctx.strokeStyle = '#f8fafc';
+      ctx.lineWidth = 1.6;
+      for (let ty = y + 8; ty <= y + TILE_SIZE - 8; ty += 5) {
+        ctx.beginPath();
+        ctx.moveTo(x + 1, ty);
+        ctx.lineTo(x + 5, ty);
+        ctx.moveTo(x + TILE_SIZE - 5, ty);
+        ctx.lineTo(x + TILE_SIZE - 1, ty);
+        ctx.stroke();
+      }
+
+      // Base Blanket Body
+      ctx.save();
+      ctx.beginPath();
+      ctx.roundRect(x + pad, y + pad, w, h, 6);
+      ctx.clip();
+
+      ctx.fillStyle = tile.towelColor;
+      ctx.fillRect(x + pad, y + pad, w, h);
+
+      // Cabana Stripes
+      ctx.fillStyle = tile.towelStripe;
+      const stripeW = w / 5;
+      for (let i = 1; i < 5; i += 2) {
+        ctx.fillRect(x + pad + i * stripeW, y + pad, stripeW, h);
+      }
+
+      // Progressive Thermal Glow Overlay as Towel Warms Up (0 -> 2.6s)
+      if (tile.tileHeat > 0.2) {
+        const warmRatio = Math.min(1, tile.tileHeat / 2.6);
+        ctx.fillStyle = `rgba(239, 68, 68, ${warmRatio * 0.78})`;
+        ctx.fillRect(x + pad, y + pad, w, h);
+
+        if (tile.tileHeat >= 2.0) {
+          ctx.strokeStyle = '#fef08a';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(x + pad + 2, y + pad + 2, w - 4, h - 4);
+        }
+      }
+
+      ctx.restore();
+
+      // Stitched Inner Border
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.roundRect(x + pad + 3, y + pad + 3, w - 6, h - 6, 4);
+      ctx.stroke();
+    }
+
+    function drawRespawnPad(x, y) {
+      // Cooling Gel Pad + Mini Flip-Flops
+      ctx.fillStyle = 'rgba(2, 132, 199, 0.35)';
+      ctx.beginPath();
+      ctx.roundRect(x + 3, y + 3, TILE_SIZE - 6, TILE_SIZE - 6, 10);
+      ctx.fill();
+
+      const grad = ctx.createLinearGradient(x, y, x + TILE_SIZE, y + TILE_SIZE);
+      grad.addColorStop(0, '#22d3ee');
+      grad.addColorStop(1, '#0284c7');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.roundRect(x + 5, y + 5, TILE_SIZE - 10, TILE_SIZE - 10, 9);
+      ctx.fill();
+
+      ctx.strokeStyle = '#e0f2fe';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Draw pair of tiny beach flip-flops
+      [-8, 8].forEach((offsetX) => {
+        const fx = x + TILE_SIZE / 2 + offsetX;
+        const fy = y + TILE_SIZE / 2;
+        ctx.fillStyle = '#fde047';
+        ctx.beginPath();
+        ctx.ellipse(fx, fy, 5, 11, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.moveTo(fx - 4, fy + 1);
+        ctx.lineTo(fx, fy - 5);
+        ctx.lineTo(fx + 4, fy + 1);
+        ctx.stroke();
+      });
+    }
+
+    function drawShadeTile(x, y) {
+      // Cool UV-blocked shadow tint
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.44)';
+      ctx.beginPath();
+      ctx.roundRect(x + 1, y + 1, TILE_SIZE - 2, TILE_SIZE - 2, 8);
+      ctx.fill();
+
+      // Subtle cool air sparkle
+      const pulse = 0.25 + 0.15 * Math.sin(animClock * 4 + x);
+      ctx.strokeStyle = `rgba(125, 211, 252, ${pulse})`;
+      ctx.lineWidth = 1.2;
+      ctx.strokeRect(x + 4, y + 4, TILE_SIZE - 8, TILE_SIZE - 8);
+    }
+
+    function drawTidePool(x, y, tile) {
+      const cx = x + TILE_SIZE / 2;
+      const cy = y + TILE_SIZE / 2;
+
+      // Dark Wet Sand Outer Rim
+      ctx.fillStyle = '#b48446';
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, 25, 21, 0.15, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Deep-to-Bright Turquoise Water Gradient
+      const waterGrad = ctx.createRadialGradient(cx - 4, cy - 4, 3, cx, cy, 22);
+      waterGrad.addColorStop(0, '#67e8f9');
+      waterGrad.addColorStop(0.55, '#0ea5e9');
+      waterGrad.addColorStop(1, '#0369a1');
+      ctx.fillStyle = waterGrad;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, 21, 17, 0.15, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Animated Expanding Concentric Ripple Ring
+      const rippleProg = (animClock * 0.9 + pseudoRand(tile.seed)) % 1;
+      ctx.strokeStyle = `rgba(224, 242, 254, ${(1 - rippleProg) * 0.75})`;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, 5 + rippleProg * 14, 4 + rippleProg * 11, 0.15, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Specular Sun Glints
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+      ctx.beginPath();
+      ctx.ellipse(cx - 7, cy - 5, 5, 2.2, -0.3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function drawBasaltRock(x, y, tile) {
+      const cx = x + TILE_SIZE / 2;
+      const cy = y + TILE_SIZE / 2;
+
+      // Scorched Black Volcanic Sand Bed
+      ctx.fillStyle = '#27201c';
+      ctx.beginPath();
+      ctx.arc(cx, cy, 24, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Outer Heat Glow
+      const glow = 0.45 + 0.35 * Math.sin(animClock * 6 + tile.seed);
+      ctx.fillStyle = `rgba(239, 68, 68, ${glow * 0.45})`;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 25, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Multi-faceted Jagged Basalt Polygon
+      ctx.fillStyle = '#18181b';
+      ctx.beginPath();
+      ctx.moveTo(cx - 18, cy - 8);
+      ctx.lineTo(cx - 8, cy - 20);
+      ctx.lineTo(cx + 10, cy - 18);
+      ctx.lineTo(cx + 20, cy - 4);
+      ctx.lineTo(cx + 15, cy + 16);
+      ctx.lineTo(cx - 4, cy + 20);
+      ctx.lineTo(cx - 19, cy + 10);
+      ctx.closePath();
+      ctx.fill();
+
+      // Rock Top Facet Highlight
+      ctx.fillStyle = '#27272a';
+      ctx.beginPath();
+      ctx.moveTo(cx - 12, cy - 6);
+      ctx.lineTo(cx - 5, cy - 14);
+      ctx.lineTo(cx + 8, cy - 12);
+      ctx.lineTo(cx + 12, cy + 2);
+      ctx.lineTo(cx - 2, cy + 8);
+      ctx.closePath();
+      ctx.fill();
+
+      // Pulsing Magma-Red Thermal Fissures
+      ctx.strokeStyle = glow > 0.6 ? '#fde047' : '#ef4444';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(cx - 9, cy - 6);
+      ctx.lineTo(cx, cy + 1);
+      ctx.lineTo(cx + 9, cy - 4);
+      ctx.moveTo(cx, cy + 1);
+      ctx.lineTo(cx - 3, cy + 11);
+      ctx.stroke();
+    }
+
+    function drawOceanTile(x, y, r, c) {
+      // Multi-band Turquoise & Deep Azure Water
+      const waterGrad = ctx.createLinearGradient(x, y, x, y + TILE_SIZE);
+      waterGrad.addColorStop(0, '#0284c7');
+      waterGrad.addColorStop(0.6, '#0ea5e9');
+      waterGrad.addColorStop(1, '#38bdf8');
+      ctx.fillStyle = waterGrad;
+      ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+
+      // Animated Rolling Whitewater Surf Foam on the Shoreline Row
+      const waveShift = Math.sin(animClock * 3.2 + c * 0.9) * 5;
+      if (r === GOAL_ROW) {
+        ctx.fillStyle = 'rgba(240, 249, 255, 0.9)';
+        ctx.beginPath();
+        ctx.moveTo(x, y + TILE_SIZE - 14 + waveShift);
+        ctx.quadraticCurveTo(
+          x + TILE_SIZE / 2,
+          y + TILE_SIZE - 6 - waveShift,
+          x + TILE_SIZE,
+          y + TILE_SIZE - 14 + waveShift
+        );
+        ctx.lineTo(x + TILE_SIZE, y + TILE_SIZE);
+        ctx.lineTo(x, y + TILE_SIZE);
+        ctx.closePath();
+        ctx.fill();
+      } else {
+        // Gentle Secondary Wave Crest
+        ctx.strokeStyle = 'rgba(224, 242, 254, 0.45)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(x + 6, y + 26 + waveShift);
+        ctx.quadraticCurveTo(x + TILE_SIZE / 2, y + 18 + waveShift, x + TILE_SIZE - 6, y + 26 + waveShift);
+        ctx.stroke();
+      }
+    }
+
+    function drawUmbrellaCanopy(x, y, tile) {
+      const swayX = Math.sin(animClock * 2.2 + tile.seed) * 2.5;
+      const cx = x + TILE_SIZE / 2 + swayX;
+      const cy = y + TILE_SIZE / 2;
+      const radius = TILE_SIZE * 0.56;
+
+      // Cast Drop Shadow Under Canopy
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.42)';
+      ctx.beginPath();
+      ctx.arc(cx - 5, cy + 6, radius, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 8-Wedge Scalloped Beach Umbrella
+      const wedges = 8;
+      const rot = Math.sin(animClock * 0.8 + tile.seed) * 0.08;
+      for (let i = 0; i < wedges; i++) {
+        const a1 = rot + (i * Math.PI * 2) / wedges;
+        const a2 = rot + ((i + 1) * Math.PI * 2) / wedges;
+
+        ctx.fillStyle = i % 2 === 0 ? tile.umbrellaColors[0] : tile.umbrellaColors[1];
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.arc(cx, cy, radius, a1, a2);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.strokeStyle = 'rgba(15, 23, 42, 0.2)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+
+      // Sunlight Specular Highlight on Upper-Right
+      const sunGrad = ctx.createRadialGradient(cx + 8, cy - 8, 2, cx, cy, radius);
+      sunGrad.addColorStop(0, 'rgba(255, 255, 255, 0.38)');
+      sunGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+      ctx.fillStyle = sunGrad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Center Wooden/Silver Finial Knob
+      ctx.fillStyle = '#f8fafc';
+      ctx.beginPath();
+      ctx.arc(cx, cy, 4.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#475569';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+
+    function drawFootprints(startRow, endRow) {
+      for (let fp of footprints) {
+        if (fp.row < startRow || fp.row > endRow) continue;
+        const cx = (fp.col + 0.5) * TILE_SIZE;
+        const cy = rowToScreenY(fp.row) + TILE_SIZE / 2;
+        const alpha = Math.min(1, fp.life / 4.0) * 0.65;
+
+        ctx.save();
+        ctx.translate(cx, cy);
+        const angle = Math.atan2(fp.dx, fp.dy);
+        ctx.rotate(angle);
+
+        ctx.fillStyle = fp.wet
+          ? `rgba(56, 189, 248, ${alpha})`
+          : `rgba(146, 94, 32, ${alpha})`;
+
+        // Left & Right Bare Foot Indents
+        ctx.beginPath();
+        ctx.ellipse(-6, -3, 3.2, 6.5, -0.1, 0, Math.PI * 2);
+        ctx.ellipse(6, 3, 3.2, 6.5, 0.1, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    function drawCrab(crab) {
+      const cx = (crab.x + 0.5) * TILE_SIZE;
+      const cy = rowToScreenY(crab.row) + TILE_SIZE / 2;
+      const wiggle = Math.sin(crab.legPhase) * 3;
+
+      ctx.save();
+      ctx.translate(cx, cy);
+
+      // Shadow
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.22)';
+      ctx.beginPath();
+      ctx.ellipse(0, 3, 14, 9, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 6 Wiggling Legs (3 per side)
+      ctx.strokeStyle = '#dc2626';
+      ctx.lineWidth = 2.2;
+      [-1, 1].forEach((side) => {
+        for (let l = -1; l <= 1; l++) {
+          ctx.beginPath();
+          ctx.moveTo(side * 8, l * 4);
+          ctx.lineTo(side * 16, l * 6 + (l % 2 === 0 ? wiggle : -wiggle));
+          ctx.stroke();
+        }
+      });
+
+      // Snapping Front Pincers
+      [-1, 1].forEach((side) => {
+        ctx.beginPath();
+        ctx.moveTo(side * 7, -5);
+        ctx.lineTo(side * 13, -12 + wiggle * 0.5);
+        ctx.stroke();
+        ctx.fillStyle = '#ef4444';
+        ctx.beginPath();
+        ctx.arc(side * 13, -13 + wiggle * 0.5, 3.8, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // Red Carapace Shell
+      ctx.fillStyle = '#ef4444';
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 11, 8, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#991b1b';
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+
+      // Eyes on Stalks
+      [-4, 4].forEach((ex) => {
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(ex, -7, 2.6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.arc(ex + crab.dir * 0.7, -7, 1.3, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      ctx.restore();
+    }
+
+    function drawPlayerCharacter() {
+      const baseX = (player.col + 0.5) * TILE_SIZE;
+      const baseY = rowToScreenY(player.row) + TILE_SIZE / 2;
+      const hopHeight = Math.sin(player.hopAnim * Math.PI) * 13;
+      const screamBounce = gameState === 'screaming' ? Math.abs(Math.sin(animClock * 26)) * 14 : 0;
+      const px = baseX;
+      const py = baseY - hopHeight - screamBounce;
+
+      // Dynamic Ground Shadow (shrinks as character jumps higher)
+      const shadowScale = 1 - ((hopHeight + screamBounce) / 28) * 0.4;
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.35)';
+      ctx.beginPath();
+      ctx.ellipse(baseX, baseY + 12, 14 * shadowScale, 7 * shadowScale, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Pulsing Red Thermal Aura Under Feet
+      if (heat > 12) {
+        const pulseRadius = 17 + Math.sin(animClock * 12) * 2.5;
+        const heatGrad = ctx.createRadialGradient(px, py + 10, 2, px, py + 10, pulseRadius);
+        heatGrad.addColorStop(0, `rgba(239, 68, 68, ${(heat / 100) * 0.85})`);
+        heatGrad.addColorStop(1, 'rgba(239, 68, 68, 0)');
+        ctx.fillStyle = heatGrad;
+        ctx.beginPath();
+        ctx.arc(px, py + 10, pulseRadius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Wet Steam-Shield Cyan Ring
+      if (wetCharges > 0) {
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 2.8;
+        ctx.setLineDash([5, 4]);
+        ctx.beginPath();
+        ctx.arc(px, py + 4, 21, animClock * 4, animClock * 4 + Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      // Bare Feet (Tint red as sole temperature rises!)
+      const stride = Math.sin(player.hopAnim * Math.PI * 2) * 5;
+      const footColor = heat > 65 ? '#ef4444' : '#f5cba7';
+      ctx.fillStyle = footColor;
+      ctx.beginPath();
+      ctx.ellipse(px - 6, py + 12 + stride, 4, 5.5, 0, 0, Math.PI * 2);
+      ctx.ellipse(px + 6, py + 12 - stride, 4, 5.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Swinging Arms (Flail upwards if screaming!)
+      const armFlail = gameState === 'screaming' ? -10 : stride * 0.8;
+      ctx.strokeStyle = '#f5cba7';
+      ctx.lineWidth = 4.5;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(px - 11, py - 4);
+      ctx.lineTo(px - 16, py + 5 + armFlail);
+      ctx.moveTo(px + 11, py - 4);
+      ctx.lineTo(px + 16, py + 5 - armFlail);
+      ctx.stroke();
+
+      if (selectedAvatar === 'man') {
+        // Beach Man: Muscular Torso & Striped Boardshorts
+        ctx.fillStyle = '#f5cba7';
+        ctx.beginPath();
+        ctx.roundRect(px - 12, py - 9, 24, 13, 6);
+        ctx.fill();
+
+        // Surf Trunks
+        ctx.fillStyle = '#0284c7';
+        ctx.beginPath();
+        ctx.roundRect(px - 11, py + 2, 22, 10, 4);
+        ctx.fill();
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillRect(px - 11, py + 5, 22, 3);
+
+        // Head
+        ctx.fillStyle = '#f5cba7';
+        ctx.beginPath();
+        ctx.arc(px, py - 14, 10.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Spiked Sun-Bleached Brown Hair
+        ctx.fillStyle = '#78350f';
+        ctx.beginPath();
+        ctx.arc(px, py - 16, 10.5, Math.PI * 0.95, Math.PI * 2.05);
+        ctx.fill();
+
+        // Cool Aviator Sunglasses
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(px - 7, py - 15, 6, 4);
+        ctx.fillRect(px + 1, py - 15, 6, 4);
+        ctx.strokeStyle = '#fde047';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(px - 7, py - 15, 6, 4);
+        ctx.strokeRect(px + 1, py - 15, 6, 4);
+      } else {
+        // Beach Woman: Coral Two-Piece Swimsuit, Sun Visor & Flowing Ponytail
+        // Flowing Ponytail
+        const hairSway = Math.sin(animClock * 6) * 2.5;
+        ctx.fillStyle = '#92400e';
+        ctx.beginPath();
+        ctx.ellipse(px - 9 + hairSway, py - 15, 5, 9, -0.4, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Shoulders & Swimsuit
+        ctx.fillStyle = '#f5cba7';
+        ctx.beginPath();
+        ctx.roundRect(px - 10, py - 8, 20, 18, 6);
+        ctx.fill();
+
+        // Vibrant Coral/Pink Swimwear
+        ctx.fillStyle = '#ec4899';
+        ctx.beginPath();
+        ctx.roundRect(px - 10, py - 5, 20, 14, 5);
+        ctx.fill();
+        ctx.fillStyle = '#fbcfe8';
+        ctx.fillRect(px - 10, py + 1, 20, 2.5);
+
+        // Head
+        ctx.fillStyle = '#f5cba7';
+        ctx.beginPath();
+        ctx.arc(px, py - 14, 10, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Crown Hair + White & Pink Sun Visor Brim
+        ctx.fillStyle = '#b45309';
+        ctx.beginPath();
+        ctx.arc(px, py - 16, 9.8, Math.PI, 0);
+        ctx.fill();
+
+        ctx.fillStyle = '#fdf2f8';
+        ctx.beginPath();
+        ctx.ellipse(px, py - 18, 11, 4, 0, Math.PI, 0);
+        ctx.fill();
+
+        // Sunglasses
+        ctx.fillStyle = '#831843';
+        ctx.fillRect(px - 7, py - 15, 6, 4);
+        ctx.fillRect(px + 1, py - 15, 6, 4);
+      }
+
+      // Overhead Mini Sole Thermal Bar
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.78)';
+      ctx.beginPath();
+      ctx.roundRect(px - 19, py - 33, 38, 7, 3);
+      ctx.fill();
+
+      ctx.fillStyle = heat > 75 ? '#ef4444' : heat > 40 ? '#facc15' : '#38bdf8';
+      ctx.beginPath();
+      ctx.roundRect(px - 17.5, py - 31.5, Math.max(2, 35 * (heat / 100)), 4, 2);
+      ctx.fill();
+
+      // Comic Scream Callout Badge when Burning
+      if (gameState === 'screaming') {
+        ctx.save();
+        ctx.translate(px, py - 46);
+        ctx.fillStyle = '#fef08a';
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.roundRect(-64, -14, 128, 24, 8);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#dc2626';
+        ctx.font = '900 13px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('🔥 YEEEOUCH! 🔥', 0, -2);
+        ctx.restore();
+      }
+    }
+
+    function draw() {
+      if (!rows.length) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const startRow = Math.max(0, Math.floor(cameraRow) - 1);
+      const endRow = Math.min(rows.length - 1, Math.ceil(cameraRow + VISIBLE_ROWS + 1));
+
+      // PASS 1: Base Sand, Towels, Shade, Tide Pools, Basalt Rocks & Ocean Surf
+      for (let r = startRow; r <= endRow; r++) {
+        const y = rowToScreenY(r);
+        for (let c = 0; c < COLS; c++) {
+          const x = c * TILE_SIZE;
+          const tile = rows[r][c];
+
+          if (tile.type === T_OCEAN) {
+            drawOceanTile(x, y, r, c);
+            continue;
+          }
+
+          drawSandTile(x, y, tile, r, c);
+
+          if (tile.type === T_TOWEL) {
+            drawPlushTowel(x, y, tile);
+          } else if (tile.type === T_RESPAWN) {
+            drawRespawnPad(x, y);
+          } else if (tile.type === T_SHADE || tile.type === T_POLE) {
+            drawShadeTile(x, y);
+          } else if (tile.type === T_WET) {
+            drawTidePool(x, y, tile);
+          } else if (tile.type === T_BLACK) {
+            drawBasaltRock(x, y, tile);
+          }
+        }
+      }
+
+      // PASS 2: Persistent Footprints Trail
+      drawFootprints(startRow, endRow);
+
+      // PASS 3: Sideways Scuttling Beach Crabs
+      for (let crab of crabs) {
+        if (crab.row >= startRow && crab.row <= endRow) {
+          drawCrab(crab);
+        }
+      }
+
+      // PASS 4: Player Character
+      drawPlayerCharacter();
+
+      // PASS 5: Foreground 3D Scalloped Beach Umbrella Canopies
+      for (let r = startRow; r <= endRow; r++) {
+        const y = rowToScreenY(r);
+        for (let c = 0; c < COLS; c++) {
+          const tile = rows[r][c];
+          if (tile.type === T_POLE) {
+            drawUmbrellaCanopy(c * TILE_SIZE, y, tile);
+          }
+        }
+      }
+
+      // PASS 6: Steam, Sand & Fire Particles
+      for (let p of particles) {
+        const sy = rowToScreenY(p.y) + TILE_SIZE / 2;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, sy, p.size || 3.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // PASS 7: Bottom Scrolling Heat Danger Vignette
+      const dangerGrad = ctx.createLinearGradient(0, canvas.height - 28, 0, canvas.height);
+      dangerGrad.addColorStop(0, 'rgba(239, 68, 68, 0)');
+      dangerGrad.addColorStop(1, 'rgba(239, 68, 68, 0.72)');
+      ctx.fillStyle = dangerGrad;
+      ctx.fillRect(0, canvas.height - 28, canvas.width, 28);
+    }
+
+    function gameLoop(timestamp) {
+      const dt = Math.min(0.05, (timestamp - lastTime) / 1000);
+      lastTime = timestamp;
+
+      update(dt);
+      draw();
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    // Initialize level & start continuous ambient + gameplay loop immediately
+    generateLevel();
+    updateHUD();
+    draw();
+    requestAnimationFrame(gameLoop);
+  </script>
+</body>
+</html>
