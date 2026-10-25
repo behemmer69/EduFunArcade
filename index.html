@@ -380,7 +380,104 @@
           <a class="launch-btn" href="signal.html">▶ Launch Signal Ops</a>
         </div>
       </article>
+<!-- CARD: Scorching Sand: Thermal Hop Lab -->
+<article class="game-card" style="--accent: #f97316; --accent-glow: rgba(249, 115, 22, 0.30); --btn-grad: linear-gradient(135deg, #ea580c, #0284c7);">
+  <div class="card-art">
+    <span class="mode-pill">Heat Transfer &amp; Thermodynamics</span>
+    <svg viewBox="0 0 320 180" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="sandGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#1e293b"/>
+          <stop offset="22%" stop-color="#0284c7"/>
+          <stop offset="28%" stop-color="#38bdf8"/>
+          <stop offset="32%" stop-color="#e8c37d"/>
+          <stop offset="100%" stop-color="#c28e42"/>
+        </linearGradient>
+        <linearGradient id="heatBar" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="#38bdf8"/>
+          <stop offset="55%" stop-color="#facc15"/>
+          <stop offset="100%" stop-color="#ef4444"/>
+        </linearGradient>
+      </defs>
 
+      <!-- Background Surf & Scorching Sand -->
+      <rect width="320" height="180" fill="url(#sandGrad)"/>
+
+      <!-- Ocean Foam Line -->
+      <path d="M0 54 Q 40 60, 80 54 T 160 55 T 240 53 T 320 56 L 320 48 L 0 48 Z" fill="#e0f2fe" opacity="0.85"/>
+
+      <!-- Perspective Frogger Tile Grid -->
+      <g stroke="rgba(120, 53, 15, 0.22)" stroke-width="1">
+        <line x1="0" y1="80" x2="320" y2="80"/>
+        <line x1="0" y1="108" x2="320" y2="108"/>
+        <line x1="0" y1="138" x2="320" y2="138"/>
+        <line x1="0" y1="168" x2="320" y2="168"/>
+        <line x1="55" y1="56" x2="30" y2="180"/>
+        <line x1="110" y1="56" x2="95" y2="180"/>
+        <line x1="160" y1="56" x2="160" y2="180"/>
+        <line x1="210" y1="56" x2="225" y2="180"/>
+        <line x1="265" y1="56" x2="290" y2="180"/>
+      </g>
+
+      <!-- Cabana Beach Towel Oasis (Insulator) -->
+      <g transform="translate(36, 112)">
+        <rect x="2" y="3" width="54" height="24" rx="3" fill="rgba(0,0,0,0.28)"/>
+        <rect width="54" height="24" rx="3" fill="#ec4899" stroke="#fbcfe8" stroke-width="1.5"/>
+        <rect x="9" y="0" width="9" height="24" fill="#fdf2f8" opacity="0.75"/>
+        <rect x="27" y="0" width="9" height="24" fill="#fdf2f8" opacity="0.75"/>
+        <rect x="45" y="0" width="6" height="24" fill="#fdf2f8" opacity="0.75"/>
+      </g>
+
+      <!-- Evaporative Tide Pool (Wet Patch) -->
+      <g transform="translate(198, 83)">
+        <rect width="52" height="22" rx="10" fill="#0284c7" stroke="#7dd3fc" stroke-width="1.5"/>
+        <ellipse cx="26" cy="11" rx="16" ry="5" fill="none" stroke="#e0f2fe" stroke-width="1.2" opacity="0.8"/>
+      </g>
+
+      <!-- Scorching Black Basalt Rock -->
+      <g transform="translate(112, 82)">
+        <rect width="38" height="23" rx="6" fill="#18181b" stroke="#ef4444" stroke-width="1.5"/>
+        <path d="M8 7 L18 14 L14 19 M22 6 L29 15" stroke="#f97316" stroke-width="1.5" fill="none"/>
+      </g>
+
+      <!-- Beach Umbrella & Cool Radiation Shadow -->
+      <g transform="translate(235, 134)">
+        <ellipse cx="-8" cy="6" rx="28" ry="14" fill="rgba(15, 23, 42, 0.45)"/>
+        <circle cx="0" cy="0" r="20" fill="#ef4444" stroke="#ffffff" stroke-width="2"/>
+        <path d="M0 -20 L-7 20 M0 -20 L7 20 M-20 0 L20 0" stroke="#ffffff" stroke-width="2" opacity="0.85"/>
+        <circle cx="0" cy="0" r="3" fill="#fde047"/>
+      </g>
+
+      <!-- Sizzling Player & Thermal Ring -->
+      <g transform="translate(160, 148)">
+        <ellipse cx="0" cy="6" rx="16" ry="8" fill="rgba(239, 68, 68, 0.45)" stroke="#ef4444" stroke-width="1.5"/>
+        <rect x="-8" y="-10" width="16" height="14" rx="4" fill="#0284c7"/>
+        <circle cx="0" cy="-14" r="7" fill="#fde68a"/>
+        <!-- Overhead Sole Thermal Bar -->
+        <rect x="-18" y="-27" width="36" height="5" rx="2" fill="#090f1a" stroke="#334155" stroke-width="1"/>
+        <rect x="-17" y="-26" width="28" height="3" rx="1" fill="url(#heatBar)"/>
+      </g>
+
+      <!-- Rising Heat Shimmer Waves -->
+      <g stroke="rgba(239, 68, 68, 0.55)" stroke-width="1.5" fill="none">
+        <path d="M24 102 Q 21 95, 25 88 T 23 74"/>
+        <path d="M145 132 Q 142 125, 146 118 T 144 104"/>
+        <path d="M292 118 Q 289 111, 293 104 T 291 90"/>
+      </g>
+
+      <!-- Telemetry Badge -->
+      <rect x="8" y="148" width="118" height="24" rx="5" fill="rgba(9, 15, 26, 0.82)" stroke="rgba(249, 115, 22, 0.5)" stroke-width="1"/>
+      <text x="14" y="164" fill="#fde047" font-family="monospace" font-size="10" font-weight="bold">47.2°C • +1.8kW/m²</text>
+    </svg>
+  </div>
+  <div class="card-body">
+    <div class="card-info">
+      <h2>Scorching Sand: Thermal Hop Lab</h2>
+      <p>Sprint 60m to the surf before conductive sand flux burns your feet in 3.0s! Hop across insulating towels, umbrella shade, and evaporative tide pools.</p>
+    </div>
+    <a class="launch-btn" href="hotsand.html">▶ Launch Scorching Sand</a>
+  </div>
+</article>
       <!-- 5. 3D PRO PUTTING CHALLENGE -->
       <article class="game-card" style="--accent: #34d399; --accent-glow: rgba(52, 211, 153, 0.25); --btn-grad: linear-gradient(135deg, #10b981, #16a34a);">
         <div class="card-art">

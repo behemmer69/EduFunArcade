@@ -1713,6 +1713,33 @@
       });
     }
 
+    function normalizeMinMaxToFullScale(samples) {
+      let minVal = Infinity;
+      let maxVal = -Infinity;
+
+      for (let i = 0; i < samples.length; i++) {
+        const s = samples[i];
+        if (s < minVal) minVal = s;
+        if (s > maxVal) maxVal = s;
+      }
+
+      const range = maxVal - minVal;
+      if (range > 1e-6) {
+        for (let i = 0; i < samples.length; i++) {
+          // Map [minVal, maxVal] linearly to [-1.0, +1.0]
+          const normalized = ((samples[i] - minVal) / range) * 2.0 - 1.0;
+
+          // Apply smooth edge fade-in/out so full-scale normalization doesn't click on start/stop
+          const t = i / MASTER_SR;
+          let edgeEnv = 1.0;
+          if (t < 0.08) edgeEnv = t / 0.08;
+          else if (t > DURATION_SEC - 0.15) edgeEnv = (DURATION_SEC - t) / 0.15;
+
+          samples[i] = Math.max(-1.0, Math.min(1.0, normalized * edgeEnv));
+        }
+      }
+      return samples;
+    }
     /* =========================================================================
        1. DATA-DRIVEN SYNTHESIS & EXTERNAL/LOCAL MP3 10s WINDOW EXTRACTOR
        ========================================================================= */
@@ -1834,14 +1861,15 @@
           sample = Math.tanh(sample * drive) * 0.86;
         }
 
-        let edgeEnv = 1.0;
+        /*let edgeEnv = 1.0;
         if (t < 0.08) edgeEnv = t / 0.08;
         else if (t > DURATION_SEC - 0.15) edgeEnv = (DURATION_SEC - t) / 0.15;
 
-        out[i] = Math.max(-0.96, Math.min(0.96, sample * edgeEnv));
+        out[i] = Math.max(-0.96, Math.min(0.96, sample * edgeEnv));*/
+        out[i] = sample;
       }
-
-      return out;
+/*return out;*/
+      return normalizeMinMaxToFullScale(out);
     }
 
     async function decodeAudioBufferFromUrl(url) {
@@ -1870,7 +1898,7 @@
       const rendered = await offline.startRendering();
       const samples = new Float32Array(rendered.getChannelData(0));
 
-      let peak = 0;
+      /*let peak = 0;
       for (let i = 0; i < samples.length; i++) {
         const abs = Math.abs(samples[i]);
         if (abs > peak) peak = abs;
@@ -1885,7 +1913,8 @@
         samples[i] = Math.max(-0.96, Math.min(0.96, samples[i] * normGain * edgeEnv));
       }
 
-      return samples;
+      return samples;*/
+      return normalizeMinMaxToFullScale(samples);
     }
 
     /* =========================================================================
@@ -1935,7 +1964,7 @@
         ? biquadLowPass(analogBuf, nyquistHz, MASTER_SR)
         : analogBuf;
 
-      const levels = Math.pow(2, bits);
+      /*const levels = Math.pow(2, bits);
       const halfLevels = levels / 2;
 
       const stepPeriod = MASTER_SR / targetSr;
@@ -1948,6 +1977,47 @@
         if (i >= nextSamplePos) {
           const raw = sourceSignal[i];
           const q = Math.round(raw * halfLevels) / halfLevels;
+          heldValue = Math.max(-1, Math.min(1, q));*/
+      /*const maxIndex = Math.max(1, Math.pow(2, bits) - 1);
+
+      const stepPeriod = MASTER_SR / targetSr;
+      const out = new Float32Array(analogBuf.length);
+
+      let nextSamplePos = 0;
+      let heldValue = 0;
+
+      for (let i = 0; i < analogBuf.length; i++) {
+        if (i >= nextSamplePos) {
+          const raw = Math.max(-1, Math.min(1, sourceSignal[i]));
+          const q = (Math.round(((raw + 1) * 0.5) * maxIndex) / maxIndex) * 2 - 1;
+          heldValue = Math.max(-1, Math.min(1, q));
+          nextSamplePos += stepPeriod;
+        }
+        out[i] = heldValue;
+      }*/
+      let minVal = Infinity;
+      let maxVal = -Infinity;
+      for (let i = 0; i < sourceSignal.length; i++) {
+        const v = sourceSignal[i];
+        if (v < minVal) minVal = v;
+        if (v > maxVal) maxVal = v;
+      }
+      const span = maxVal - minVal || 1e-6;
+      const maxIndex = Math.max(1, Math.pow(2, bits) - 1);
+
+      const stepPeriod = MASTER_SR / targetSr;
+      const out = new Float32Array(analogBuf.length);
+
+      let nextSamplePos = 0;
+      let heldValue = 0;
+
+      for (let i = 0; i < analogBuf.length; i++) {
+        if (i >= nextSamplePos) {
+          const raw = sourceSignal[i];
+          // ADC: Stretch [minVal, maxVal] -> [0, maxIndex] and quantize to 2^N levels
+          const qNorm = Math.round(((raw - minVal) / span) * maxIndex) / maxIndex;
+          // DAC: Reconstruct back to original [minVal, maxVal] amplitude range
+          const q = minVal + qNorm * span;
           heldValue = Math.max(-1, Math.min(1, q));
           nextSamplePos += stepPeriod;
         }
@@ -2029,20 +2099,45 @@
       }
       const spectralPts = Math.round(500 * Math.min(1, spectralRatio));
 
-      let sigPower = 0;
+      /*let sigPower = 0;
       let quantErrPower = 0;
-      const levels = Math.pow(2, state.bits) / 2;
+      /*const levels = Math.pow(2, state.bits) / 2;
 
       for (let i = 0; i < TOTAL_SAMPLES; i += 8) {
         const s = state.analogSamples[i];
-        const q = Math.round(s * levels) / levels;
+        const q = Math.round(s * levels) / levels;*/
+        /*const maxIndex = Math.max(1, Math.pow(2, state.bits) - 1);
+
+      for (let i = 0; i < TOTAL_SAMPLES; i += 8) {
+        const s = state.analogSamples[i];
+        const q = (Math.round(((s + 1) * 0.5) * maxIndex) / maxIndex) * 2 - 1;
+        const err = s - q;
+        sigPower += s * s;
+        quantErrPower += err * err;
+      }*/
+      let minVal = Infinity;
+      let maxVal = -Infinity;
+      for (let i = 0; i < TOTAL_SAMPLES; i++) {
+        const v = state.analogSamples[i];
+        if (v < minVal) minVal = v;
+        if (v > maxVal) maxVal = v;
+      }
+      const span = maxVal - minVal || 1e-6;
+      const maxIndex = Math.max(1, Math.pow(2, state.bits) - 1);
+
+      let sigPower = 0;
+      let quantErrPower = 0;
+
+      for (let i = 0; i < TOTAL_SAMPLES; i += 8) {
+        const s = state.analogSamples[i];
+        const qNorm = Math.round(((s - minVal) / span) * maxIndex) / maxIndex;
+        const q = minVal + qNorm * span;
         const err = s - q;
         sigPower += s * s;
         quantErrPower += err * err;
       }
-
       const sqnrDb = 10 * Math.log10((sigPower + 1e-9) / (quantErrPower + 1e-9));
-      const requiredSqnrDb = 44 * dynamicSensitivity;
+      const requiredSqnrDb = 46 * dynamicSensitivity;
       const dynamicRatio = Math.max(0.05, Math.min(1.0, Math.pow(Math.min(sqnrDb / requiredSqnrDb, 1.0), 1.1)));
       const dynamicPts = Math.round(500 * dynamicRatio);
 
@@ -2285,12 +2380,33 @@
       oscopeCtx.stroke();
 
       if (state.showMeterCues) {
-        const levels = Math.pow(2, state.bits);
+        /*const levels = Math.pow(2, state.bits);
         const drawSteps = Math.min(levels, 32);
         oscopeCtx.strokeStyle = 'rgba(245, 158, 11, 0.18)';
         oscopeCtx.lineWidth = 1;
         for (let i = 1; i < drawSteps; i++) {
           const y = (i / drawSteps) * h;
+          oscopeCtx.beginPath();
+          oscopeCtx.moveTo(0, y);
+          oscopeCtx.lineTo(w, y);
+          oscopeCtx.stroke();*/
+        let minVal = -0.96, maxVal = 0.96;
+        if (state.analogSamples) {
+          minVal = Infinity; maxVal = -Infinity;
+          for (let i = 0; i < state.analogSamples.length; i += 16) {
+            const v = state.analogSamples[i];
+            if (v < minVal) minVal = v;
+            if (v > maxVal) maxVal = v;
+          }
+        }
+        const levels = Math.round(Math.pow(2, state.bits));
+        const drawLevels = Math.min(levels, 32);
+        const maxIdx = Math.max(1, drawLevels - 1);
+        oscopeCtx.strokeStyle = 'rgba(245, 158, 11, 0.18)';
+        oscopeCtx.lineWidth = 1;
+        for (let i = 0; i <= maxIdx; i++) {
+          const val = minVal + (i / maxIdx) * (maxVal - minVal);
+          const y = h / 2 - val * (h * 0.43);
           oscopeCtx.beginPath();
           oscopeCtx.moveTo(0, y);
           oscopeCtx.lineTo(w, y);
