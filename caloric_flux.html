@@ -1,0 +1,2097 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Caloric Flux: Metabolic Balance Lab</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            navy: {
+              950: '#0b1120',
+              900: '#111827',
+              800: '#1e293b',
+              700: '#334155',
+              600: '#475569'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * {
+      -webkit-tap-highlight-color: transparent;
+      box-sizing: border-box;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background-color: #060a14;
+      color: #f8fafc;
+      overflow-x: hidden;
+      user-select: none;
+      touch-action: manipulation;
+    }
+    /* Custom Range Sliders */
+    input[type=range] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: #1e293b;
+      height: 6px;
+      border-radius: 999px;
+      border: 1px solid #334155;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #38bdf8;
+      border: 2px solid #ffffff;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.75);
+      cursor: pointer;
+      transition: transform 0.1s ease;
+    }
+    input[type=range]::-webkit-slider-thumb:active {
+      transform: scale(1.15);
+    }
+    input[type=range].slider-rose::-webkit-slider-thumb {
+      background: #f43f5e;
+      box-shadow: 0 0 10px rgba(244, 63, 94, 0.75);
+    }
+    input[type=range].slider-emerald::-webkit-slider-thumb {
+      background: #10b981;
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.75);
+    }
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    .studio-artboard {
+      background:
+        linear-gradient(to right, rgba(56, 189, 248, 0.05) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(56, 189, 248, 0.05) 1px, transparent 1px),
+        radial-gradient(circle at 50% 44%, #17253b 0%, #0b1220 62%, #050811 100%);
+      background-size: 24px 24px, 24px 24px, 100% 100%;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex justify-center items-start sm:items-center sm:py-3 bg-[#060a14] font-sans">
+
+  <!-- MOBILE-FIRST FIXED HORIZONTAL VIEWPORT (MAX 480PX) -->
+  <div id="appRoot" class="w-full max-w-[480px] min-h-screen sm:min-h-[900px] sm:h-[92vh] sm:max-h-[940px] bg-[#0b1120] sm:border sm:border-[#334155] sm:rounded-3xl flex flex-col relative overflow-hidden shadow-2xl">
+
+    <!-- ================= TOP TELEMETRY HEADER ================= -->
+    <header class="bg-[#111827] border-b border-[#334155] px-3.5 pt-2.5 pb-2 shrink-0 z-20">
+      <div class="flex items-center justify-between mb-2">
+        <div class="flex items-center gap-2">
+          <div class="w-2.5 h-2.5 rounded-full bg-[#38bdf8] shadow-[0_0_8px_#38bdf8]"></div>
+          <div>
+            <div class="flex items-center gap-1.5">
+              <h1 class="text-xs font-black tracking-wider uppercase text-white font-mono">CALORIC FLUX</h1>
+              <span class="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-[#1e293b] text-[#38bdf8] border border-[#334155]">METABOLIC LAB</span>
+            </div>
+            <p class="text-[9px] text-slate-400 font-mono leading-tight mt-0.5">© Barry Hemmerdinger • CICO Thermodynamics</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-1.5">
+          <!-- Week Badge -->
+          <div class="bg-[#1e293b] border border-[#334155] rounded-lg px-2 py-1 text-center">
+            <div class="text-[8px] font-mono text-slate-400 uppercase leading-none">Round</div>
+            <div class="text-[11px] font-mono font-extrabold text-[#38bdf8] leading-tight mt-0.5">WEEK <span id="hdrWeekNum">1</span>/6</div>
+          </div>
+          <!-- Score Badge -->
+          <div class="bg-[#1e293b] border border-[#334155] rounded-lg px-2 py-1 text-center">
+            <div class="text-[8px] font-mono text-slate-400 uppercase leading-none">Score</div>
+            <div id="hdrScore" class="text-[11px] font-mono font-extrabold text-[#10b981] leading-tight mt-0.5">0000</div>
+          </div>
+          <!-- Sound Toggle -->
+          <button id="btnAudioToggle" onclick="toggleAudio()" class="w-7 h-7 rounded-lg bg-[#1e293b] border border-[#334155] flex items-center justify-center text-slate-300 hover:text-[#38bdf8] transition" title="Toggle Sound">
+            <svg id="iconSoundOn" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path></svg>
+            <svg id="iconSoundOff" class="w-3.5 h-3.5 hidden text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15zM17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"></path></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Live Telemetry Pill Strip (WEIGHT | BMI | BMR | DAILY BURN) -->
+      <div class="grid grid-cols-4 gap-1.5 font-mono">
+        <div class="bg-[#0b1120] border border-[#334155] rounded-lg px-2 py-1 flex flex-col justify-between">
+          <span class="text-[8px] text-slate-400 uppercase">Weight</span>
+          <span id="pillWeight" class="text-[11px] font-bold text-white truncate">135.0 lbs</span>
+        </div>
+        <div class="bg-[#0b1120] border border-[#334155] rounded-lg px-2 py-1 flex flex-col justify-between">
+          <span class="text-[8px] text-slate-400 uppercase">BMI Index</span>
+          <span id="pillBmi" class="text-[11px] font-bold text-[#38bdf8] truncate">21.8</span>
+        </div>
+        <div class="bg-[#0b1120] border border-[#334155] rounded-lg px-2 py-1 flex flex-col justify-between">
+          <span class="text-[8px] text-slate-400 uppercase">Rest BMR</span>
+          <span id="pillBmr" class="text-[11px] font-bold text-amber-400 truncate">1,397 kcal</span>
+        </div>
+        <div class="bg-[#0b1120] border border-[#334155] rounded-lg px-2 py-1 flex flex-col justify-between">
+          <span class="text-[8px] text-slate-400 uppercase">Daily Burn</span>
+          <span id="pillDailyBurn" class="text-[11px] font-bold text-rose-400 truncate">2,210 kcal</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- ================= 4-TAB HORIZONTAL NAVIGATION BAR ================= -->
+    <nav class="bg-[#111827] border-b border-[#334155] grid grid-cols-4 shrink-0 z-10 font-mono">
+      <button id="tabBtn1" onclick="switchTab(1)" class="py-2.5 text-[10px] font-bold text-[#38bdf8] border-b-2 border-[#38bdf8] bg-[#1e293b]/60 transition flex items-center justify-center gap-1">
+        <span>1. AVATAR</span>
+      </button>
+      <button id="tabBtn2" onclick="switchTab(2)" class="py-2.5 text-[10px] font-semibold text-slate-400 border-b-2 border-transparent hover:text-slate-200 transition flex items-center justify-center gap-1">
+        <span>2. ROUTINE</span>
+      </button>
+      <button id="tabBtn3" onclick="switchTab(3)" class="py-2.5 text-[10px] font-semibold text-slate-400 border-b-2 border-transparent hover:text-slate-200 transition flex items-center justify-center gap-1">
+        <span>3. PREDICT</span>
+      </button>
+      <button id="tabBtn4" onclick="switchTab(4)" class="py-2.5 text-[10px] font-semibold text-slate-400 border-b-2 border-transparent hover:text-slate-200 transition flex items-center justify-center gap-1">
+        <span>4. LEDGER</span>
+      </button>
+    </nav>
+
+    <!-- ================= MAIN SCROLLABLE VIEWPORT ================= -->
+    <main id="mainViewport" class="flex-1 overflow-y-auto no-scrollbar p-3 space-y-3">
+
+      <!-- =================================================================
+           TAB 1: AVATAR LAB & LIVE SUBJECT CALIBRATION
+           ================================================================= -->
+      <section id="tabPanel1" class="space-y-3">
+        <!-- Main Avatar Studio Card -->
+        <div class="bg-[#111827] border border-[#334155] rounded-2xl p-3 shadow-lg">
+          <!-- Top Bar inside Avatar Card -->
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-1.5">
+              <!-- Sex Switcher Pills -->
+              <div class="inline-flex bg-[#0b1120] border border-[#334155] rounded-lg p-0.5 font-mono text-[10px]">
+                <button id="btnSexFemale" onclick="setSubjectSex('female')" class="px-2.5 py-1 rounded-md bg-pink-500/20 text-pink-300 border border-pink-500/40 font-bold transition">♀ Female</button>
+                <button id="btnSexMale" onclick="setSubjectSex('male')" class="px-2.5 py-1 rounded-md text-slate-400 hover:text-white transition">♂ Male</button>
+              </div>
+              <button onclick="toggleCalibrationDrawer()" class="px-2.5 py-1 rounded-lg bg-[#1e293b] hover:bg-[#334155] border border-[#334155] text-[10px] font-mono text-[#38bdf8] font-semibold flex items-center gap-1 transition">
+                <span>⚙ Calibrate Subject</span>
+              </button>
+            </div>
+            <!-- Ghost Toggle -->
+            <label class="flex items-center gap-1 text-[10px] font-mono text-slate-300 cursor-pointer">
+              <input id="chkShowGhost" type="checkbox" checked onchange="renderAvatar()" class="rounded accent-[#38bdf8]">
+              <span>Day 0 Ghost</span>
+            </label>
+          </div>
+
+          <!-- Collapsible Live Subject Calibration Drawer -->
+          <div id="calibrationDrawer" class="mb-2.5 bg-[#1e293b]/90 border border-[#38bdf8]/40 rounded-xl p-2.5 space-y-2 transition-all">
+            <div class="flex items-center justify-between border-b border-[#334155] pb-1">
+              <span class="text-[10px] font-mono font-bold uppercase text-[#38bdf8]">Baseline Subject Calibration (Live Preview)</span>
+              <button onclick="toggleCalibrationDrawer()" class="text-[10px] font-mono text-slate-400 hover:text-white">✕ Hide</button>
+            </div>
+            <div class="grid grid-cols-1 gap-2 text-xs">
+              <!-- Starting Weight Slider -->
+              <div class="bg-[#0b1120] border border-[#334155] rounded-lg p-2">
+                <div class="flex justify-between font-mono text-[11px] mb-1">
+                  <span class="text-slate-300">Starting Weight:</span>
+                  <span id="calWeightLabel" class="text-[#38bdf8] font-bold">135.0 lbs (61.2 kg)</span>
+                </div>
+                <input id="sliderCalWeight" type="range" min="95" max="340" step="1" value="135" oninput="handleCalibrationInput()" class="w-full">
+                <div class="flex justify-between text-[9px] font-mono text-slate-500 mt-0.5">
+                  <span>95 lbs (Slender)</span>
+                  <span>160 lbs</span>
+                  <span>240 lbs</span>
+                  <span>340 lbs (Heavy)</span>
+                </div>
+              </div>
+              <!-- Height & Age Row -->
+              <div class="grid grid-cols-2 gap-2">
+                <div class="bg-[#0b1120] border border-[#334155] rounded-lg p-2">
+                  <div class="flex justify-between font-mono text-[10px] mb-1">
+                    <span class="text-slate-400">Height:</span>
+                    <span id="calHeightLabel" class="text-white font-bold">5'6" (168cm)</span>
+                  </div>
+                  <input id="sliderCalHeight" type="range" min="58" max="78" step="1" value="66" oninput="handleCalibrationInput()" class="w-full">
+                </div>
+                <div class="bg-[#0b1120] border border-[#334155] rounded-lg p-2">
+                  <div class="flex justify-between font-mono text-[10px] mb-1">
+                    <span class="text-slate-400">Age:</span>
+                    <span id="calAgeLabel" class="text-white font-bold">25 yrs</span>
+                  </div>
+                  <input id="sliderCalAge" type="range" min="18" max="80" step="1" value="25" oninput="handleCalibrationInput()" class="w-full">
+                </div>
+              </div>
+            </div>
+            <div class="flex justify-between items-center pt-0.5 text-[10px] font-mono text-slate-400">
+              <span>Drag sliders to see real-time BMI & body shape changes!</span>
+              <button onclick="resetToNewSubject()" class="px-2 py-0.5 rounded bg-[#38bdf8]/20 text-[#38bdf8] border border-[#38bdf8]/40 font-bold hover:bg-[#38bdf8]/30 transition">Lock Baseline</button>
+            </div>
+          </div>
+
+          <!-- High-Contrast Dark Telemetry Anatomical Viewport (Headless Neck-to-Thighs) -->
+          <div class="relative w-full h-[395px] studio-artboard rounded-xl border-2 border-[#334155] overflow-hidden flex items-center justify-center shadow-[inset_0_0_40px_rgba(0,0,0,0.75)]">
+            <!-- Telemetry Center Axis & Anatomical Zone Guides -->
+            <div class="absolute inset-y-0 left-1/2 -translate-x-1/2 w-px bg-sky-400/10 pointer-events-none"></div>
+            <div class="absolute inset-x-6 top-[27%] h-px border-t border-dashed border-sky-400/15 pointer-events-none"></div>
+            <div class="absolute inset-x-6 top-[46%] h-px border-t border-dashed border-sky-400/15 pointer-events-none"></div>
+            <div class="absolute inset-x-6 top-[64%] h-px border-t border-dashed border-sky-400/15 pointer-events-none"></div>
+
+            <!-- Anatomical Zone Labels (Right Edge) -->
+            <div class="absolute right-2.5 inset-y-4 flex flex-col justify-between pointer-events-none font-mono text-[8px] text-sky-300/45 text-right uppercase tracking-wider">
+              <span>— Clavicle</span>
+              <span>— Bust / Pec</span>
+              <span>— Waist Cinch</span>
+              <span>— Hip / Pelvis</span>
+              <span>— Mid Thigh</span>
+              <span>— Knee Base</span>
+            </div>
+
+            <!-- SVG Avatar Canvas (Cropped Neck-to-Thighs for Maximum Torso/Hip Detail) -->
+            <svg id="avatarSvg" viewBox="22 108 296 372" class="w-full h-full max-h-[390px] select-none">
+              <defs>
+                <!-- Crisp Rim-Light & Drop Shadow so Bold Black Cartoon Outlines Pop on Dark Background -->
+                <filter id="studioShadow" x="-20%" y="-15%" width="140%" height="130%">
+                  <feDropShadow dx="0" dy="0" stdDeviation="1.4" flood-color="#38bdf8" flood-opacity="0.55"/>
+                  <feDropShadow dx="0" dy="6" stdDeviation="7" flood-color="#020617" flood-opacity="0.9"/>
+                </filter>
+                <!-- Warm Cartoon Tan Skin Fill (Matches Reference Illustration) -->
+                <linearGradient id="skinToneGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#c98b60"/>
+                  <stop offset="14%" stop-color="#d79c71"/>
+                  <stop offset="86%" stop-color="#d79c71"/>
+                  <stop offset="100%" stop-color="#c98b60"/>
+                </linearGradient>
+                <!-- Subtle Cel-Shaded Rim Overlay -->
+                <linearGradient id="skinHighlightGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#000000" stop-opacity="0.10"/>
+                  <stop offset="18%" stop-color="#ffffff" stop-opacity="0.0"/>
+                  <stop offset="50%" stop-color="#ffffff" stop-opacity="0.06"/>
+                  <stop offset="82%" stop-color="#ffffff" stop-opacity="0.0"/>
+                  <stop offset="100%" stop-color="#000000" stop-opacity="0.12"/>
+                </linearGradient>
+                <!-- Deep Crimson-Red Bikini / Swimwear Fill (#9e241a from Reference) -->
+                <linearGradient id="femaleGearGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#ab281d"/>
+                  <stop offset="55%" stop-color="#9e241a"/>
+                  <stop offset="100%" stop-color="#7f1b12"/>
+                </linearGradient>
+                <!-- Matching Crimson-Red Male Swim Trunks Fill -->
+                <linearGradient id="maleGearGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#ab281d"/>
+                  <stop offset="55%" stop-color="#9e241a"/>
+                  <stop offset="100%" stop-color="#7f1b12"/>
+                </linearGradient>
+              </defs>
+
+              <!-- Floor Telemetry Pedestal Glow -->
+              <ellipse id="floorShadow" cx="170" cy="472" rx="68" ry="6" fill="#38bdf8" opacity="0.18"/>
+
+              <!-- Active Morphing Avatar Layer -->
+              <g id="activeAvatarLayer" filter="url(#studioShadow)"></g>
+
+              <!-- Persistent Day 0 Ghost Reference Layer (Rendered on top as glowing cyan dashed outline) -->
+              <g id="ghostAvatarLayer" pointer-events="none"></g>
+            </svg>
+
+            <!-- Top-Left Floating Telemetry Tag -->
+            <div class="absolute top-2.5 left-2.5 bg-[#0b1120]/90 backdrop-blur border border-[#334155] rounded-lg px-2 py-1 font-mono text-[10px] shadow">
+              <div class="flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-[#38bdf8]"></span>
+                <span class="text-slate-300">Day 0:</span>
+                <span id="badgeDay0Weight" class="text-white font-bold">135.0 lbs</span>
+              </div>
+              <div class="flex items-center gap-1.5 mt-0.5">
+                <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+                <span class="text-slate-300">Net Δ:</span>
+                <span id="badgeNetWeightDelta" class="text-[#38bdf8] font-bold">0.0 lbs</span>
+              </div>
+            </div>
+
+            <!-- Bottom-Left BMI Classification Pill -->
+            <div class="absolute bottom-2.5 left-2.5 bg-[#0b1120]/90 backdrop-blur border border-[#334155] rounded-lg px-2.5 py-1 font-mono text-[10px] shadow">
+              <span class="text-slate-400">Physique: </span>
+              <span id="badgePhysiqueCategory" class="text-emerald-400 font-bold">Athletic Sculpted</span>
+            </div>
+
+            <!-- Bottom-Right Body Fat Indicator -->
+            <div class="absolute bottom-2.5 right-2.5 bg-[#0b1120]/90 backdrop-blur border border-[#334155] rounded-lg px-2.5 py-1 font-mono text-[10px] text-rose-400 font-bold shadow">
+              <span id="badgeBodyFatOverlay">21.4% Body Fat</span>
+            </div>
+          </div>
+
+          <!-- Interactive Morph Preview Scrubber Bar (Test BMI & Shape Changes Instantly) -->
+          <div class="mt-2 bg-[#0b1120] border border-[#334155] rounded-xl px-2.5 py-1.5 flex items-center gap-2 font-mono text-[10px]">
+            <span class="text-slate-400 shrink-0">Shape Preview:</span>
+            <input id="sliderPreviewMorph" type="range" min="95" max="320" step="1" value="135" oninput="previewMorphWeight(this.value)" onchange="restoreActualWeightAfterPreview()" class="flex-1">
+            <button onclick="restoreActualWeightAfterPreview()" class="px-2 py-0.5 rounded bg-[#1e293b] hover:bg-[#334155] text-[#38bdf8] border border-[#334155] shrink-0">Reset</button>
+          </div>
+
+          <!-- Live Anthropometric Measurements Strip -->
+          <div class="grid grid-cols-4 gap-1.5 mt-2.5 font-mono">
+            <div class="bg-[#1e293b] border border-[#334155] rounded-xl p-2 text-center">
+              <div class="text-[8px] text-slate-400 uppercase">Waistline</div>
+              <div id="measWaist" class="text-xs font-extrabold text-white mt-0.5">26.2"</div>
+              <div id="measWaistDelta" class="text-[8px] text-[#38bdf8]">Baseline</div>
+            </div>
+            <div class="bg-[#1e293b] border border-[#334155] rounded-xl p-2 text-center">
+              <div id="measHipChestTitle" class="text-[8px] text-slate-400 uppercase">Hips / Bust</div>
+              <div id="measHips" class="text-xs font-extrabold text-white mt-0.5">36.8"</div>
+              <div id="measHipsDelta" class="text-[8px] text-pink-400">Hourglass</div>
+            </div>
+            <div class="bg-[#1e293b] border border-[#334155] rounded-xl p-2 text-center">
+              <div class="text-[8px] text-slate-400 uppercase">Est Body Fat</div>
+              <div id="measBfp" class="text-xs font-extrabold text-rose-400 mt-0.5">21.4%</div>
+              <div id="measLeanMass" class="text-[8px] text-slate-400">Lean: 106 lb</div>
+            </div>
+            <div class="bg-[#1e293b] border border-[#334155] rounded-xl p-2 text-center">
+              <div class="text-[8px] text-slate-400 uppercase">BMI Score</div>
+              <div id="measBmi" class="text-xs font-extrabold text-[#38bdf8] mt-0.5">21.8</div>
+              <div id="measBmiStatus" class="text-[8px] text-emerald-400">Optimal</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Physiological Status Briefing Card -->
+        <div class="bg-[#111827] border border-[#334155] rounded-2xl p-3 text-xs leading-relaxed">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[10px] font-mono font-bold uppercase text-[#38bdf8] flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-[#38bdf8]"></span>
+              Metabolic Status Briefing
+            </span>
+            <span id="briefingWeekTag" class="text-[10px] font-mono text-slate-400">Week 1 of 6</span>
+          </div>
+          <p id="briefingText" class="text-slate-300 text-[11px]">
+            Adjust your subject's starting parameters above or proceed to <strong class="text-[#38bdf8]">2. ROUTINE</strong> to select a daily meal plan and multi-exercise schedule.
+          </p>
+        </div>
+      </section>
+
+      <!-- =================================================================
+           TAB 2: ROUTINE BUILDER (DYNAMIC SAMPLE MENU & MULTI-EXERCISE)
+           ================================================================= -->
+      <section id="tabPanel2" class="space-y-3 hidden">
+        <!-- Daily Calorie Intake Target Card -->
+        <div class="bg-[#111827] border border-[#334155] rounded-2xl p-3 shadow-lg">
+          <div class="flex items-center justify-between mb-1.5">
+            <div>
+              <h2 class="text-xs font-bold text-white uppercase font-mono flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                Daily Calorie Intake Target
+              </h2>
+              <p class="text-[10px] text-slate-400">Total energy ingested from food & beverages per day</p>
+            </div>
+            <div class="text-right font-mono">
+              <span id="lblDailyKcal" class="text-base font-black text-emerald-400">2,000</span>
+              <span class="text-[10px] text-slate-400 block">kcal / day</span>
+            </div>
+          </div>
+
+          <input id="sliderDailyKcal" type="range" min="1200" max="4200" step="50" value="2000" oninput="handleIntakeChange(this.value)" class="w-full my-2 slider-emerald">
+
+          <!-- Quick Calorie Preset Pills -->
+          <div class="grid grid-cols-4 gap-1.5 font-mono text-[10px] mt-1">
+            <button onclick="setIntakeValue(1400)" class="py-1.5 rounded-lg bg-[#1e293b] hover:bg-[#334155] border border-[#334155] text-slate-200 transition">1,400 Cut</button>
+            <button onclick="setIntakeValue(1800)" class="py-1.5 rounded-lg bg-[#1e293b] hover:bg-[#334155] border border-[#334155] text-slate-200 transition">1,800 Lean</button>
+            <button onclick="setIntakeValue(2200)" class="py-1.5 rounded-lg bg-[#1e293b] hover:bg-[#334155] border border-[#334155] text-slate-200 transition">2,200 Maint</button>
+            <button onclick="setIntakeValue(2900)" class="py-1.5 rounded-lg bg-[#1e293b] hover:bg-[#334155] border border-[#334155] text-slate-200 transition">2,900 Bulk</button>
+          </div>
+        </div>
+
+        <!-- Macro Preset & Sample Daily Menu Card -->
+        <div class="bg-[#111827] border border-[#334155] rounded-2xl p-3 shadow-lg space-y-2.5">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-xs font-bold text-white uppercase font-mono flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-[#38bdf8]"></span>
+                Dietary Macro Profile & Sample Menu
+              </h3>
+              <p class="text-[10px] text-slate-400">Determines Thermic Effect of Food (TEF) & muscle partitioning</p>
+            </div>
+            <span id="badgeTefRate" class="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-[#1e293b] text-[#38bdf8] border border-[#334155]">TEF: 12%</span>
+          </div>
+
+          <!-- 4 Diet Preset Buttons -->
+          <div class="grid grid-cols-2 gap-1.5 font-mono text-[10px]">
+            <button id="btnDiet_protein" onclick="setMacroPreset('protein')" class="p-2 rounded-xl border border-[#38bdf8] bg-[#38bdf8]/15 text-white font-bold text-left transition flex items-center justify-between">
+              <span>🥩 High-Protein Athletic</span>
+              <span class="text-[9px] text-[#38bdf8]">12% TEF</span>
+            </button>
+            <button id="btnDiet_balanced" onclick="setMacroPreset('balanced')" class="p-2 rounded-xl border border-[#334155] bg-[#1e293b] text-slate-300 font-semibold text-left transition flex items-center justify-between">
+              <span>🥗 Balanced Everyday</span>
+              <span class="text-[9px] text-slate-400">10% TEF</span>
+            </button>
+            <button id="btnDiet_keto" onclick="setMacroPreset('keto')" class="p-2 rounded-xl border border-[#334155] bg-[#1e293b] text-slate-300 font-semibold text-left transition flex items-center justify-between">
+              <span>🥑 Low-Carb / Keto</span>
+              <span class="text-[9px] text-slate-400">8% TEF</span>
+            </button>
+            <button id="btnDiet_plant" onclick="setMacroPreset('plant')" class="p-2 rounded-xl border border-[#334155] bg-[#1e293b] text-slate-300 font-semibold text-left transition flex items-center justify-between">
+              <span>🌱 Plant-Based Lean</span>
+              <span class="text-[9px] text-slate-400">10% TEF</span>
+            </button>
+          </div>
+
+          <!-- Daily Macro Grams Bar -->
+          <div class="bg-[#0b1120] border border-[#334155] rounded-xl p-2 flex items-center justify-between font-mono text-[10px]">
+            <span class="text-slate-400 uppercase">Daily Macros:</span>
+            <div class="flex items-center gap-2">
+              <span id="macroTotalP" class="text-rose-400 font-bold">P: 175g</span>
+              <span class="text-slate-600">•</span>
+              <span id="macroTotalC" class="text-[#38bdf8] font-bold">C: 175g</span>
+              <span class="text-slate-600">•</span>
+              <span id="macroTotalF" class="text-amber-400 font-bold">F: 67g</span>
+            </div>
+          </div>
+
+          <!-- Dynamic Portion-Scaled Sample Day Menu -->
+          <div class="space-y-1.5 pt-1">
+            <div class="text-[10px] font-mono uppercase text-slate-400 font-semibold flex justify-between">
+              <span>Example Daily Menu (Portion-Scaled):</span>
+              <span id="menuTotalCheck" class="text-emerald-400">2,000 kcal total</span>
+            </div>
+            <div id="dynamicMenuContainer" class="space-y-1.5">
+              <!-- Populated dynamically via JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Multi-Exercise Workout Configurator Card -->
+        <div class="bg-[#111827] border border-[#334155] rounded-2xl p-3 shadow-lg space-y-2.5">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-xs font-bold text-white uppercase font-mono flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+                Multi-Exercise Weekly Regimen
+              </h3>
+              <p class="text-[10px] text-slate-400">Burn scales with current mass: <span class="font-mono text-slate-300">MET × kg × hrs × days</span></p>
+            </div>
+            <div class="text-right font-mono">
+              <div id="lblTotalWeeklyExBurn" class="text-xs font-black text-rose-400">2,450 kcal/wk</div>
+              <div id="lblAvgDailyExBurn" class="text-[9px] text-slate-400">~350 kcal/day</div>
+            </div>
+          </div>
+
+          <!-- Active Exercise Rows -->
+          <div id="exerciseList" class="space-y-2">
+            <!-- Populated dynamically -->
+          </div>
+
+          <!-- Add Exercise Bar -->
+          <div class="flex gap-1.5 pt-1">
+            <select id="selectAddExercise" class="flex-1 bg-[#0b1120] border border-[#334155] rounded-xl px-2.5 py-2 text-xs font-mono text-slate-200 focus:outline-none focus:border-[#38bdf8]">
+              <option value="run">🏃 Running / Jogging (8.5 MET)</option>
+              <option value="weights">🏋️ Weight Training (5.0 MET)</option>
+              <option value="hiit">⚡ HIIT Circuit (9.5 MET)</option>
+              <option value="cycle">🚴 Road Cycling (7.5 MET)</option>
+              <option value="swim">🏊 Lap Swimming (8.0 MET)</option>
+              <option value="walk">🥾 Brisk Incline Walk (4.5 MET)</option>
+              <option value="yoga">🧘 Yoga / Pilates (3.0 MET)</option>
+            </select>
+            <button onclick="addExerciseSession()" class="px-3.5 py-2 rounded-xl bg-[#38bdf8] hover:bg-sky-400 text-[#0b1120] font-mono font-extrabold text-xs transition shrink-0">
+              + Add Exercise
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- =================================================================
+           TAB 3: PREDICT WEIGHT SHIFT & WEIGH-IN REVEAL
+           ================================================================= -->
+      <section id="tabPanel3" class="space-y-3 hidden">
+        <!-- Energy Tally Clues Card (Does not spoil final net weight change) -->
+        <div class="bg-[#111827] border border-[#334155] rounded-2xl p-3.5 shadow-lg space-y-2.5">
+          <div class="flex items-center justify-between border-b border-[#334155] pb-2">
+            <div>
+              <span class="text-[10px] font-mono uppercase text-[#38bdf8] font-bold">Week <span id="predWeekNum">1</span> Telemetry Tally</span>
+              <h2 class="text-sm font-extrabold text-white">Calculate & Predict Your Weight Change</h2>
+            </div>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-[#1e293b] text-amber-400 border border-[#334155]">3,500 kcal ≈ 1 lb</span>
+          </div>
+
+          <p class="text-[11px] text-slate-300 leading-relaxed">
+            Examine your 7-day calories in vs. calories out below. Remember that <strong class="text-white">Resting BMR</strong> and <strong class="text-white">Exercise Burn</strong> depend on your current body weight (<span id="predCurrentWeightText" class="font-mono text-[#38bdf8] font-bold">135.0 lbs</span>).
+          </p>
+
+          <!-- Component Breakdown Table (Leaves Net Sum for Player to Estimate) -->
+          <div class="bg-[#0b1120] border border-[#334155] rounded-xl p-2.5 font-mono text-xs space-y-1.5">
+            <div class="grid grid-cols-12 text-[9px] text-slate-400 uppercase border-b border-[#334155] pb-1">
+              <div class="col-span-6">Thermodynamic Component</div>
+              <div class="col-span-3 text-right">Daily</div>
+              <div class="col-span-3 text-right">7-Day Total</div>
+            </div>
+            <div class="grid grid-cols-12 text-emerald-400 font-bold">
+              <div class="col-span-6">+ Food & Drink Intake</div>
+              <div id="predInDaily" class="col-span-3 text-right">+2,000</div>
+              <div id="predInWeekly" class="col-span-3 text-right">+14,000</div>
+            </div>
+            <div class="grid grid-cols-12 text-slate-300">
+              <div class="col-span-6">- Resting BMR (Mass-based)</div>
+              <div id="predBmrDaily" class="col-span-3 text-right">-1,397</div>
+              <div id="predBmrWeekly" class="col-span-3 text-right">-9,779</div>
+            </div>
+            <div class="grid grid-cols-12 text-slate-300">
+              <div class="col-span-6">- Food Thermogenesis (TEF)</div>
+              <div id="predTefDaily" class="col-span-3 text-right">-240</div>
+              <div id="predTefWeekly" class="col-span-3 text-right">-1,680</div>
+            </div>
+            <div class="grid grid-cols-12 text-slate-300">
+              <div class="col-span-6">- Ambient Movement (NEAT)</div>
+              <div id="predNeatDaily" class="col-span-3 text-right">-210</div>
+              <div id="predNeatWeekly" class="col-span-3 text-right">-1,470</div>
+            </div>
+            <div class="grid grid-cols-12 text-rose-400 font-bold border-b border-[#334155] pb-1.5">
+              <div class="col-span-6">- Multi-Exercise Burn (EAT)</div>
+              <div id="predEatDaily" class="col-span-3 text-right">-350</div>
+              <div id="predEatWeekly" class="col-span-3 text-right">-2,450</div>
+            </div>
+            <div class="grid grid-cols-12 text-slate-400 text-[10px] pt-0.5">
+              <div class="col-span-6">Total Expenditure (Out):</div>
+              <div id="predOutDaily" class="col-span-3 text-right text-amber-400 font-bold">-2,197 kcal</div>
+              <div id="predOutWeekly" class="col-span-3 text-right text-amber-400 font-bold">-15,379 kcal</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Interactive Prediction Slider Card -->
+        <div class="bg-[#111827] border border-[#334155] rounded-2xl p-4 shadow-lg text-center space-y-3">
+          <div class="text-[10px] font-mono uppercase tracking-wider text-slate-400 font-bold">
+            Your End-of-Week Weight Change Prediction
+          </div>
+
+          <div class="py-1">
+            <span id="lblGuessValue" class="text-4xl font-black font-mono text-[#38bdf8]">-0.4</span>
+            <span class="text-sm font-mono text-slate-400"> lbs</span>
+            <div id="lblGuessProjectedWeight" class="text-[11px] font-mono text-slate-400 mt-1">
+              Projected Scale Reading: <span class="text-white font-bold">134.6 lbs</span>
+            </div>
+          </div>
+
+          <input id="sliderWeightGuess" type="range" min="-6.0" max="6.0" step="0.1" value="-0.4" oninput="updateGuessDisplay(this.value)" class="w-full">
+
+          <div class="flex justify-between text-[9px] font-mono text-slate-500">
+            <span>-6.0 lbs (Loss)</span>
+            <span>0.0 lbs (Maintain)</span>
+            <span>+6.0 lbs (Gain)</span>
+          </div>
+
+          <!-- Fine-Tune Nudge Buttons -->
+          <div class="flex justify-center gap-1.5 pt-1 font-mono text-xs">
+            <button onclick="nudgeGuess(-0.5)" class="px-2.5 py-1.5 rounded-lg bg-[#1e293b] hover:bg-[#334155] border border-[#334155] text-slate-200 transition">-0.5</button>
+            <button onclick="nudgeGuess(-0.1)" class="px-2.5 py-1.5 rounded-lg bg-[#1e293b] hover:bg-[#334155] border border-[#334155] text-slate-200 transition">-0.1</button>
+            <button onclick="nudgeGuess(0, true)" class="px-2.5 py-1.5 rounded-lg bg-[#1e293b] hover:bg-[#334155] border border-[#334155] text-[#38bdf8] font-bold transition">0.0</button>
+            <button onclick="nudgeGuess(0.1)" class="px-2.5 py-1.5 rounded-lg bg-[#1e293b] hover:bg-[#334155] border border-[#334155] text-slate-200 transition">+0.1</button>
+            <button onclick="nudgeGuess(0.5)" class="px-2.5 py-1.5 rounded-lg bg-[#1e293b] hover:bg-[#334155] border border-[#334155] text-slate-200 transition">+0.5</button>
+          </div>
+
+          <button onclick="lockInGuessAndWeighIn()" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#38bdf8] to-blue-600 hover:from-sky-400 hover:to-blue-500 text-[#0b1120] font-mono font-black text-xs uppercase tracking-wider shadow-lg shadow-sky-500/20 active:scale-[0.99] transition">
+            ⚖ LOCK IN GUESS & STEP ON SCALE ➜
+          </button>
+        </div>
+
+        <!-- Inline Round Reveal Card (Appears after locking in guess) -->
+        <div id="roundRevealCard" class="hidden bg-[#111827] border-2 border-[#10b981] rounded-2xl p-3.5 shadow-2xl space-y-3">
+          <div class="flex items-center justify-between border-b border-[#334155] pb-2">
+            <div>
+              <span class="text-[9px] font-mono uppercase px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-700 font-bold">Official Weigh-In Result</span>
+              <h3 class="text-sm font-black text-white mt-1">Week <span id="revWeekNum">1</span> Balance & Accuracy</h3>
+            </div>
+            <div class="text-right font-mono">
+              <div id="revPointsBadge" class="text-sm font-black text-[#10b981]">+500 PTS</div>
+              <div id="revAccuracyLabel" class="text-[9px] text-slate-400">Bullseye!</div>
+            </div>
+          </div>
+
+          <!-- 3-Column Comparison: Your Guess | Actual Change | vs Maintenance -->
+          <div class="grid grid-cols-3 gap-2 font-mono text-center">
+            <div class="bg-[#0b1120] border border-[#334155] rounded-xl p-2">
+              <div class="text-[8px] text-slate-400 uppercase">Your Guess</div>
+              <div id="revYourGuess" class="text-xs font-extrabold text-[#38bdf8] mt-0.5">-0.40 lbs</div>
+            </div>
+            <div class="bg-[#0b1120] border border-[#10b981]/50 rounded-xl p-2">
+              <div class="text-[8px] text-slate-400 uppercase">Actual Δ</div>
+              <div id="revActualDelta" class="text-xs font-extrabold text-[#10b981] mt-0.5">-0.41 lbs</div>
+            </div>
+            <div class="bg-[#0b1120] border border-[#334155] rounded-xl p-2">
+              <div class="text-[8px] text-slate-400 uppercase">vs Maintain (0.0)</div>
+              <div id="revNetKcalFlux" class="text-xs font-extrabold text-amber-400 mt-0.5">-1,379 kcal</div>
+            </div>
+          </div>
+
+          <!-- Metabolic Plateau Diagnostic Insight -->
+          <div class="bg-[#1e293b]/80 border border-[#334155] rounded-xl p-2.5 text-[11px] text-slate-200 leading-relaxed">
+            <div class="text-[9px] font-mono uppercase text-[#38bdf8] font-bold mb-0.5">Physiological Adaptation Report:</div>
+            <p id="revDiagnosticText"></p>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <button onclick="switchTab(1)" class="py-2.5 rounded-xl bg-[#1e293b] hover:bg-[#334155] border border-[#334155] text-xs font-mono font-bold text-white transition">
+              👤 View Avatar Morph
+            </button>
+            <button id="btnAdvanceNextWeek" onclick="advanceToNextWeek()" class="py-2.5 rounded-xl bg-[#10b981] hover:bg-emerald-400 text-[#0b1120] text-xs font-mono font-black uppercase transition">
+              Next Week ➜
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- =================================================================
+           TAB 4: THERMODYNAMIC LEDGER & 6-WEEK PLATEAU CHART
+           ================================================================= -->
+      <section id="tabPanel4" class="space-y-3 hidden">
+        <!-- 7-Day Balance Sheet Ledger Card -->
+        <div class="bg-[#111827] border border-[#334155] rounded-2xl p-3.5 shadow-lg space-y-2.5">
+          <div class="flex items-center justify-between border-b border-[#334155] pb-2">
+            <div>
+              <h2 class="text-xs font-bold text-white uppercase font-mono">📊 7-Day Caloric Balance Sheet</h2>
+              <p class="text-[10px] text-slate-400">Complete energy accounting for Week <span id="ledgerWeekNum">1</span></p>
+            </div>
+            <span id="ledgerStatusBadge" class="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-[#1e293b] text-[#38bdf8] border border-[#334155]">Deficit Mode</span>
+          </div>
+
+          <div class="font-mono text-xs space-y-1">
+            <div class="grid grid-cols-12 text-[9px] text-slate-400 uppercase border-b border-[#334155] pb-1">
+              <div class="col-span-6">Ledger Account</div>
+              <div class="col-span-3 text-right">Daily kcal</div>
+              <div class="col-span-3 text-right">7-Day kcal</div>
+            </div>
+            <div class="grid grid-cols-12 py-1 text-emerald-400 font-bold border-b border-[#1e293b]">
+              <div class="col-span-6">Gross Dietary Intake</div>
+              <div id="ldgInD" class="col-span-3 text-right">+2,000</div>
+              <div id="ldgInW" class="col-span-3 text-right">+14,000</div>
+            </div>
+            <div class="grid grid-cols-12 py-1 text-slate-300 border-b border-[#1e293b]">
+              <div class="col-span-6 pl-2">• Basal Metabolic (BMR)</div>
+              <div id="ldgBmrD" class="col-span-3 text-right">-1,397</div>
+              <div id="ldgBmrW" class="col-span-3 text-right">-9,779</div>
+            </div>
+            <div class="grid grid-cols-12 py-1 text-slate-300 border-b border-[#1e293b]">
+              <div class="col-span-6 pl-2">• Thermic Food Effect</div>
+              <div id="ldgTefD" class="col-span-3 text-right">-240</div>
+              <div id="ldgTefW" class="col-span-3 text-right">-1,680</div>
+            </div>
+            <div class="grid grid-cols-12 py-1 text-slate-300 border-b border-[#1e293b]">
+              <div class="col-span-6 pl-2">• Baseline NEAT</div>
+              <div id="ldgNeatD" class="col-span-3 text-right">-210</div>
+              <div id="ldgNeatW" class="col-span-3 text-right">-1,470</div>
+            </div>
+            <div class="grid grid-cols-12 py-1 text-rose-400 font-semibold border-b border-[#334155]">
+              <div class="col-span-6 pl-2">• Exercise Work (EAT)</div>
+              <div id="ldgEatD" class="col-span-3 text-right">-350</div>
+              <div id="ldgEatW" class="col-span-3 text-right">-2,450</div>
+            </div>
+            <div class="grid grid-cols-12 pt-1.5 font-extrabold text-white">
+              <div class="col-span-6 uppercase text-[11px]">Net Caloric Balance</div>
+              <div id="ldgNetD" class="col-span-3 text-right text-[#38bdf8]">-197</div>
+              <div id="ldgNetW" class="col-span-3 text-right text-[#38bdf8]">-1,379</div>
+            </div>
+          </div>
+
+          <!-- Tissue Partitioning Box -->
+          <div class="bg-[#0b1120] border border-[#334155] rounded-xl p-2.5 font-mono text-[10px] space-y-1">
+            <div class="text-slate-400 uppercase font-bold text-[9px]">Predicted Tissue Partitioning:</div>
+            <div class="flex justify-between">
+              <span class="text-slate-300">Adipose Fat Mass (3,500 kcal/lb):</span>
+              <span id="ldgFatDelta" class="text-pink-400 font-bold">-0.36 lbs</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-300">Skeletal Muscle / Lean (2,700 kcal/lb):</span>
+              <span id="ldgMuscleDelta" class="text-emerald-400 font-bold">-0.04 lbs</span>
+            </div>
+            <div class="flex justify-between border-t border-[#334155] pt-1 text-white font-bold text-[11px]">
+              <span>Expected Scale Change:</span>
+              <span id="ldgTotalWeightDelta" class="text-[#38bdf8]">-0.40 lbs</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 6-Week Trajectory & Metabolic Plateau Canvas Chart -->
+        <div class="bg-[#111827] border border-[#334155] rounded-2xl p-3.5 shadow-lg space-y-2">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-xs font-bold text-white uppercase font-mono">📈 6-Week Trajectory vs. Linear Myth</h3>
+              <p class="text-[10px] text-slate-400">Shows how mass changes alter burn rate over time</p>
+            </div>
+            <div class="flex items-center gap-2 font-mono text-[9px]">
+              <span class="text-[#38bdf8] font-bold">● Actual</span>
+              <span class="text-slate-400">-- Linear Extrapolation</span>
+            </div>
+          </div>
+          <canvas id="trajectoryCanvas" width="420" height="165" class="w-full h-[145px] bg-[#0b1120] border border-[#334155] rounded-xl"></canvas>
+        </div>
+
+        <!-- Weekly Historical Log Table -->
+        <div class="bg-[#111827] border border-[#334155] rounded-2xl p-3.5 shadow-lg space-y-2">
+          <div class="flex justify-between items-center">
+            <h3 class="text-xs font-bold text-white uppercase font-mono">📋 Weekly Weigh-In Log</h3>
+            <button onclick="resetFullCampaign()" class="text-[10px] font-mono text-rose-400 hover:underline">Reset 6-Week Lab ↺</button>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full font-mono text-[10px] text-left">
+              <thead>
+                <tr class="text-slate-400 border-b border-[#334155]">
+                  <th class="py-1">Wk</th>
+                  <th class="py-1">Weight</th>
+                  <th class="py-1">Guess</th>
+                  <th class="py-1">Actual Δ</th>
+                  <th class="py-1 text-right">Score</th>
+                </tr>
+              </thead>
+              <tbody id="historyLogBody" class="divide-y divide-[#1e293b] text-slate-200">
+                <tr><td colspan="5" class="py-3 text-center text-slate-500">Complete Week 1 Weigh-In to log data.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- ================= STICKY BOTTOM STEP ACTION BAR ================= -->
+    <footer class="bg-[#111827] border-t border-[#334155] px-3.5 py-2.5 shrink-0 flex items-center justify-between z-20">
+      <button id="btnFooterPrev" onclick="stepNavigation(-1)" class="px-3 py-2 rounded-xl bg-[#1e293b] hover:bg-[#334155] border border-[#334155] text-xs font-mono font-bold text-slate-300 transition disabled:opacity-40">
+        ◄ PREV
+      </button>
+      <div class="text-center font-mono">
+        <div id="footerStepPrompt" class="text-[10px] text-[#38bdf8] font-bold uppercase">Step 1: Inspect Avatar</div>
+        <div class="text-[8px] text-slate-500">© Barry Hemmerdinger</div>
+      </div>
+      <button id="btnFooterNext" onclick="stepNavigation(1)" class="px-3.5 py-2 rounded-xl bg-[#38bdf8] hover:bg-sky-400 text-[#0b1120] text-xs font-mono font-black uppercase transition shadow-md shadow-sky-500/15">
+        ROUTINE ►
+      </button>
+    </footer>
+
+    <!-- ================= 6-WEEK CAMPAIGN COMPLETE MODAL ================= -->
+    <div id="modalCampaignComplete" class="hidden absolute inset-0 bg-[#0b1120]/95 backdrop-blur-md z-50 flex flex-col justify-between p-4 overflow-y-auto">
+      <div class="space-y-3">
+        <div class="text-center pt-2">
+          <span class="px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-mono text-[10px] font-bold uppercase">6-Week STEM Lab Complete</span>
+          <h2 class="text-lg font-black text-white mt-1 uppercase tracking-wide">Metabolic Dossier Summary</h2>
+          <p class="text-[11px] text-slate-400 font-mono">© Barry Hemmerdinger • Caloric Flux Lab</p>
+        </div>
+
+        <div class="bg-[#111827] border border-[#334155] rounded-2xl p-4 text-center">
+          <div class="text-[10px] font-mono text-slate-400 uppercase">Total Predictive Mastery Score</div>
+          <div id="finalTotalScore" class="text-3xl font-black font-mono text-[#10b981] my-1">2,750 / 3,000</div>
+          <div id="finalRankBadge" class="text-xs font-mono font-bold text-[#38bdf8]">RANK: THERMODYNAMIC MASTER</div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2 font-mono text-center text-xs">
+          <div class="bg-[#111827] border border-[#334155] rounded-xl p-2.5">
+            <div class="text-[9px] text-slate-400">Start Weight</div>
+            <div id="finalStartWeight" class="font-bold text-white mt-0.5">135.0 lbs</div>
+          </div>
+          <div class="bg-[#111827] border border-[#334155] rounded-xl p-2.5">
+            <div class="text-[9px] text-slate-400">Final Weight</div>
+            <div id="finalEndWeight" class="font-bold text-[#38bdf8] mt-0.5">131.4 lbs</div>
+          </div>
+          <div class="bg-[#111827] border border-[#334155] rounded-xl p-2.5">
+            <div class="text-[9px] text-slate-400">BMR Shift</div>
+            <div id="finalBmrDelta" class="font-bold text-amber-400 mt-0.5">-16 kcal/d</div>
+          </div>
+        </div>
+
+        <div class="bg-[#111827] border border-[#334155] rounded-2xl p-3 text-xs text-slate-300 leading-relaxed space-y-1.5">
+          <div class="text-[10px] font-mono font-bold uppercase text-[#38bdf8]">Key STEM Takeaway: The Mass-Energy Feedback Loop</div>
+          <p>
+            Over 6 weeks, every pound gained or lost altered both your resting organ energy draw (<strong class="text-white">BMR</strong>) and the mechanical work required to move your body during exercise (<strong class="text-white">MET × mass × time</strong>). This natural feedback loop causes weight loss plateaus and bulking ceilings unless intake or activity is recalibrated!
+          </p>
+        </div>
+      </div>
+
+      <button onclick="resetFullCampaign()" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#38bdf8] to-blue-600 text-[#0b1120] font-mono font-black text-xs uppercase tracking-wider shadow-lg mt-4">
+        START NEW 6-WEEK EXPERIMENT ↺
+      </button>
+    </div>
+
+  </div>
+
+  <!-- =====================================================================
+       APPLICATION JAVASCRIPT: PHYSIOLOGY ENGINE & SHAPELY LINE-ART RENDERER
+       ===================================================================== -->
+  <script>
+    /* =====================================================================
+       1. SYNTHESIZED WEB AUDIO ENGINE (NO EXTERNAL FILES)
+       ===================================================================== */
+    let audioCtx = null;
+    let soundEnabled = true;
+
+    function playSynthTone(freq = 480, dur = 0.07, type = 'sine', vol = 0.12) {
+      if (!soundEnabled) return;
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + dur);
+      } catch (e) {}
+    }
+
+    function playChime() {
+      playSynthTone(523.25, 0.09, 'sine', 0.15);
+      setTimeout(() => playSynthTone(659.25, 0.09, 'sine', 0.15), 80);
+      setTimeout(() => playSynthTone(783.99, 0.14, 'triangle', 0.18), 160);
+      setTimeout(() => playSynthTone(1046.5, 0.25, 'sine', 0.20), 250);
+    }
+
+    function toggleAudio() {
+      soundEnabled = !soundEnabled;
+      document.getElementById('iconSoundOn').classList.toggle('hidden', !soundEnabled);
+      document.getElementById('iconSoundOff').classList.toggle('hidden', soundEnabled);
+      if (soundEnabled) playSynthTone(600, 0.06);
+    }
+
+    /* =====================================================================
+       2. STATE & CATALOG DEFINITIONS
+       ===================================================================== */
+    const state = {
+      sex: 'female',
+      age: 25,
+      heightInches: 66,          // 5'6"
+      initialWeightLbs: 135.0,
+      currentWeightLbs: 135.0,
+      animatedWeightLbs: 135.0,  // Used for smooth tweening on weigh-in
+      currentWeek: 1,
+      totalScore: 0,
+      activeTab: 1,
+      weekLockedIn: false,
+
+      // Routine Settings
+      dailyIntake: 2000,
+      macroPreset: 'protein',    // 'protein' | 'balanced' | 'keto' | 'plant'
+
+      // Multi-Exercise List
+      exercises: [
+        { id: 101, key: 'run', name: 'Running / Jogging', met: 8.5, days: 3, minutes: 40 },
+        { id: 102, key: 'weights', name: 'Weight Training', met: 5.0, days: 3, minutes: 45 }
+      ],
+
+      // History across 6 weeks
+      weightHistory: [135.0],
+      weekLogs: [],
+      cumulativeMuscleDelta: 0
+    };
+
+    const EXERCISE_DB = {
+      run:     { name: 'Running / Jogging', met: 8.5, isResistance: false },
+      weights: { name: 'Weight Training',   met: 5.0, isResistance: true  },
+      hiit:    { name: 'HIIT Circuit',      met: 9.5, isResistance: true  },
+      cycle:   { name: 'Road Cycling',      met: 7.5, isResistance: false },
+      swim:    { name: 'Lap Swimming',      met: 8.0, isResistance: false },
+      walk:    { name: 'Brisk Incline Walk',met: 4.5, isResistance: false },
+      yoga:    { name: 'Yoga / Pilates',    met: 3.0, isResistance: true  }
+    };
+
+    const DIET_DB = {
+      protein: {
+        name: 'High-Protein Athletic',
+        tef: 0.12,
+        ratios: { p: 0.35, c: 0.35, f: 0.30 },
+        meals: [
+          { slot: 'Breakfast (25%)', share: 0.25, icon: '🍳', title: 'Egg White & Smoked Salmon Sourdough', basePortion: 1.0, unit: 'plate', desc: 'Pasture egg whites, smoked wild salmon, sliced avocado & baby spinach on toasted sourdough.' },
+          { slot: 'Lunch (35%)',     share: 0.35, icon: '🍗', title: 'Herb-Grilled Chicken & Quinoa Bowl', basePortion: 6.5, unit: 'oz chicken', desc: 'Lean grilled chicken breast over tri-color quinoa, roasted broccoli & olive oil drizzle.' },
+          { slot: 'Snack (15%)',     share: 0.15, icon: '🫐', title: '0% Greek Yogurt & Whey Berry Parfait', basePortion: 1.0, unit: 'cup', desc: 'Strained Greek yogurt mixed with vanilla whey isolate, wild blueberries & almonds.' },
+          { slot: 'Dinner (25%)',    share: 0.25, icon: '🐟', title: 'Seared Wild Salmon & Sweet Potato', basePortion: 6.0, unit: 'oz fillet', desc: 'Crispy-skin Atlantic salmon, oven-roasted sweet potato wedges & garlic asparagus.' }
+        ]
+      },
+      balanced: {
+        name: 'Balanced Everyday',
+        tef: 0.10,
+        ratios: { p: 0.25, c: 0.45, f: 0.30 },
+        meals: [
+          { slot: 'Breakfast (25%)', share: 0.25, icon: '🥣', title: 'Steel-Cut Oats with Banana & Walnuts', basePortion: 1.0, unit: 'bowl', desc: 'Warm rolled oats cooked with milk, sliced banana, toasted walnuts & pure honey.' },
+          { slot: 'Lunch (35%)',     share: 0.35, icon: '🌯', title: 'Roasted Turkey & Avocado Artisan Wrap', basePortion: 1.0, unit: 'wrap', desc: 'Oven-roasted turkey breast, provolone, smashed avocado & greens in whole-wheat lavash.' },
+          { slot: 'Snack (15%)',     share: 0.15, icon: '🍎', title: 'Honeycrisp Apple & Peanut Butter', basePortion: 1.5, unit: 'tbsp PB', desc: 'Crisp sliced apple paired with natural roasted peanut butter & string cheese.' },
+          { slot: 'Dinner (25%)',    share: 0.25, icon: '🍝', title: 'Lean Beef Bolognese & Whole-Grain Pasta', basePortion: 5.5, unit: 'oz beef', desc: '93% lean ground beef simmered in San Marzano marinara over whole-grain penne.' }
+        ]
+      },
+      keto: {
+        name: 'Low-Carb / Keto',
+        tef: 0.08,
+        ratios: { p: 0.28, c: 0.08, f: 0.64 },
+        meals: [
+          { slot: 'Breakfast (25%)', share: 0.25, icon: '🥓', title: 'Three-Egg Bacon & Gruyère Omelet', basePortion: 3.0, unit: 'eggs', desc: 'Fluffy pasture-raised eggs folded with aged Gruyère, uncured bacon & half avocado.' },
+          { slot: 'Lunch (35%)',     share: 0.35, icon: '🥗', title: 'California Cobb Salad with Ranch', basePortion: 6.0, unit: 'oz chicken', desc: 'Grilled chicken thigh, crispy bacon, hard-boiled egg, blue cheese & avocado over romaine.' },
+          { slot: 'Snack (15%)',     share: 0.15, icon: '🌰', title: 'Roasted Macadamias & 85% Dark Cacao', basePortion: 1.5, unit: 'oz nuts', desc: 'Sea-salt roasted Hawaiian macadamia nuts with two squares of 85% dark chocolate.' },
+          { slot: 'Dinner (25%)',    share: 0.25, icon: '🥩', title: 'Grass-Fed Ribeye & Garlic Cauliflower Mash', basePortion: 7.0, unit: 'oz steak', desc: 'Pan-basted ribeye steak with herb-butter whipped cauliflower & roasted Brussels sprouts.' }
+        ]
+      },
+      plant: {
+        name: 'Plant-Based Lean',
+        tef: 0.10,
+        ratios: { p: 0.24, c: 0.52, f: 0.24 },
+        meals: [
+          { slot: 'Breakfast (25%)', share: 0.25, icon: '🌮', title: 'Turmeric Tofu Scramble & Black Beans', basePortion: 6.0, unit: 'oz tofu', desc: 'Crumbled organic firm tofu sautéed with bell peppers, black beans, salsa & avocado.' },
+          { slot: 'Lunch (35%)',     share: 0.35, icon: '🥙', title: 'Mediterranean Lentil & Falafel Bowl', basePortion: 1.2, unit: 'cups lentils', desc: 'Spiced green lentils, baked herb falafel, hummus, cucumber-tomato tabbouleh & tahini.' },
+          { slot: 'Snack (15%)',     share: 0.15, icon: '🥤', title: 'Pea Protein Berry & Hemp Smoothie', basePortion: 1.0, unit: 'shake', desc: 'Plant protein isolate blended with almond milk, frozen mixed berries & hulled hemp seeds.' },
+          { slot: 'Dinner (25%)',    share: 0.25, icon: '🍛', title: 'Sesame-Ginger Tempeh & Brown Jasmine Rice', basePortion: 6.0, unit: 'oz tempeh', desc: 'Crispy glazed organic tempeh, steamed edamame, bok choy & brown jasmine rice.' }
+        ]
+      }
+    };
+
+    /* =====================================================================
+       3. DETERMINISTIC THERMODYNAMIC ENGINE (ZERO RNG)
+       ===================================================================== */
+    function computeBmi(weightLbs, heightInches) {
+      return (weightLbs / (heightInches * heightInches)) * 703;
+    }
+
+    function computeBmr(weightLbs, heightInches, age, sex) {
+      const kg = weightLbs / 2.20462;
+      const cm = heightInches * 2.54;
+      const offset = (sex === 'male') ? 5 : -161;
+      return Math.round((10 * kg) + (6.25 * cm) - (5 * age) + offset);
+    }
+
+    function computeBodyFatPct(weightLbs, heightInches, age, sex) {
+      const bmi = computeBmi(weightLbs, heightInches);
+      const baseBfp = (sex === 'male')
+        ? (1.20 * bmi) + (0.23 * age) - 16.2
+        : (1.20 * bmi) + (0.23 * age) - 5.4;
+      // Factor in cumulative muscle hypertrophy shift
+      const adj = baseBfp - (state.cumulativeMuscleDelta * 0.35);
+      return Math.max(sex === 'male' ? 6.0 : 12.0, Math.min(52.0, adj));
+    }
+
+    function computeWeeklyEnergyBalance(weightLbs = state.currentWeightLbs) {
+      const kg = weightLbs / 2.20462;
+      const bmrDaily = computeBmr(weightLbs, state.heightInches, state.age, state.sex);
+      const bmrWeekly = bmrDaily * 7;
+
+      const diet = DIET_DB[state.macroPreset];
+      const tefDaily = Math.round(state.dailyIntake * diet.tef);
+      const tefWeekly = tefDaily * 7;
+
+      // Adaptive NEAT: 15% of BMR, with subtle metabolic adaptation over weeks
+      const neatScalar = Math.max(0.90, 1.0 - ((state.currentWeek - 1) * 0.015));
+      const neatDaily = Math.round(bmrDaily * 0.15 * neatScalar);
+      const neatWeekly = neatDaily * 7;
+
+      // Multi-Exercise Mass-Dependent Burn: MET * kg * hours * days
+      let eatWeekly = 0;
+      let hasResistance = false;
+      state.exercises.forEach(ex => {
+        const exBurn = ex.met * kg * (ex.minutes / 60) * ex.days;
+        eatWeekly += exBurn;
+        if (EXERCISE_DB[ex.key] && EXERCISE_DB[ex.key].isResistance) hasResistance = true;
+      });
+      eatWeekly = Math.round(eatWeekly);
+      const eatDaily = Math.round(eatWeekly / 7);
+
+      const intakeDaily = state.dailyIntake;
+      const intakeWeekly = intakeDaily * 7;
+
+      const totalBurnDaily = bmrDaily + tefDaily + neatDaily + eatDaily;
+      const totalBurnWeekly = bmrWeekly + tefWeekly + neatWeekly + eatWeekly;
+
+      const netDailyKcal = intakeDaily - totalBurnDaily;
+      const netWeeklyKcal = intakeWeekly - totalBurnWeekly;
+
+      // Tissue Partitioning (Adipose Fat @ 3500 kcal/lb vs Muscle @ 2700 kcal/lb)
+      let fatDeltaLbs = 0;
+      let muscleDeltaLbs = 0;
+
+      if (netWeeklyKcal < 0) {
+        // Deficit: high protein + resistance preserves lean mass (92% fat loss)
+        const fatShare = (hasResistance && state.macroPreset === 'protein') ? 0.92 : 0.82;
+        fatDeltaLbs = (netWeeklyKcal * fatShare) / 3500;
+        muscleDeltaLbs = (netWeeklyKcal * (1 - fatShare)) / 2700;
+      } else {
+        // Surplus: resistance + protein channels up to 38% into lean mass synthesis
+        const muscleShare = (hasResistance && state.macroPreset === 'protein') ? 0.38 : (hasResistance ? 0.25 : 0.12);
+        muscleDeltaLbs = (netWeeklyKcal * muscleShare) / 2700;
+        fatDeltaLbs = (netWeeklyKcal * (1 - muscleShare)) / 3500;
+      }
+
+      const totalWeightDeltaLbs = parseFloat((fatDeltaLbs + muscleDeltaLbs).toFixed(2));
+
+      return {
+        bmrDaily, bmrWeekly,
+        tefDaily, tefWeekly,
+        neatDaily, neatWeekly,
+        eatDaily, eatWeekly,
+        intakeDaily, intakeWeekly,
+        totalBurnDaily, totalBurnWeekly,
+        netDailyKcal, netWeeklyKcal,
+        fatDeltaLbs: parseFloat(fatDeltaLbs.toFixed(2)),
+        muscleDeltaLbs: parseFloat(muscleDeltaLbs.toFixed(2)),
+        totalWeightDeltaLbs
+      };
+    }
+
+    /* =====================================================================
+       4. PROCEDURAL SHAPELY LINE-ART AVATAR ENGINE (FEMALE & MALE)
+       ===================================================================== */
+    function computeMorphParameters(weightLbs, isGhost = false) {
+      const baseBmi = computeBmi(state.initialWeightLbs, state.heightInches);
+      const rawBmi = computeBmi(weightLbs, state.heightInches);
+
+      // Amplify weekly delta from Day 0 so 1-3 lb weekly shifts are unmistakably visible against Ghost!
+      const weightDeltaFromDay0 = isGhost ? 0 : (weightLbs - state.initialWeightLbs);
+      const amplifiedEquivalentLbs = state.initialWeightLbs + (weightDeltaFromDay0 * 3.4);
+      const effectiveBmi = isGhost ? baseBmi : computeBmi(amplifiedEquivalentLbs, state.heightInches);
+
+      // Normalized Adiposity Factor `f`:
+      // f = 0.0 at BMI 16.5 (very lean), f = 0.25 at BMI 21.5 (athletic), f = 0.55 at BMI 27.5 (curvy/thick), f = 1.0 at BMI 38+ (heavy)
+      const f = Math.max(-0.08, Math.min(1.25, (effectiveBmi - 17.0) / 21.0));
+      const bfp = computeBodyFatPct(isGhost ? state.initialWeightLbs : amplifiedEquivalentLbs, state.heightInches, state.age, state.sex);
+
+      return { f, effectiveBmi, rawBmi, bfp, weightDeltaFromDay0 };
+    }
+
+    /**
+     * Generates the Headless (Neck-to-Thighs) Cartoon Pin-Up Female SVG
+     * Directly matching the user's reference illustration:
+     * - Bold, smooth black cartoon outlines (#050505, stroke-width 3.8)
+     * - Warm flat cartoon tan skin (#d79c71)
+     * - Sweetheart crimson-red bikini top (#9e241a) with rounded cups, side wings,
+     *   thin black halter straps, and Y-shaped cleavage line
+     * - Hourglass torso tapering to a cinched waist (or expanding convexly at higher BMI)
+     *   with a vertical teardrop/oval belly button
+     * - Hands-on-hips pose with bent elbows, elbow crook creases, and cute curved knuckle bumps
+     * - Crimson-red retro bikini bottoms (#9e241a) and shapely cartoon thighs
+     */
+    function buildFemaleAvatarSvg(weightLbs, isGhost = false) {
+      const { f, bfp } = computeMorphParameters(weightLbs, isGhost);
+      const cx = 170;
+
+      // Reference pin-up baseline is around f = 0.20 (135 lbs, 5'6")
+      // u measures deviation from the ideal hourglass reference (-0.25 lean to +1.05 heavy)
+      const u = f - 0.20;
+
+      // Parametric Cartoon Control Coordinates (Half-widths from center x = 170)
+      const neckW        = 15.0 + f * 4.5;
+      const shoulderX    = 52.0 + f * 12.0;
+      const armpitX      = 42.0 + f * 15.0;
+      const armpitY      = 184;
+
+      // Sweetheart Bikini Bust Cup Dimensions
+      const bustPeakX    = 31.0 + f * 8.5;
+      const bustOuterX   = 46.5 + f * 18.5; // Rounded outer swell of bikini cups
+      const cupBottomY   = 222 + f * 7.5;   // Bottom curve of bikini cups
+      const ribSideX     = 37.5 + f * 21.5; // Torso width under the bikini side band
+
+      // Hourglass Waist Cinch vs High-BMI Convex Belly
+      const waistX       = Math.max(21.0, 29.5 + u * 39.0);
+      const waistY       = 264;
+
+      // Hips & Bikini Bottoms
+      const hipTopX      = 44.0 + f * 27.0; // Top edge of crimson bikini briefs (y = 299)
+      const hipMidX      = 56.5 + f * 30.0; // Outer hip corner of bikini briefs (y = 339)
+      const thighTopX    = 57.5 + f * 30.5;
+      const thighLowX    = 46.0 + f * 24.0;
+      // Touching inner thighs with bold center line at normal/curvy BMI; slight gap only when very lean
+      const thighGap     = Math.max(0, 2.2 - f * 10.0);
+
+      // Bent Arms & Elbows (Winged outward with clean triangular cutout)
+      const elbowOutX    = 112.0 + f * 18.0;
+      const elbowOutY    = 242;
+      const elbowInX     = 87.0 + f * 13.5;
+      const elbowInY     = 244;
+
+      const ink          = isGhost ? '#38bdf8' : '#050505';
+      const dash         = isGhost ? 'stroke-dasharray="6,5"' : '';
+      const skinFill     = isGhost ? 'none' : 'url(#skinToneGrad)';
+      const redFill      = isGhost ? 'none' : 'url(#femaleGearGrad)';
+      const sw           = isGhost ? '2.2' : '3.8';
+
+      // Subtle abdominal tone vs soft belly crease at high BMI
+      const abToneOp     = isGhost ? 0 : Math.max(0, Math.min(0.45, (21.5 - bfp) / 9.0));
+      const softBellyOp  = isGhost ? 0 : Math.max(0, Math.min(0.75, (bfp - 26.5) / 12.0));
+
+      // 1. Left & Right Bent Arms Path (Drawn behind torso so armpit/hip junctions overlap cleanly)
+      const leftArmPath = `
+        M ${cx - neckW - 2} 135
+        C ${cx - 28} 136, ${cx - shoulderX + 6} 139, ${cx - shoulderX - 10} 154
+        C ${cx - shoulderX - 28} 174, ${cx - elbowOutX + 8} 218, ${cx - elbowOutX} ${elbowOutY}
+        C ${cx - elbowOutX + 6} 258, ${cx - hipTopX - 32} 288, ${cx - hipTopX - 4} 307
+        L ${cx - waistX - 2} 290
+        C ${cx - waistX - 18} 274, ${cx - elbowInX + 8} 254, ${cx - elbowInX} ${elbowInY}
+        C ${cx - elbowInX + 12} 224, ${cx - armpitX - 12} 198, ${cx - armpitX} ${armpitY}
+        Z
+      `;
+
+      const rightArmPath = `
+        M ${cx + neckW + 2} 135
+        C ${cx + 28} 136, ${cx + shoulderX - 6} 139, ${cx + shoulderX + 10} 154
+        C ${cx + shoulderX + 28} 174, ${cx + elbowOutX - 8} 218, ${cx + elbowOutX} ${elbowOutY}
+        C ${cx + elbowOutX - 6} 258, ${cx + hipTopX + 32} 288, ${cx + hipTopX + 4} 307
+        L ${cx + waistX + 2} 290
+        C ${cx + waistX + 18} 274, ${cx + elbowInX - 8} 254, ${cx + elbowInX} ${elbowInY}
+        C ${cx + elbowInX - 12} 224, ${cx + armpitX + 12} 198, ${cx + armpitX} ${armpitY}
+        Z
+      `;
+
+      // 2. Main Headless Hourglass Torso & Shapely Thighs Path
+      const torsoAndLegsPath = `
+        M ${cx - neckW} 115
+        Q ${cx} 121 ${cx + neckW} 115
+        C ${cx + neckW + 1} 127, ${cx + neckW + 3} 133, ${cx + 28} 137
+        C ${cx + 42} 140, ${cx + armpitX + 4} 162, ${cx + armpitX} ${armpitY}
+        C ${cx + ribSideX + 3} 202, ${cx + ribSideX + 1} 214, ${cx + ribSideX} 224
+        C ${cx + ribSideX - 4} 242, ${cx + waistX} 250, ${cx + waistX} ${waistY}
+        C ${cx + waistX} 278, ${cx + hipTopX - 6} 288, ${cx + hipTopX} 299
+        C ${cx + hipMidX - 1} 316, ${cx + hipMidX + 1} 328, ${cx + hipMidX} 339
+        C ${cx + thighTopX + 2} 366, ${cx + thighTopX - 2} 412, ${cx + thighLowX} 468
+        L ${cx + thighGap} 468
+        L ${cx + thighGap} 359
+        L ${cx - thighGap} 359
+        L ${cx - thighGap} 468
+        L ${cx - thighLowX} 468
+        C ${cx - thighTopX + 2} 412, ${cx - thighTopX - 2} 366, ${cx - hipMidX} 339
+        C ${cx - hipMidX - 1} 328, ${cx - hipMidX + 1} 316, ${cx - hipTopX} 299
+        C ${cx - hipTopX + 6} 288, ${cx - waistX} 278, ${cx - waistX} ${waistY}
+        C ${cx - waistX} 250, ${cx - ribSideX + 4} 242, ${cx - ribSideX} 224
+        C ${cx - ribSideX - 1} 214, ${cx - ribSideX - 3} 202, ${cx - armpitX} ${armpitY}
+        C ${cx - armpitX - 4} 162, ${cx - 42} 140, ${cx - 28} 137
+        C ${cx - neckW - 3} 133, ${cx - neckW - 1} 127, ${cx - neckW} 115
+        Z
+      `;
+
+      // 3. Sweetheart Crimson-Red Bikini Cups & Side Wings (Exact match to Reference)
+      // Side band wings wrapping under armpits
+      const bikiniWingsPath = `
+        M ${cx - bustOuterX + 5} 200
+        L ${cx - ribSideX - 2} 206
+        L ${cx - ribSideX - 1} 220
+        L ${cx - bustOuterX + 10} 215 Z
+        M ${cx + bustOuterX - 5} 200
+        L ${cx + ribSideX + 2} 206
+        L ${cx + ribSideX + 1} 220
+        L ${cx + bustOuterX - 10} 215 Z
+      `;
+
+      // Main Sweetheart Double-Rounded Bikini Cups
+      const bikiniCupsPath = `
+        M ${cx} 196
+        C ${cx - 8} 186, ${cx - 19} 178, ${cx - bustPeakX} 173
+        C ${cx - bustOuterX - 2} 183, ${cx - bustOuterX - 5} 202, ${cx - bustOuterX + 4} 214
+        C ${cx - bustOuterX + 14} ${cupBottomY + 5}, ${cx - 14} ${cupBottomY + 5}, ${cx} ${cupBottomY - 6}
+        C ${cx + 14} ${cupBottomY + 5}, ${cx + bustOuterX - 14} ${cupBottomY + 5}, ${cx + bustOuterX - 4} 214
+        C ${cx + bustOuterX + 5} 202, ${cx + bustOuterX + 2} 183, ${cx + bustPeakX} 173
+        C ${cx + 19} 178, ${cx + 8} 186, ${cx} 196
+        Z
+      `;
+
+      // 4. Crimson-Red Retro Hip-Hugger Bikini Bottoms
+      const bikiniBottomsPath = `
+        M ${cx - hipTopX} 299
+        Q ${cx} ${309 + f * 4} ${cx + hipTopX} 299
+        C ${cx + hipMidX - 1} 316, ${cx + hipMidX + 1} 328, ${cx + hipMidX} 339
+        Q ${cx + 26} 346 ${cx} 360
+        Q ${cx - 26} 346 ${cx - hipMidX} 339
+        C ${cx - hipMidX - 1} 328, ${cx - hipMidX + 1} 316, ${cx - hipTopX} 299
+        Z
+      `;
+
+      if (isGhost) {
+        return `
+          <g opacity="0.85">
+            <path d="${leftArmPath}" fill="none" stroke="${ink}" stroke-width="1.8" ${dash} />
+            <path d="${rightArmPath}" fill="none" stroke="${ink}" stroke-width="1.8" ${dash} />
+            <path d="${torsoAndLegsPath}" fill="none" stroke="${ink}" stroke-width="2.2" ${dash} />
+            <path d="${bikiniCupsPath}" fill="none" stroke="${ink}" stroke-width="1.4" ${dash} />
+            <path d="${bikiniBottomsPath}" fill="none" stroke="${ink}" stroke-width="1.4" ${dash} />
+          </g>
+        `;
+      }
+
+      return `
+        <!-- 1. Cartoon Bent Arms, Elbow Creases & Cute Hand Knuckles on Hips -->
+        <g stroke="${ink}" stroke-width="${sw}" fill="${skinFill}" stroke-linecap="round" stroke-linejoin="round">
+          <path d="${leftArmPath}" />
+          <path d="${rightArmPath}" />
+          <!-- Cute Cartoon Curved Knuckles Tucked at Hip Edge (Matches Reference) -->
+          <path d="M ${cx - hipTopX - 3} 288 C ${cx - hipTopX - 11} 292, ${cx - hipTopX - 11} 303, ${cx - hipTopX - 2} 309" />
+          <path d="M ${cx - hipTopX - 6} 295 C ${cx - hipTopX - 12} 300, ${cx - hipTopX - 10} 309, ${cx - hipTopX - 1} 313" />
+          <path d="M ${cx + hipTopX + 3} 288 C ${cx + hipTopX + 11} 292, ${cx + hipTopX + 11} 303, ${cx + hipTopX + 2} 309" />
+          <path d="M ${cx + hipTopX + 6} 295 C ${cx + hipTopX + 12} 300, ${cx + hipTopX + 10} 309, ${cx + hipTopX + 1} 313" />
+          <!-- Inner Elbow Crook Crease Lines -->
+          <line x1="${cx - elbowInX}" y1="${elbowInY}" x2="${cx - elbowInX - 9}" y2="${elbowInY - 3}" stroke-width="3.2" />
+          <line x1="${cx + elbowInX}" y1="${elbowInY}" x2="${cx + elbowInX + 9}" y2="${elbowInY - 3}" stroke-width="3.2" />
+        </g>
+
+        <!-- 2. Main Hourglass Torso & Thighs Silhouette -->
+        <path d="${torsoAndLegsPath}" fill="${skinFill}" stroke="${ink}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" />
+        <path d="${torsoAndLegsPath}" fill="url(#skinHighlightGrad)" stroke="none" />
+
+        <!-- Clean Neck Base Cutaway Cap -->
+        <ellipse cx="${cx}" cy="115" rx="${neckW}" ry="3.8" fill="#b87b52" stroke="${ink}" stroke-width="3.2" />
+
+        <!-- Center Inner-Thigh Division Line (When thighs touch as in reference) -->
+        ${thighGap <= 0.5 ? `<path d="M ${cx} 360 Q ${cx - 2} 415 ${cx - 3} 468" stroke="${ink}" stroke-width="${sw}" fill="none" stroke-linecap="round" />` : ''}
+
+        <!-- 3. Iconic Y-Shaped Cartoon Cleavage & Bikini Halter Straps -->
+        <g stroke="${ink}" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <!-- Thin Black Halter Straps Angled Up to Neck Base -->
+          <path d="M ${cx - bustPeakX + 2} 174 Q ${cx - 24} 152 ${cx - 18} 135" stroke-width="3.5" />
+          <path d="M ${cx + bustPeakX - 2} 174 Q ${cx + 24} 152 ${cx + 18} 135" stroke-width="3.5" />
+          <!-- Curved Y-Cleavage Lines Above Sweetheart Gore -->
+          <path d="M ${cx} 196 Q ${cx - 2} 178 ${cx - 13} 165" stroke-width="3.4" />
+          <path d="M ${cx - 1} 182 Q ${cx + 5} 172 ${cx + 14} 163" stroke-width="3.4" />
+        </g>
+
+        <!-- 4. Sweetheart Crimson-Red Bikini Top (#9e241a) -->
+        <g stroke="${ink}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round">
+          <path d="${bikiniWingsPath}" fill="${redFill}" />
+          <path d="${bikiniCupsPath}" fill="${redFill}" />
+          <!-- Center Cup Seam / Under-Gore Curve -->
+          <path d="M ${cx} 196 Q ${cx - 3} 207 ${cx} ${cupBottomY - 6}" stroke-width="3.2" fill="none" />
+        </g>
+
+        <!-- 5. Midriff Vertical Teardrop Belly Button & Dynamic BMI Contours -->
+        <g stroke-linecap="round">
+          <!-- Vertical Cartoon Teardrop Navel (Matches Reference) -->
+          <path d="M ${cx} 269 C ${cx + 3.2} 273, ${cx + 3.2} 281, ${cx} 284 C ${cx - 2.8} 281, ${cx - 2.8} 273, ${cx} 269 Z" fill="${ink}" />
+          <!-- Subtle Toned Oblique Hints at Very Low Body Fat -->
+          <g opacity="${abToneOp}" stroke="#8c583a" stroke-width="2.2" fill="none">
+            <path d="M ${cx - 14} 238 Q ${cx - 17} 256 ${cx - 12} 276" />
+            <path d="M ${cx + 14} 238 Q ${cx + 17} 256 ${cx + 12} 276" />
+          </g>
+          <!-- Soft Belly Fold Curve at High BMI -->
+          <path d="M ${cx - waistX + 10} 280 Q ${cx} ${296 + f * 12} ${cx + waistX - 10} 280" stroke="${ink}" stroke-width="2.6" fill="none" opacity="${softBellyOp}" />
+        </g>
+
+        <!-- 6. Crimson-Red Retro Bikini Bottoms (#9e241a) -->
+        <path d="${bikiniBottomsPath}" fill="${redFill}" stroke="${ink}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" />
+      `;
+    }
+
+    /**
+     * Generates the Headless (Neck-to-Thighs) Cartoon Male SVG
+     * in the exact same Bold Black Ink (#050505) + Warm Tan Skin (#d79c71)
+     * + Crimson-Red Swim Trunks (#9e241a) style.
+     */
+    function buildMaleAvatarSvg(weightLbs, isGhost = false) {
+      const { f, bfp } = computeMorphParameters(weightLbs, isGhost);
+      const cx = 170;
+      const u = f - 0.20;
+
+      const neckW       = 19.0 + f * 5.5;
+      const shoulderX   = 62.0 + f * 14.0;
+      const armpitX     = 50.0 + f * 17.0;
+      const armpitY     = 186;
+      const chestSideX  = 48.0 + f * 20.0;
+      const waistX      = Math.max(29.0, 35.0 + u * 38.0);
+      const waistY      = 266;
+      const hipTopX     = 43.0 + f * 26.0;
+      const hipMidX     = 52.0 + f * 28.0;
+      const thighTopX   = 53.0 + f * 28.0;
+      const thighLowX   = 43.0 + f * 21.0;
+      const thighGap    = Math.max(0, 2.0 - f * 9.0);
+
+      const elbowOutX   = 120.0 + f * 18.0;
+      const elbowOutY   = 242;
+      const elbowInX    = 93.0 + f * 14.0;
+      const elbowInY    = 244;
+
+      const ink         = isGhost ? '#38bdf8' : '#050505';
+      const dash        = isGhost ? 'stroke-dasharray="6,5"' : '';
+      const skinFill    = isGhost ? 'none' : 'url(#skinToneGrad)';
+      const redFill     = isGhost ? 'none' : 'url(#maleGearGrad)';
+      const sw          = isGhost ? '2.2' : '3.8';
+
+      const abDefOpacity    = isGhost ? 0 : Math.max(0, Math.min(0.85, (22.0 - bfp) / 10.0));
+      const softBellyOpacity = isGhost ? 0 : Math.max(0, Math.min(0.80, (bfp - 23.0) / 12.0));
+
+      const leftArmPath = `
+        M ${cx - neckW - 3} 134
+        C ${cx - 34} 135, ${cx - shoulderX + 6} 138, ${cx - shoulderX - 10} 154
+        C ${cx - shoulderX - 28} 176, ${cx - elbowOutX + 8} 218, ${cx - elbowOutX} ${elbowOutY}
+        C ${cx - elbowOutX + 6} 258, ${cx - hipTopX - 34} 288, ${cx - hipTopX - 4} 307
+        L ${cx - waistX - 2} 290
+        C ${cx - waistX - 18} 274, ${cx - elbowInX + 8} 254, ${cx - elbowInX} ${elbowInY}
+        C ${cx - elbowInX + 12} 224, ${cx - armpitX - 12} 198, ${cx - armpitX} ${armpitY}
+        Z
+      `;
+
+      const rightArmPath = `
+        M ${cx + neckW + 3} 134
+        C ${cx + 34} 135, ${cx + shoulderX - 6} 138, ${cx + shoulderX + 10} 154
+        C ${cx + shoulderX + 28} 176, ${cx + elbowOutX - 8} 218, ${cx + elbowOutX} ${elbowOutY}
+        C ${cx + elbowOutX - 6} 258, ${cx + hipTopX + 34} 288, ${cx + hipTopX + 4} 307
+        L ${cx + waistX + 2} 290
+        C ${cx + waistX + 18} 274, ${cx + elbowInX - 8} 254, ${cx + elbowInX} ${elbowInY}
+        C ${cx + elbowInX - 12} 224, ${cx + armpitX + 12} 198, ${cx + armpitX} ${armpitY}
+        Z
+      `;
+
+      const bodyPath = `
+        M ${cx - neckW} 115
+        Q ${cx} 121 ${cx + neckW} 115
+        C ${cx + neckW + 2} 126, ${cx + neckW + 5} 132, ${cx + 34} 136
+        C ${cx + 50} 140, ${cx + armpitX + 4} 164, ${cx + armpitX} ${armpitY}
+        C ${cx + chestSideX + 2} 206, ${cx + chestSideX - 2} 224, ${cx + waistX} ${waistY}
+        C ${cx + waistX} 280, ${cx + hipTopX - 4} 290, ${cx + hipTopX} 301
+        C ${cx + hipMidX} 322, ${cx + thighTopX} 364, ${cx + thighLowX} 468
+        L ${cx + thighGap} 468
+        L ${cx + thighGap} 362
+        L ${cx - thighGap} 362
+        L ${cx - thighGap} 468
+        L ${cx - thighLowX} 468
+        C ${cx - thighTopX} 364, ${cx - hipMidX} 322, ${cx - hipTopX} 301
+        C ${cx - hipTopX + 4} 290, ${cx - waistX} 280, ${cx - waistX} ${waistY}
+        C ${cx - chestSideX + 2} 224, ${cx - chestSideX - 2} 206, ${cx - armpitX} ${armpitY}
+        C ${cx - armpitX - 4} 164, ${cx - 50} 140, ${cx - 34} 136
+        C ${cx - neckW - 5} 132, ${cx - neckW - 2} 126, ${cx - neckW} 115
+        Z
+      `;
+
+      const trunksPath = `
+        M ${cx - hipTopX} 300
+        Q ${cx} ${308 + f * 4} ${cx + hipTopX} 300
+        L ${cx + hipMidX + 1} 364
+        L ${cx + thighGap} 362
+        L ${cx} 352
+        L ${cx - thighGap} 362
+        L ${cx - hipMidX - 1} 364
+        Z
+      `;
+
+      if (isGhost) {
+        return `
+          <g opacity="0.85">
+            <path d="${leftArmPath}" fill="none" stroke="${ink}" stroke-width="1.8" ${dash} />
+            <path d="${rightArmPath}" fill="none" stroke="${ink}" stroke-width="1.8" ${dash} />
+            <path d="${bodyPath}" fill="none" stroke="${ink}" stroke-width="2.2" ${dash} />
+            <path d="${trunksPath}" fill="none" stroke="${ink}" stroke-width="1.4" ${dash} />
+          </g>
+        `;
+      }
+
+      return `
+        <!-- 1. Cartoon Bent Muscular Arms & Knuckles on Hips -->
+        <g stroke="${ink}" stroke-width="${sw}" fill="${skinFill}" stroke-linecap="round" stroke-linejoin="round">
+          <path d="${leftArmPath}" />
+          <path d="${rightArmPath}" />
+          <path d="M ${cx - hipTopX - 3} 288 C ${cx - hipTopX - 12} 292, ${cx - hipTopX - 12} 304, ${cx - hipTopX - 2} 310" />
+          <path d="M ${cx + hipTopX + 3} 288 C ${cx + hipTopX + 12} 292, ${cx + hipTopX + 12} 304, ${cx + hipTopX + 2} 310" />
+          <line x1="${cx - elbowInX}" y1="${elbowInY}" x2="${cx - elbowInX - 10}" y2="${elbowInY - 3}" stroke-width="3.2" />
+          <line x1="${cx + elbowInX}" y1="${elbowInY}" x2="${cx + elbowInX + 10}" y2="${elbowInY - 3}" stroke-width="3.2" />
+        </g>
+
+        <!-- 2. Main Cartoon Torso & Legs Silhouette -->
+        <path d="${bodyPath}" fill="${skinFill}" stroke="${ink}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" />
+        <path d="${bodyPath}" fill="url(#skinHighlightGrad)" stroke="none" />
+
+        <!-- Clean Neck Base Cutaway Cap -->
+        <ellipse cx="${cx}" cy="115" rx="${neckW}" ry="4.0" fill="#b87b52" stroke="${ink}" stroke-width="3.2" />
+
+        ${thighGap <= 0.5 ? `<path d="M ${cx} 362 L ${cx - 2} 468" stroke="${ink}" stroke-width="${sw}" fill="none" stroke-linecap="round" />` : ''}
+
+        <!-- 3. Cartoon Pectoral Contours -->
+        <g stroke="${ink}" stroke-width="3.4" stroke-linecap="round" fill="none">
+          <path d="M ${cx - chestSideX + 6} 188 C ${cx - chestSideX + 12} 210, ${cx - 12} 212, ${cx - 3} 200" />
+          <path d="M ${cx + chestSideX - 6} 188 C ${cx + chestSideX - 12} 210, ${cx + 12} 212, ${cx + 3} 200" />
+          <line x1="${cx}" y1="176" x2="${cx}" y2="206" stroke-width="3.0" />
+        </g>
+
+        <!-- 4. Cartoon Abdominal Lines (When Lean) & Navel -->
+        <g stroke="${ink}" stroke-width="2.6" fill="none" stroke-linecap="round" opacity="${abDefOpacity}">
+          <path d="M ${cx - 16} 222 C ${cx - 19} 242, ${cx - 17} 262, ${cx - 12} 280" />
+          <path d="M ${cx + 16} 222 C ${cx + 19} 242, ${cx + 17} 262, ${cx + 12} 280" />
+          <line x1="${cx - 14}" y1="238" x2="${cx + 14}" y2="238" />
+          <line x1="${cx - 13}" y1="256" x2="${cx + 13}" y2="256" />
+        </g>
+
+        <path d="M ${cx} 271 C ${cx + 3.2} 275, ${cx + 3.2} 283, ${cx} 286 C ${cx - 2.8} 283, ${cx - 2.8} 275, ${cx} 271 Z" fill="${ink}" />
+        <path d="M ${cx - waistX + 8} 279 Q ${cx} ${298 + f * 14} ${cx + waistX - 8} 279" stroke="${ink}" stroke-width="2.8" fill="none" opacity="${softBellyOpacity}" />
+
+        <!-- 5. Crimson-Red Retro Swim Trunks (#9e241a) -->
+        <g stroke="${ink}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round">
+          <path d="${trunksPath}" fill="${redFill}" />
+          <line x1="${cx}" y1="306" x2="${cx}" y2="352" stroke-width="3.0" />
+        </g>
+      `;
+    }
+
+    function previewMorphWeight(val) {
+      state.animatedWeightLbs = parseFloat(val);
+      renderAvatar();
+    }
+
+    function restoreActualWeightAfterPreview() {
+      document.getElementById('sliderPreviewMorph').value = Math.round(state.currentWeightLbs);
+      animateAvatarWeightTo(state.currentWeightLbs);
+    }
+
+    function renderAvatar() {
+      const activeLayer = document.getElementById('activeAvatarLayer');
+      const ghostLayer = document.getElementById('ghostAvatarLayer');
+      const showGhost = document.getElementById('chkShowGhost').checked;
+
+      if (state.sex === 'female') {
+        activeLayer.innerHTML = buildFemaleAvatarSvg(state.animatedWeightLbs, false);
+        ghostLayer.innerHTML = showGhost ? buildFemaleAvatarSvg(state.initialWeightLbs, true) : '';
+      } else {
+        activeLayer.innerHTML = buildMaleAvatarSvg(state.animatedWeightLbs, false);
+        ghostLayer.innerHTML = showGhost ? buildMaleAvatarSvg(state.initialWeightLbs, true) : '';
+      }
+
+      // Scale floor shadow subtly with weight
+      const shadowRx = Math.round(58 + ((state.animatedWeightLbs - 110) * 0.18));
+      document.getElementById('floorShadow').setAttribute('rx', shadowRx);
+
+      updateAnthropometricReadouts(state.animatedWeightLbs);
+    }
+
+    function animateAvatarWeightTo(targetWeightLbs) {
+      const startWeight = state.animatedWeightLbs;
+      const diff = targetWeightLbs - startWeight;
+      if (Math.abs(diff) < 0.01) {
+        state.animatedWeightLbs = targetWeightLbs;
+        renderAvatar();
+        return;
+      }
+      const duration = 750;
+      const startTime = performance.now();
+
+      function step(now) {
+        const t = Math.min(1, (now - startTime) / duration);
+        // Ease out cubic
+        const ease = 1 - Math.pow(1 - t, 3);
+        state.animatedWeightLbs = startWeight + (diff * ease);
+        renderAvatar();
+        if (t < 1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    }
+
+    function updateAnthropometricReadouts(weightLbs) {
+      const bmi = computeBmi(weightLbs, state.heightInches);
+      const bfp = computeBodyFatPct(weightLbs, state.heightInches, state.age, state.sex);
+      const leanMass = Math.round(weightLbs * (1 - bfp / 100));
+      const netDelta = weightLbs - state.initialWeightLbs;
+
+      // Realistic Waist & Hip/Chest inches derived from height & BMI + amplified delta feedback
+      const baseWaist = (state.sex === 'female')
+        ? (state.heightInches * 0.34) + ((bmi - 20) * 0.68)
+        : (state.heightInches * 0.38) + ((bmi - 21) * 0.72);
+      const baseHips = (state.sex === 'female')
+        ? baseWaist + 9.8 - Math.max(0, (bmi - 26) * 0.25)
+        : baseWaist + 6.5 + (state.cumulativeMuscleDelta * 0.2);
+
+      const startBmi = computeBmi(state.initialWeightLbs, state.heightInches);
+      const startWaist = (state.sex === 'female')
+        ? (state.heightInches * 0.34) + ((startBmi - 20) * 0.68)
+        : (state.heightInches * 0.38) + ((startBmi - 21) * 0.72);
+      const waistDiff = baseWaist - startWaist;
+
+      document.getElementById('measWaist').textContent = `${baseWaist.toFixed(1)}"`;
+      document.getElementById('measWaistDelta').textContent = Math.abs(waistDiff) < 0.05
+        ? 'Baseline'
+        : `${waistDiff > 0 ? '▲ +' : '▼ '}${waistDiff.toFixed(1)}" vs Day 0`;
+
+      document.getElementById('measHipChestTitle').textContent = state.sex === 'female' ? 'Hips / Bust' : 'Chest / Lats';
+      document.getElementById('measHips').textContent = `${baseHips.toFixed(1)}"`;
+      document.getElementById('measHipsDelta').textContent = state.sex === 'female' ? 'WHR: ' + (baseWaist / baseHips).toFixed(2) : 'V-Taper';
+
+      document.getElementById('measBfp').textContent = `${bfp.toFixed(1)}%`;
+      document.getElementById('measLeanMass').textContent = `Lean: ${leanMass} lb`;
+      document.getElementById('measBmi').textContent = bmi.toFixed(1);
+
+      let cat = 'Athletic Toned';
+      let bmiStat = 'Optimal';
+      if (bmi < 18.5) { cat = 'Slender / Lean'; bmiStat = 'Underweight'; }
+      else if (bmi < 22.5) { cat = 'Athletic Sculpted'; bmiStat = 'Optimal Fit'; }
+      else if (bmi < 25.0) { cat = 'Fit & Shapely'; bmiStat = 'Normal'; }
+      else if (bmi < 30.0) { cat = 'Curvy / Solid'; bmiStat = 'Overweight'; }
+      else { cat = 'Heavy Mass'; bmiStat = 'High BMI'; }
+
+      document.getElementById('measBmiStatus').textContent = bmiStat;
+      document.getElementById('badgePhysiqueCategory').textContent = cat;
+      document.getElementById('badgeBodyFatOverlay').textContent = `${bfp.toFixed(1)}% Body Fat`;
+      document.getElementById('badgeDay0Weight').textContent = `${state.initialWeightLbs.toFixed(1)} lbs`;
+      document.getElementById('badgeNetWeightDelta').textContent = `${netDelta >= 0 ? '+' : ''}${netDelta.toFixed(1)} lbs`;
+    }
+
+    /* =====================================================================
+       5. SUBJECT CALIBRATION & CONTROLS
+       ===================================================================== */
+    function setSubjectSex(sex) {
+      playSynthTone(500, 0.05);
+      state.sex = sex;
+      const btnF = document.getElementById('btnSexFemale');
+      const btnM = document.getElementById('btnSexMale');
+      if (sex === 'female') {
+        btnF.className = 'px-2.5 py-1 rounded-md bg-pink-500/20 text-pink-300 border border-pink-500/40 font-bold transition';
+        btnM.className = 'px-2.5 py-1 rounded-md text-slate-400 hover:text-white transition';
+      } else {
+        btnM.className = 'px-2.5 py-1 rounded-md bg-[#38bdf8]/20 text-[#38bdf8] border border-[#38bdf8]/40 font-bold transition';
+        btnF.className = 'px-2.5 py-1 rounded-md text-slate-400 hover:text-white transition';
+      }
+      syncAllTelemetry();
+      renderAvatar();
+    }
+
+    function toggleCalibrationDrawer() {
+      playSynthTone(440, 0.05);
+      const drawer = document.getElementById('calibrationDrawer');
+      drawer.classList.toggle('hidden');
+    }
+
+    function handleCalibrationInput() {
+      const w = parseFloat(document.getElementById('sliderCalWeight').value);
+      const h = parseInt(document.getElementById('sliderCalHeight').value);
+      const a = parseInt(document.getElementById('sliderCalAge').value);
+
+      state.initialWeightLbs = w;
+      state.currentWeightLbs = w;
+      state.animatedWeightLbs = w;
+      state.heightInches = h;
+      state.age = a;
+      state.currentWeek = 1;
+      state.weightHistory = [w];
+      state.weekLogs = [];
+      state.cumulativeMuscleDelta = 0;
+
+      const ft = Math.floor(h / 12);
+      const inc = h % 12;
+      document.getElementById('calWeightLabel').textContent = `${w.toFixed(1)} lbs (${(w / 2.20462).toFixed(1)} kg)`;
+      document.getElementById('calHeightLabel').textContent = `${ft}'${inc}" (${Math.round(h * 2.54)}cm)`;
+      document.getElementById('calAgeLabel').textContent = `${a} yrs`;
+
+      syncAllTelemetry();
+      renderAvatar();
+    }
+
+    function resetToNewSubject() {
+      playChime();
+      document.getElementById('calibrationDrawer').classList.add('hidden');
+      syncAllTelemetry();
+      renderAvatar();
+    }
+
+    /* =====================================================================
+       6. TAB 2: DYNAMIC MENU & MULTI-EXERCISE BUILDER
+       ===================================================================== */
+    function handleIntakeChange(val) {
+      state.dailyIntake = parseInt(val);
+      document.getElementById('lblDailyKcal').textContent = state.dailyIntake.toLocaleString();
+      syncAllTelemetry();
+    }
+
+    function setIntakeValue(val) {
+      playSynthTone(520, 0.05);
+      document.getElementById('sliderDailyKcal').value = val;
+      handleIntakeChange(val);
+    }
+
+    function setMacroPreset(preset) {
+      playSynthTone(480, 0.05);
+      state.macroPreset = preset;
+      ['protein', 'balanced', 'keto', 'plant'].forEach(k => {
+        const btn = document.getElementById(`btnDiet_${k}`);
+        if (k === preset) {
+          btn.className = 'p-2 rounded-xl border border-[#38bdf8] bg-[#38bdf8]/15 text-white font-bold text-left transition flex items-center justify-between';
+        } else {
+          btn.className = 'p-2 rounded-xl border border-[#334155] bg-[#1e293b] text-slate-300 font-semibold text-left transition flex items-center justify-between';
+        }
+      });
+      syncAllTelemetry();
+    }
+
+    function renderDynamicSampleMenu() {
+      const diet = DIET_DB[state.macroPreset];
+      const kcal = state.dailyIntake;
+      const scale = kcal / 2000;
+
+      const totalP = Math.round((kcal * diet.ratios.p) / 4);
+      const totalC = Math.round((kcal * diet.ratios.c) / 4);
+      const totalF = Math.round((kcal * diet.ratios.f) / 9);
+
+      document.getElementById('badgeTefRate').textContent = `TEF: ${Math.round(diet.tef * 100)}%`;
+      document.getElementById('macroTotalP').textContent = `P: ${totalP}g`;
+      document.getElementById('macroTotalC').textContent = `C: ${totalC}g`;
+      document.getElementById('macroTotalF').textContent = `F: ${totalF}g`;
+      document.getElementById('menuTotalCheck').textContent = `${kcal.toLocaleString()} kcal total`;
+
+      const container = document.getElementById('dynamicMenuContainer');
+      container.innerHTML = '';
+
+      diet.meals.forEach(m => {
+        const mealKcal = Math.round(kcal * m.share);
+        const mP = Math.round(totalP * m.share);
+        const mC = Math.round(totalC * m.share);
+        const mF = Math.round(totalF * m.share);
+        const scaledPortion = (m.basePortion * scale).toFixed(1);
+
+        const row = document.createElement('div');
+        row.className = 'bg-[#0b1120] border border-[#334155] rounded-xl p-2.5 flex items-start gap-2.5';
+        row.innerHTML = `
+          <div class="w-8 h-8 rounded-lg bg-[#1e293b] border border-[#334155] flex items-center justify-center text-base shrink-0">${m.icon}</div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between font-mono text-[10px]">
+              <span class="text-[#38bdf8] font-bold uppercase">${m.slot} • ${scaledPortion} ${m.unit}</span>
+              <span class="text-emerald-400 font-extrabold">${mealKcal} kcal</span>
+            </div>
+            <div class="text-xs font-bold text-white truncate mt-0.5">${m.title}</div>
+            <div class="text-[10px] text-slate-400 leading-snug mt-0.5">${m.desc}</div>
+            <div class="flex gap-2 mt-1 font-mono text-[9px] text-slate-400">
+              <span class="text-rose-300">P: ${mP}g</span>
+              <span>•</span>
+              <span class="text-sky-300">C: ${mC}g</span>
+              <span>•</span>
+              <span class="text-amber-300">F: ${mF}g</span>
+            </div>
+          </div>
+        `;
+        container.appendChild(row);
+      });
+    }
+
+    function renderExerciseList() {
+      const container = document.getElementById('exerciseList');
+      container.innerHTML = '';
+      const kg = state.currentWeightLbs / 2.20462;
+      let totalWeeklyBurn = 0;
+
+      state.exercises.forEach(ex => {
+        const wkBurn = Math.round(ex.met * kg * (ex.minutes / 60) * ex.days);
+        totalWeeklyBurn += wkBurn;
+
+        const item = document.createElement('div');
+        item.className = 'bg-[#0b1120] border border-[#334155] rounded-xl p-2.5 space-y-2 font-mono';
+        item.innerHTML = `
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-1.5">
+              <span class="text-xs font-bold text-white font-sans">${ex.name}</span>
+              <span class="text-[9px] px-1.5 py-0.5 rounded bg-[#1e293b] text-[#38bdf8] border border-[#334155]">${ex.met} MET</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-extrabold text-rose-400">-${wkBurn} kcal/wk</span>
+              <button onclick="removeExerciseSession(${ex.id})" class="text-slate-500 hover:text-rose-400 text-xs px-1" title="Remove">✕</button>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-2.5 text-[10px]">
+            <div>
+              <div class="flex justify-between text-slate-400 mb-0.5">
+                <span>Sessions/Wk:</span>
+                <span class="text-[#38bdf8] font-bold">${ex.days} days</span>
+              </div>
+              <input type="range" min="1" max="7" step="1" value="${ex.days}" oninput="updateExerciseDays(${ex.id}, this.value)" class="w-full">
+            </div>
+            <div>
+              <div class="flex justify-between text-slate-400 mb-0.5">
+                <span>Duration:</span>
+                <span class="text-rose-400 font-bold">${ex.minutes} min</span>
+              </div>
+              <input type="range" min="15" max="120" step="5" value="${ex.minutes}" oninput="updateExerciseMinutes(${ex.id}, this.value)" class="w-full slider-rose">
+            </div>
+          </div>
+        `;
+        container.appendChild(item);
+      });
+
+      document.getElementById('lblTotalWeeklyExBurn').textContent = `${totalWeeklyBurn.toLocaleString()} kcal/wk`;
+      document.getElementById('lblAvgDailyExBurn').textContent = `~${Math.round(totalWeeklyBurn / 7)} kcal/day`;
+    }
+
+    function addExerciseSession() {
+      playSynthTone(540, 0.06);
+      const key = document.getElementById('selectAddExercise').value;
+      const meta = EXERCISE_DB[key];
+      state.exercises.push({
+        id: Date.now() + Math.floor(Math.random() * 1000),
+        key,
+        name: meta.name,
+        met: meta.met,
+        days: 3,
+        minutes: 40
+      });
+      syncAllTelemetry();
+    }
+
+    function removeExerciseSession(id) {
+      playSynthTone(360, 0.05);
+      state.exercises = state.exercises.filter(e => e.id !== id);
+      syncAllTelemetry();
+    }
+
+    function updateExerciseDays(id, val) {
+      const ex = state.exercises.find(e => e.id === id);
+      if (ex) {
+        ex.days = parseInt(val);
+        syncAllTelemetry();
+      }
+    }
+
+    function updateExerciseMinutes(id, val) {
+      const ex = state.exercises.find(e => e.id === id);
+      if (ex) {
+        ex.minutes = parseInt(val);
+        syncAllTelemetry();
+      }
+    }
+
+    /* =====================================================================
+       7. TAB 3 & 4: PREDICTION CHALLENGE, WEIGH-IN & LEDGER
+       ===================================================================== */
+    function updateGuessDisplay(val) {
+      const num = parseFloat(val);
+      const prefix = num > 0 ? '+' : '';
+      document.getElementById('lblGuessValue').textContent = `${prefix}${num.toFixed(1)}`;
+      const proj = state.currentWeightLbs + num;
+      document.getElementById('lblGuessProjectedWeight').innerHTML = `Projected Scale Reading: <span class="text-white font-bold">${proj.toFixed(1)} lbs</span>`;
+    }
+
+    function nudgeGuess(delta, resetZero = false) {
+      playSynthTone(500, 0.04);
+      const slider = document.getElementById('sliderWeightGuess');
+      let v = resetZero ? 0.0 : parseFloat(slider.value) + delta;
+      v = Math.max(-6.0, Math.min(6.0, parseFloat(v.toFixed(1))));
+      slider.value = v;
+      updateGuessDisplay(v);
+    }
+
+    function lockInGuessAndWeighIn() {
+      if (state.weekLockedIn) return;
+      state.weekLockedIn = true;
+
+      const userGuess = parseFloat(document.getElementById('sliderWeightGuess').value);
+      const bal = computeWeeklyEnergyBalance(state.currentWeightLbs);
+      const actualDelta = bal.totalWeightDeltaLbs;
+
+      const oldWeight = state.currentWeightLbs;
+      const newWeight = parseFloat(Math.max(80, Math.min(420, oldWeight + actualDelta)).toFixed(2));
+      state.currentWeightLbs = newWeight;
+      state.cumulativeMuscleDelta += bal.muscleDeltaLbs;
+      state.weightHistory.push(newWeight);
+
+      // Calculate Accuracy Score
+      const err = Math.abs(userGuess - actualDelta);
+      let pts = 50;
+      let label = 'Off Target';
+      if (err <= 0.12) { pts = 500; label = 'Bullseye Precision! (±0.1 lb)'; playChime(); }
+      else if (err <= 0.30) { pts = 350; label = 'High Accuracy (±0.3 lb)'; playChime(); }
+      else if (err <= 0.60) { pts = 200; label = 'Near Estimate (±0.6 lb)'; playSynthTone(620, 0.12); }
+      else { pts = 75; label = 'Wide Margin'; playSynthTone(300, 0.15); }
+
+      state.totalScore += pts;
+      state.weekLogs.push({
+        week: state.currentWeek,
+        weight: newWeight,
+        guess: userGuess,
+        actual: actualDelta,
+        pts
+      });
+
+      // Populate Reveal Card
+      document.getElementById('revWeekNum').textContent = state.currentWeek;
+      document.getElementById('revPointsBadge').textContent = `+${pts} PTS`;
+      document.getElementById('revAccuracyLabel').textContent = label;
+      document.getElementById('revYourGuess').textContent = `${userGuess >= 0 ? '+' : ''}${userGuess.toFixed(2)} lbs`;
+      document.getElementById('revActualDelta').textContent = `${actualDelta >= 0 ? '+' : ''}${actualDelta.toFixed(2)} lbs`;
+      document.getElementById('revNetKcalFlux').textContent = `${bal.netWeeklyKcal >= 0 ? '+' : ''}${bal.netWeeklyKcal.toLocaleString()} kcal`;
+
+      const newBmr = computeBmr(newWeight, state.heightInches, state.age, state.sex);
+      const bmrDiff = newBmr - bal.bmrDaily;
+      document.getElementById('revDiagnosticText').innerHTML =
+        `Scale moved from <strong>${oldWeight.toFixed(1)} lbs</strong> to <strong>${newWeight.toFixed(1)} lbs</strong> (${bal.fatDeltaLbs >= 0 ? '+' : ''}${bal.fatDeltaLbs.toFixed(2)} lb fat, ${bal.muscleDeltaLbs >= 0 ? '+' : ''}${bal.muscleDeltaLbs.toFixed(2)} lb lean). ` +
+        `Because your body mass changed, your resting BMR shifted by <strong>${bmrDiff >= 0 ? '+' : ''}${bmrDiff} kcal/day</strong> and your workouts will burn a different amount of energy next week!`;
+
+      document.getElementById('btnAdvanceNextWeek').textContent = state.currentWeek >= 6 ? 'Finish 6-Week Lab 🏆' : `Start Week ${state.currentWeek + 1} ➜`;
+      document.getElementById('roundRevealCard').classList.remove('hidden');
+
+      // Animate avatar morph immediately so switching to Tab 1 or viewing shows new physique
+      animateAvatarWeightTo(newWeight);
+      syncAllTelemetry();
+    }
+
+    function advanceToNextWeek() {
+      playSynthTone(560, 0.06);
+      if (state.currentWeek >= 6) {
+        showCampaignCompleteModal();
+        return;
+      }
+      state.currentWeek += 1;
+      state.weekLockedIn = false;
+      document.getElementById('roundRevealCard').classList.add('hidden');
+
+      const totalShift = state.currentWeightLbs - state.initialWeightLbs;
+      document.getElementById('briefingWeekTag').textContent = `Week ${state.currentWeek} of 6`;
+      document.getElementById('briefingText').innerHTML =
+        `Week ${state.currentWeek} Active: Current weight is <strong class="text-white">${state.currentWeightLbs.toFixed(1)} lbs</strong> (${totalShift >= 0 ? '+' : ''}${totalShift.toFixed(1)} lbs vs Day 0 Ghost). Notice how the avatar contour and waist measurements have morphed!`;
+
+      syncAllTelemetry();
+      switchTab(1);
+    }
+
+    function showCampaignCompleteModal() {
+      playChime();
+      document.getElementById('finalTotalScore').textContent = `${state.totalScore.toLocaleString()} / 3,000`;
+      let rank = 'METABOLIC APPRENTICE';
+      if (state.totalScore >= 2400) rank = 'RANK: THERMODYNAMIC GRANDMASTER 🏆';
+      else if (state.totalScore >= 1700) rank = 'RANK: SENIOR PHYSIOLOGY FELLOW 🔬';
+      document.getElementById('finalRankBadge').textContent = rank;
+
+      document.getElementById('finalStartWeight').textContent = `${state.initialWeightLbs.toFixed(1)} lbs`;
+      document.getElementById('finalEndWeight').textContent = `${state.currentWeightLbs.toFixed(1)} lbs`;
+      const bmr0 = computeBmr(state.initialWeightLbs, state.heightInches, state.age, state.sex);
+      const bmr6 = computeBmr(state.currentWeightLbs, state.heightInches, state.age, state.sex);
+      const diffBmr = bmr6 - bmr0;
+      document.getElementById('finalBmrDelta').textContent = `${diffBmr >= 0 ? '+' : ''}${diffBmr} kcal/d`;
+
+      document.getElementById('modalCampaignComplete').classList.remove('hidden');
+    }
+
+    function resetFullCampaign() {
+      playSynthTone(440, 0.08);
+      state.currentWeek = 1;
+      state.totalScore = 0;
+      state.weekLockedIn = false;
+      state.currentWeightLbs = state.initialWeightLbs;
+      state.animatedWeightLbs = state.initialWeightLbs;
+      state.weightHistory = [state.initialWeightLbs];
+      state.weekLogs = [];
+      state.cumulativeMuscleDelta = 0;
+
+      document.getElementById('roundRevealCard').classList.add('hidden');
+      document.getElementById('modalCampaignComplete').classList.add('hidden');
+      syncAllTelemetry();
+      renderAvatar();
+      switchTab(1);
+    }
+
+    /* =====================================================================
+       8. LEDGER & 6-WEEK TRAJECTORY CANVAS CHART
+       ===================================================================== */
+    function drawTrajectoryCanvas() {
+      const canvas = document.getElementById('trajectoryCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width;
+      const h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      const actuals = state.weightHistory;
+      const w0 = actuals[0];
+      const firstDelta = actuals.length > 1 ? (actuals[1] - w0) : computeWeeklyEnergyBalance(w0).totalWeightDeltaLbs;
+      const linearSeries = [];
+      for (let i = 0; i <= 6; i++) {
+        linearSeries.push(w0 + firstDelta * i);
+      }
+
+      const allVals = [...actuals, ...linearSeries];
+      const minW = Math.min(...allVals) - 1.5;
+      const maxW = Math.max(...allVals) + 1.5;
+      const span = Math.max(2, maxW - minW);
+
+      const padL = 42, padR = 18, padT = 18, padB = 24;
+      const gw = w - padL - padR;
+      const gh = h - padT - padB;
+
+      const xAt = (wk) => padL + (wk / 6) * gw;
+      const yAt = (val) => padT + gh - ((val - minW) / span) * gh;
+
+      // Grid lines
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= 6; i++) {
+        const x = xAt(i);
+        ctx.beginPath();
+        ctx.moveTo(x, padT);
+        ctx.lineTo(x, h - padB);
+        ctx.stroke();
+
+        ctx.fillStyle = '#64748b';
+        ctx.font = '10px JetBrains Mono, monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(`W${i}`, x, h - 8);
+      }
+
+      // Naive Linear Extrapolation Line (Dashed)
+      ctx.strokeStyle = '#64748b';
+      ctx.lineWidth = 1.8;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      linearSeries.forEach((val, idx) => {
+        if (idx === 0) ctx.moveTo(xAt(idx), yAt(val));
+        else ctx.lineTo(xAt(idx), yAt(val));
+      });
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Actual Weight Trajectory Curve
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 2.8;
+      ctx.beginPath();
+      actuals.forEach((val, idx) => {
+        if (idx === 0) ctx.moveTo(xAt(idx), yAt(val));
+        else ctx.lineTo(xAt(idx), yAt(val));
+      });
+      ctx.stroke();
+
+      // Data Points
+      actuals.forEach((val, idx) => {
+        ctx.fillStyle = '#38bdf8';
+        ctx.beginPath();
+        ctx.arc(xAt(idx), yAt(val), 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#0b1120';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      });
+
+      // Y-Axis Labels
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '9px JetBrains Mono, monospace';
+      ctx.textAlign = 'right';
+      ctx.fillText(`${maxW.toFixed(0)}lb`, padL - 5, padT + 6);
+      ctx.fillText(`${minW.toFixed(0)}lb`, padL - 5, h - padB);
+    }
+
+    function renderHistoryLogTable() {
+      const tbody = document.getElementById('historyLogBody');
+      if (state.weekLogs.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="py-3 text-center text-slate-500">Complete Week 1 Weigh-In to log data.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = state.weekLogs.map(row => `
+        <tr>
+          <td class="py-1.5 font-bold text-[#38bdf8]">W${row.week}</td>
+          <td class="py-1.5">${row.weight.toFixed(1)} lb</td>
+          <td class="py-1.5">${row.guess >= 0 ? '+' : ''}${row.guess.toFixed(1)}</td>
+          <td class="py-1.5 font-bold ${row.actual <= 0 ? 'text-emerald-400' : 'text-rose-400'}">${row.actual >= 0 ? '+' : ''}${row.actual.toFixed(2)}</td>
+          <td class="py-1.5 text-right font-bold text-amber-400">+${row.pts}</td>
+        </tr>
+      `).join('');
+    }
+
+    /* =====================================================================
+       9. MASTER UI & TELEMETRY SYNCHRONIZATION
+       ===================================================================== */
+    function syncAllTelemetry() {
+      const bal = computeWeeklyEnergyBalance(state.currentWeightLbs);
+      const bmi = computeBmi(state.currentWeightLbs, state.heightInches);
+
+      // Top Header & Pill Strip
+      document.getElementById('hdrWeekNum').textContent = state.currentWeek;
+      document.getElementById('hdrScore').textContent = state.totalScore.toString().padStart(4, '0');
+      document.getElementById('pillWeight').textContent = `${state.currentWeightLbs.toFixed(1)} lbs`;
+      document.getElementById('pillBmi').textContent = bmi.toFixed(1);
+      document.getElementById('pillBmr').textContent = `${bal.bmrDaily.toLocaleString()} kcal`;
+      document.getElementById('pillDailyBurn').textContent = `${bal.totalBurnDaily.toLocaleString()} kcal`;
+
+      const previewSlider = document.getElementById('sliderPreviewMorph');
+      if (previewSlider) previewSlider.value = Math.round(state.currentWeightLbs);
+
+      // Routine Tab Updates
+      renderDynamicSampleMenu();
+      renderExerciseList();
+
+      // Predict Tab Updates
+      document.getElementById('predWeekNum').textContent = state.currentWeek;
+      document.getElementById('predCurrentWeightText').textContent = `${state.currentWeightLbs.toFixed(1)} lbs`;
+      document.getElementById('predInDaily').textContent = `+${bal.intakeDaily.toLocaleString()}`;
+      document.getElementById('predInWeekly').textContent = `+${bal.intakeWeekly.toLocaleString()}`;
+      document.getElementById('predBmrDaily').textContent = `-${bal.bmrDaily.toLocaleString()}`;
+      document.getElementById('predBmrWeekly').textContent = `-${bal.bmrWeekly.toLocaleString()}`;
+      document.getElementById('predTefDaily').textContent = `-${bal.tefDaily.toLocaleString()}`;
+      document.getElementById('predTefWeekly').textContent = `-${bal.tefWeekly.toLocaleString()}`;
+      document.getElementById('predNeatDaily').textContent = `-${bal.neatDaily.toLocaleString()}`;
+      document.getElementById('predNeatWeekly').textContent = `-${bal.neatWeekly.toLocaleString()}`;
+      document.getElementById('predEatDaily').textContent = `-${bal.eatDaily.toLocaleString()}`;
+      document.getElementById('predEatWeekly').textContent = `-${bal.eatWeekly.toLocaleString()}`;
+      document.getElementById('predOutDaily').textContent = `-${bal.totalBurnDaily.toLocaleString()} kcal`;
+      document.getElementById('predOutWeekly').textContent = `-${bal.totalBurnWeekly.toLocaleString()} kcal`;
+
+      updateGuessDisplay(document.getElementById('sliderWeightGuess').value);
+
+      // Ledger Tab Updates
+      document.getElementById('ledgerWeekNum').textContent = state.currentWeek;
+      document.getElementById('ledgerStatusBadge').textContent = bal.netWeeklyKcal < -100 ? 'Caloric Deficit' : (bal.netWeeklyKcal > 100 ? 'Caloric Surplus' : 'Maintenance');
+      document.getElementById('ldgInD').textContent = `+${bal.intakeDaily.toLocaleString()}`;
+      document.getElementById('ldgInW').textContent = `+${bal.intakeWeekly.toLocaleString()}`;
+      document.getElementById('ldgBmrD').textContent = `-${bal.bmrDaily.toLocaleString()}`;
+      document.getElementById('ldgBmrW').textContent = `-${bal.bmrWeekly.toLocaleString()}`;
+      document.getElementById('ldgTefD').textContent = `-${bal.tefDaily.toLocaleString()}`;
+      document.getElementById('ldgTefW').textContent = `-${bal.tefWeekly.toLocaleString()}`;
+      document.getElementById('ldgNeatD').textContent = `-${bal.neatDaily.toLocaleString()}`;
+      document.getElementById('ldgNeatW').textContent = `-${bal.neatWeekly.toLocaleString()}`;
+      document.getElementById('ldgEatD').textContent = `-${bal.eatDaily.toLocaleString()}`;
+      document.getElementById('ldgEatW').textContent = `-${bal.eatWeekly.toLocaleString()}`;
+
+      const netSign = bal.netWeeklyKcal >= 0 ? '+' : '';
+      document.getElementById('ldgNetD').textContent = `${netSign}${bal.netDailyKcal.toLocaleString()}`;
+      document.getElementById('ldgNetW').textContent = `${netSign}${bal.netWeeklyKcal.toLocaleString()}`;
+      document.getElementById('ldgFatDelta').textContent = `${bal.fatDeltaLbs >= 0 ? '+' : ''}${bal.fatDeltaLbs.toFixed(2)} lbs`;
+      document.getElementById('ldgMuscleDelta').textContent = `${bal.muscleDeltaLbs >= 0 ? '+' : ''}${bal.muscleDeltaLbs.toFixed(2)} lbs`;
+      document.getElementById('ldgTotalWeightDelta').textContent = `${bal.totalWeightDeltaLbs >= 0 ? '+' : ''}${bal.totalWeightDeltaLbs.toFixed(2)} lbs`;
+
+      drawTrajectoryCanvas();
+      renderHistoryLogTable();
+    }
+
+    function switchTab(tabIndex) {
+      playSynthTone(460, 0.04);
+      state.activeTab = tabIndex;
+      for (let i = 1; i <= 4; i++) {
+        const panel = document.getElementById(`tabPanel${i}`);
+        const btn = document.getElementById(`tabBtn${i}`);
+        if (i === tabIndex) {
+          panel.classList.remove('hidden');
+          btn.className = 'py-2.5 text-[10px] font-bold text-[#38bdf8] border-b-2 border-[#38bdf8] bg-[#1e293b]/60 transition flex items-center justify-center gap-1';
+        } else {
+          panel.classList.add('hidden');
+          btn.className = 'py-2.5 text-[10px] font-semibold text-slate-400 border-b-2 border-transparent hover:text-slate-200 transition flex items-center justify-center gap-1';
+        }
+      }
+
+      // Update Sticky Footer Controls
+      const prevBtn = document.getElementById('btnFooterPrev');
+      const nextBtn = document.getElementById('btnFooterNext');
+      const prompt = document.getElementById('footerStepPrompt');
+      prevBtn.disabled = (tabIndex === 1);
+
+      if (tabIndex === 1) {
+        prompt.textContent = 'Step 1: Calibrate & Inspect Avatar';
+        nextBtn.textContent = '2. ROUTINE ►';
+      } else if (tabIndex === 2) {
+        prompt.textContent = 'Step 2: Configure Meals & Workouts';
+        nextBtn.textContent = '3. PREDICT ►';
+      } else if (tabIndex === 3) {
+        prompt.textContent = 'Step 3: Forecast Weekly Weight Shift';
+        nextBtn.textContent = '4. LEDGER ►';
+      } else {
+        prompt.textContent = 'Step 4: Review Balance & Plateau';
+        nextBtn.textContent = '1. AVATAR ↺';
+      }
+
+      if (tabIndex === 1) renderAvatar();
+      if (tabIndex === 4) drawTrajectoryCanvas();
+      document.getElementById('mainViewport').scrollTop = 0;
+    }
+
+    function stepNavigation(dir) {
+      let next = state.activeTab + dir;
+      if (next > 4) next = 1;
+      if (next < 1) next = 1;
+      switchTab(next);
+    }
+
+    window.addEventListener('load', () => {
+      syncAllTelemetry();
+      renderAvatar();
+    });
+  </script>
+</body>
+</html>
