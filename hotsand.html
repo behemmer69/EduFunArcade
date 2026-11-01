@@ -417,7 +417,7 @@
     <div class="top-bar">
       <div class="brand-title">☀️ SCORCHING SAND</div>
       <div class="stats-row">
-        <div class="round-badge" id="round-display">R1/3</div>
+        <div class="round-badge" id="round-display">Round 1</div>
         <div class="lives-box" id="lives-display">❤️❤️❤️</div>
         <div class="dist-badge" id="dist-display">60m to Surf</div>
       </div>
@@ -442,7 +442,7 @@
       <div class="overlay" id="start-overlay">
         <div class="title-badge">THERMODYNAMICS ARCADE LAB</div>
         <h1>Scorching Sand Sprint</h1>
-        <p>Sprint <strong>60m</strong> to the surf across <strong>3 Rounds</strong>! Sun-baked sand heats bare feet to the <strong>50°C burn threshold in 3.0s</strong>. Hop across cooling oases before the scrolling shoreline pulls you under!</p>
+        <p>Sprint to the cooling ocean surf across endless escalating rounds! Sun-baked sand heats bare feet to the <strong>50°C burn threshold in 3.0s</strong>. Beyond Round 3, distance to the ocean and obstacles increase by 10% each round!</p>
 
         <div class="char-select">
           <button class="char-btn active" id="btn-man" onclick="selectChar('man')">🕶️ Beach Man</button>
@@ -511,8 +511,8 @@
     const COLS = 7;
     const VISIBLE_ROWS = 11;
     const TILE_SIZE = 55; // 7 * 55 = 385px width, 11 * 55 = 605px height
-    const GOAL_ROW = 65;  // 60 meters from start row (row 5)
-    const MAX_ROUNDS = 3;
+    const BASE_DISTANCE = 60; // 60 meters base (from row 5 to row 65)
+    let goalRow = 65;         // Dynamic ocean goal row (increases +10% each round after round 3)
 
     // Tile Types
     const T_SAND = 0;      // Dry Yellow Sand (+33.3% heat/sec -> 3.0s burn)
@@ -730,7 +730,10 @@
         ['#10b981', '#ffffff']
       ];
 
-      for (let r = 0; r <= GOAL_ROW + 8; r++) {
+      // Obstacle scaling: after 3 rounds, increase obstacle density and counts by 10% each round
+      const obstacleScale = currentRound > 3 ? Math.pow(1.10, currentRound - 3) : 1.0;
+
+      for (let r = 0; r <= goalRow + 8; r++) {
         let rowTiles = [];
         for (let c = 0; c < COLS; c++) {
           const seed = r * 31 + c * 17;
@@ -758,8 +761,8 @@
         }
       }
 
-      // Ocean Surf Goal (Rows GOAL_ROW and above)
-      for (let r = GOAL_ROW; r <= GOAL_ROW + 8; r++) {
+      // Ocean Surf Goal (Rows goalRow and above)
+      for (let r = goalRow; r <= goalRow + 8; r++) {
         for (let c = 0; c < COLS; c++) {
           rows[r][c].type = T_OCEAN;
         }
@@ -775,7 +778,7 @@
 
       let r = 5;
       let batherToggle = 0;
-      while (r < GOAL_ROW - 1) {
+      while (r < goalRow - 1) {
         const oasisChoice = Math.random();
         const startCol = Math.floor(Math.random() * (COLS - 1));
 
@@ -793,13 +796,22 @@
           rows[r][poleCol].type = T_POLE;
           rows[r][poleCol - 1].type = T_SHADE;
           rows[r][poleCol + 1].type = T_SHADE;
-          if (r + 1 < GOAL_ROW) rows[r + 1][poleCol].type = T_SHADE;
+          if (r + 1 < goalRow) rows[r + 1][poleCol].type = T_SHADE;
         } else {
           rows[r][startCol].type = T_WET;
           if (startCol + 1 < COLS) rows[r][startCol + 1].type = T_WET;
         }
 
-        const blackCount = r > 30 ? 2 : 1;
+        // Basalt Rocks (instant burn obstacle) - scale with obstacleScale
+        let extraBlack = 0;
+        if (currentRound > 3) {
+          let bonusChance = obstacleScale - 1;
+          while (bonusChance > 0) {
+            if (Math.random() < Math.min(1, bonusChance)) extraBlack++;
+            bonusChance -= 1;
+          }
+        }
+        const blackCount = (r > 30 ? 2 : 1) + extraBlack;
         for (let b = 0; b < blackCount; b++) {
           const bc = Math.floor(Math.random() * COLS);
           if (rows[r][bc].type === T_SAND) {
@@ -807,8 +819,9 @@
           }
         }
 
-        // Round 1, 2, 3: Horizontal Beach Crabs
-        if (r > 8 && Math.random() < 0.3) {
+        // Round 1+: Horizontal Beach Crabs (+10% chance per round after Round 3)
+        const crabChance = Math.min(0.75, 0.30 * obstacleScale);
+        if (r > 8 && Math.random() < crabChance) {
           crabs.push({
             row: r - 1,
             x: Math.random() * (COLS - 1),
@@ -818,8 +831,9 @@
           });
         }
 
-        // Round 2 & 3 Addition: Women and Men Sunbathers
-        if (currentRound >= 2 && r >= 7 && r < GOAL_ROW - 3 && Math.random() < 0.48) {
+        // Round 2+: Women and Men Sunbathers (+10% chance per round after Round 3)
+        const sunbatherChance = Math.min(0.80, 0.48 * obstacleScale);
+        if (currentRound >= 2 && r >= 7 && r < goalRow - 3 && Math.random() < sunbatherChance) {
           const batherRow = r - 1;
           const candidates = [];
           for (let c = 0; c < COLS; c++) {
@@ -844,9 +858,16 @@
         r += Math.random() < 0.65 ? 2 : 3;
       }
 
-      // Round 3 Addition: Vertical Seagulls coming from Top or Bottom
+      // Round 3+: Vertical Seagulls coming from Top or Bottom (+10% seagulls after Round 3)
       if (currentRound >= 3) {
-        const gullCols = [1, 3, 5];
+        let gullCols = [1, 3, 5];
+        if (currentRound > 3) {
+          const extraGulls = Math.round(3 * (obstacleScale - 1));
+          const availableCols = [0, 2, 4, 6];
+          for (let k = 0; k < extraGulls && k < availableCols.length; k++) {
+            gullCols.push(availableCols[k]);
+          }
+        }
         gullCols.forEach((colIdx, i) => {
           const fromTop = i % 2 === 0;
           seagulls.push({
@@ -870,6 +891,16 @@
 
     function startRound() {
       initAudio();
+
+      // Distance to ocean: after 3 rounds, increase by 10% each round
+      if (currentRound <= 3) {
+        goalRow = 65;
+      } else {
+        const extraRounds = currentRound - 3;
+        const scaledDist = Math.round(BASE_DISTANCE * Math.pow(1.10, extraRounds));
+        goalRow = 5 + scaledDist;
+      }
+
       generateLevel();
       heat = 0;
       wetCharges = 0;
@@ -909,7 +940,7 @@
 
     function triggerSunbatherBounce(sb) {
       playSound('sand_throw');
-      sb.angerTimer = 1.15;
+      sb.angerTimer = 1.5;
       sandFlashTimer = 0.45;
 
       // Determine 2-square bounce back row
@@ -972,14 +1003,14 @@
         document.getElementById('end-badge').textContent = `THERMAL OVERLOAD • ROUND ${currentRound}`;
         document.getElementById('end-title').textContent = 'OUT OF LIVES! 🔥';
         document.getElementById('end-desc').textContent =
-          `${screamReason} Your soles hit the 50°C thermal pain threshold in Round ${currentRound}/3 with ${Math.max(0, GOAL_ROW - player.row)}m left to the surf.`;
+          `${screamReason} Your soles hit the 50°C thermal pain threshold in Round ${currentRound} with ${Math.max(0, goalRow - player.row)}m left to the surf.`;
         document.getElementById('end-primary-btn').textContent = 'PLAY AGAIN (ROUND 1)';
         document.getElementById('game-url').textContent = window.location.href;
         document.getElementById('end-overlay').classList.remove('hidden');
         return;
       }
 
-      const safeRow = Math.min(GOAL_ROW - 2, Math.floor(cameraRow + 4));
+      const safeRow = Math.min(goalRow - 2, Math.floor(cameraRow + 4));
       const safeCol = 3;
       rows[safeRow][safeCol].type = T_RESPAWN;
       rows[safeRow][safeCol].tileHeat = 0;
@@ -1003,40 +1034,37 @@
       updateHUD();
       document.getElementById('game-url').textContent = window.location.href;
 
-      if (currentRound < MAX_ROUNDS) {
-        gameState = 'round_clear';
-        document.getElementById('end-badge').textContent = `ROUND ${currentRound} OF ${MAX_ROUNDS} COMPLETE`;
-        document.getElementById('end-title').textContent = `ROUND ${currentRound} CLEARED! 🌊`;
-        if (currentRound === 1) {
-          document.getElementById('end-desc').textContent =
-            'Cooling surf reached! Get ready for Round 2: Women & Men Sunbathers join the beach—step on them and you bounce back 2 squares while getting sand thrown at you!';
-        } else {
-          document.getElementById('end-desc').textContent =
-            'Awesome run! Get ready for Round 3: Swooping Seagulls dive vertically from top or bottom to push you forward or back!';
-        }
-        document.getElementById('end-primary-btn').textContent = `START ROUND ${currentRound + 1} ▶`;
-      } else {
-        gameState = 'win';
-        document.getElementById('end-badge').textContent = 'ALL 3 ROUNDS CONQUERED';
-        document.getElementById('end-title').textContent = 'OCEAN CHAMPION! 🏆🌊';
+      gameState = 'round_clear';
+      document.getElementById('end-badge').textContent = `ROUND ${currentRound} COMPLETE`;
+      document.getElementById('end-title').textContent = `ROUND ${currentRound} CLEARED! 🌊`;
+      if (currentRound === 1) {
         document.getElementById('end-desc').textContent =
-          'Ahhhhh! You survived Crabs, Sunbathers throwing sand, and swooping Seagulls across all 3 Rounds! Rapid ocean cooling drops your soles back to 24°C!';
-        document.getElementById('end-primary-btn').textContent = 'PLAY AGAIN';
+          'Cooling surf reached! Get ready for Round 2: Women & Men Sunbathers join the beach—step on them and you bounce back 2 squares while getting sand thrown at you!';
+      } else if (currentRound === 2) {
+        document.getElementById('end-desc').textContent =
+          'Awesome run! Get ready for Round 3: Swooping Seagulls dive vertically from top or bottom to push you forward or back!';
+      } else if (currentRound === 3) {
+        document.getElementById('end-desc').textContent =
+          'All 3 core rounds conquered! Entering endless survival mode: starting next round, distance to the ocean and obstacle density escalate by +10% each round!';
+      } else {
+        const currentDist = goalRow - 5;
+        document.getElementById('end-desc').textContent =
+          `Sensational endurance! You conquered Round ${currentRound} (${currentDist}m surf). Next round: ocean distance and obstacles increase by another +10%!`;
       }
+      document.getElementById('end-primary-btn').textContent = `START ROUND ${currentRound + 1} ▶`;
 
       document.getElementById('end-overlay').classList.remove('hidden');
     }
 
     function shareScore() {
-      const metersLeft = Math.max(0, GOAL_ROW - player.row);
+      const metersLeft = Math.max(0, goalRow - player.row);
+      const totalMeters = goalRow - 5;
       const gameLink = window.location.href;
       let status = '';
-      if (gameState === 'win') {
-        status = `🌊 Conquered all 3 Rounds & reached the 60m Ocean Surf with ${lives}❤️ left!`;
-      } else if (gameState === 'round_clear') {
-        status = `🌊 Cleared Round ${currentRound}/3 (60m Ocean Surf) with ${lives}❤️ left!`;
+      if (gameState === 'round_clear') {
+        status = `🌊 Cleared Round ${currentRound} (${totalMeters}m Ocean Surf) with ${lives}❤️ left!`;
       } else {
-        status = `🔥 Burned out in Round ${currentRound}/3 (${metersLeft}m from the ocean)!`;
+        status = `🔥 Burned out in Round ${currentRound} (${metersLeft}m from the ${totalMeters}m surf)!`;
       }
 
       const text = `☀️ Scorching Sand: Thermal Hop Lab\n${status}\n🔗 Play here: ${gameLink}\n${COPYRIGHT_NOTICE}`;
@@ -1069,7 +1097,7 @@
       const targetRow = player.row + dr;
 
       if (targetCol < 0 || targetCol >= COLS) return;
-      if (targetRow < Math.floor(cameraRow) || targetRow > GOAL_ROW + 2) return;
+      if (targetRow < Math.floor(cameraRow) || targetRow > goalRow + 2) return;
 
       const targetTile = rows[targetRow][targetCol];
       // Umbrella center pole cannot be stepped onto; only its adjacent T_SHADE squares are walkable
@@ -1281,7 +1309,7 @@
 
         if (gull.cooldown <= 0 && gull.col === player.col && Math.abs(gull.y - player.row) < 0.55) {
           gull.cooldown = 0.85;
-          const pushRow = Math.max(Math.floor(cameraRow), Math.min(GOAL_ROW, player.row + gull.dir));
+          const pushRow = Math.max(Math.floor(cameraRow), Math.min(goalRow, player.row + gull.dir));
           if (rows[pushRow][player.col].type !== T_POLE) {
             player.row = pushRow;
             player.hopAnim = 0.8;
@@ -1358,11 +1386,11 @@
     }
 
     function updateHUD(telemetryText) {
-      document.getElementById('round-display').textContent = `R${currentRound}/${MAX_ROUNDS}`;
+      document.getElementById('round-display').textContent = `Round ${currentRound}`;
       document.getElementById('lives-display').textContent =
         '❤️'.repeat(Math.max(0, lives)) + '🖤'.repeat(Math.max(0, 3 - lives));
 
-      const metersLeft = Math.max(0, GOAL_ROW - player.row);
+      const metersLeft = Math.max(0, goalRow - player.row);
       document.getElementById('dist-display').textContent = `${metersLeft}m to Surf`;
 
       const tempC = (33.0 + (heat / 100) * 17.0).toFixed(1);
@@ -1655,7 +1683,7 @@
 
       // Animated Rolling Whitewater Surf Foam on the Shoreline Row
       const waveShift = Math.sin(animClock * 3.2 + c * 0.9) * 5;
-      if (r === GOAL_ROW) {
+      if (r === goalRow) {
         ctx.fillStyle = 'rgba(240, 249, 255, 0.9)';
         ctx.beginPath();
         ctx.moveTo(x, y + TILE_SIZE - 14 + waveShift);
