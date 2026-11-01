@@ -459,8 +459,8 @@
             Umbrellas block step-on but shade adjacent squares!
           </div>
           <div class="legend-item">
-            <strong>🌋 Basalt / 🦀 R1 Crab</strong>
-            72°C rock instant burn (-1❤️) or sideways crab shove!
+            <strong>🪨 Basalt Pebbles / 🦀 R1 Crab</strong>
+            72°C pebbles instant burn (-1❤️) or sideways crab shove!
           </div>
           <div class="legend-item">
             <strong>👙 R2 Bathers / 🕊️ R3 Gull</strong>
@@ -746,7 +746,7 @@
             umbrellaColors: umbrellaThemes[(r + c) % umbrellaThemes.length],
             tileHeat: 0,
             seed: seed,
-            decor: decorRoll < 0.08 ? 'shell' : (decorRoll < 0.13 ? 'starfish' : null)
+            decor: decorRoll < 0.00 ? 'shell' : (decorRoll < 0.00 ? 'starfish' : null)
           });
         }
         rows.push(rowTiles);
@@ -1622,54 +1622,78 @@
     function drawBasaltRock(x, y, tile) {
       const cx = x + TILE_SIZE / 2;
       const cy = y + TILE_SIZE / 2;
+      const seed = tile.seed || 1;
 
-      // Scorched Black Volcanic Sand Bed
-      ctx.fillStyle = '#27201c';
+      // Soft darkened sand impression under the pebble cluster
+      ctx.fillStyle = 'rgba(75, 55, 30, 0.22)';
       ctx.beginPath();
-      ctx.arc(cx, cy, 24, 0, Math.PI * 2);
+      ctx.ellipse(cx, cy + 1, 23, 19, 0, 0, Math.PI * 2);
       ctx.fill();
 
-      // Outer Heat Glow
-      const glow = 0.45 + 0.35 * Math.sin(animClock * 6 + tile.seed);
-      ctx.fillStyle = `rgba(239, 68, 68, ${glow * 0.45})`;
-      ctx.beginPath();
-      ctx.arc(cx, cy, 25, 0, Math.PI * 2);
-      ctx.fill();
+      // Cluster of organic grey and black beach pebbles of varying sizes & orientations
+      const pebbles = [
+        // Large & medium focal pebbles
+        { dx: -9,  dy: -7,  rx: 8.5, ry: 6.2, rot: -0.35, color: '#18181b', hi: 'rgba(255,255,255,0.18)' }, // Deep black
+        { dx: 7,   dy: -9,  rx: 7.5, ry: 5.5, rot: 0.38,  color: '#4b5563', hi: 'rgba(255,255,255,0.26)' }, // Cool slate grey
+        { dx: -2,  dy: 0,   rx: 9.2, ry: 7.0, rot: 0.15,  color: '#27272a', hi: 'rgba(255,255,255,0.20)' }, // Charcoal grey
+        { dx: 11,  dy: 3,   rx: 7.0, ry: 5.2, rot: -0.45, color: '#1f242d', hi: 'rgba(255,255,255,0.18)' }, // Dark basalt
+        { dx: -12, dy: 6,   rx: 6.8, ry: 5.0, rot: 0.42,  color: '#3f3f46', hi: 'rgba(255,255,255,0.22)' }, // Neutral grey
+        { dx: 2,   dy: 11,  rx: 8.2, ry: 6.0, rot: -0.18, color: '#111317', hi: 'rgba(255,255,255,0.16)' }, // Onyx black
+        // Small surrounding & accent pebbles
+        { dx: -15, dy: -3,  rx: 4.6, ry: 3.4, rot: 0.25,  color: '#6b7280', hi: 'rgba(255,255,255,0.30)' }, // Light grey
+        { dx: 15,  dy: -5,  rx: 5.2, ry: 3.8, rot: -0.28, color: '#2b303a', hi: 'rgba(255,255,255,0.20)' }, // Dark charcoal
+        { dx: -6,  dy: 13,  rx: 4.2, ry: 3.0, rot: 0.50,  color: '#52525b', hi: 'rgba(255,255,255,0.24)' }, // Mid grey
+        { dx: 13,  dy: 12,  rx: 4.8, ry: 3.4, rot: -0.52, color: '#18181b', hi: 'rgba(255,255,255,0.16)' }, // Black pebble
+        { dx: 0,   dy: -14, rx: 5.0, ry: 3.5, rot: 0.10,  color: '#374151', hi: 'rgba(255,255,255,0.22)' }, // Dark slate
+        { dx: -4,  dy: -13, rx: 3.2, ry: 2.4, rot: -0.20, color: '#71717a', hi: 'rgba(255,255,255,0.32)' }  // Small light grey pebble
+      ];
 
-      // Multi-faceted Jagged Basalt Polygon
-      ctx.fillStyle = '#18181b';
-      ctx.beginPath();
-      ctx.moveTo(cx - 18, cy - 8);
-      ctx.lineTo(cx - 8, cy - 20);
-      ctx.lineTo(cx + 10, cy - 18);
-      ctx.lineTo(cx + 20, cy - 4);
-      ctx.lineTo(cx + 15, cy + 16);
-      ctx.lineTo(cx - 4, cy + 20);
-      ctx.lineTo(cx - 19, cy + 10);
-      ctx.closePath();
-      ctx.fill();
+      // Draw each pebble: drop shadow, smooth body, contour, and specular light gleam
+      for (let i = 0; i < pebbles.length; i++) {
+        const p = pebbles[i];
+        // Stable per-tile jitter using deterministic pseudo-random offsets
+        const jx = (pseudoRand(seed + i * 11) - 0.5) * 2.5;
+        const jy = (pseudoRand(seed + i * 19) - 0.5) * 2.5;
+        const px = cx + p.dx + jx;
+        const py = cy + p.dy + jy;
 
-      // Rock Top Facet Highlight
-      ctx.fillStyle = '#27272a';
-      ctx.beginPath();
-      ctx.moveTo(cx - 12, cy - 6);
-      ctx.lineTo(cx - 5, cy - 14);
-      ctx.lineTo(cx + 8, cy - 12);
-      ctx.lineTo(cx + 12, cy + 2);
-      ctx.lineTo(cx - 2, cy + 8);
-      ctx.closePath();
-      ctx.fill();
+        // Ground shadow
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.40)';
+        ctx.beginPath();
+        ctx.ellipse(px + 0.8, py + 1.8, p.rx + 0.6, p.ry * 0.85 + 0.5, p.rot, 0, Math.PI * 2);
+        ctx.fill();
 
-      // Pulsing Magma-Red Thermal Fissures
-      ctx.strokeStyle = glow > 0.6 ? '#fde047' : '#ef4444';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(cx - 9, cy - 6);
-      ctx.lineTo(cx, cy + 1);
-      ctx.lineTo(cx + 9, cy - 4);
-      ctx.moveTo(cx, cy + 1);
-      ctx.lineTo(cx - 3, cy + 11);
-      ctx.stroke();
+        // Pebble body
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.ellipse(px, py, p.rx, p.ry, p.rot, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Subtle dark rim for clean edge definition
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.35)';
+        ctx.lineWidth = 0.8;
+        ctx.stroke();
+
+        // 2.5D Top-left specular sun sheen
+        ctx.fillStyle = p.hi;
+        ctx.beginPath();
+        ctx.ellipse(px - p.rx * 0.28, py - p.ry * 0.30, p.rx * 0.52, p.ry * 0.40, p.rot - 0.15, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // A few tiny scattered grit stones (1.5-2px) around the perimeter
+      const grit = [
+        { gx: -18, gy: 2,  c: '#374151' },
+        { gx: 18,  gy: 4,  c: '#18181b' },
+        { gx: -8,  gy: -16, c: '#4b5563' },
+        { gx: 8,   gy: 16,  c: '#27272a' }
+      ];
+      for (let g of grit) {
+        ctx.fillStyle = g.c;
+        ctx.beginPath();
+        ctx.arc(cx + g.gx, cy + g.gy, 1.8, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
 
     function drawOceanTile(x, y, r, c) {
