@@ -1,0 +1,2532 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stochastic Transit: The Bus Stop Probability Lab</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter & JetBrains Mono for LED / Telemetry -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <style>
+    :root {
+      --bg-night: #0b1120;
+      --panel-bg: rgba(15, 23, 42, 0.88);
+      --led-amber: #fbbf24;
+      --led-red: #f43f5e;
+      --led-cyan: #38bdf8;
+      --led-emerald: #34d399;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #070b14;
+      color: #f1f5f9;
+      overflow-x: hidden;
+      user-select: none;
+    }
+
+    .font-mono-led {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* LED Sign Glow Effects */
+    .led-text-amber {
+      color: #fbbf24;
+      text-shadow: 0 0 10px rgba(251, 191, 36, 0.55);
+    }
+    .led-text-cyan {
+      color: #38bdf8;
+      text-shadow: 0 0 10px rgba(56, 189, 248, 0.55);
+    }
+    .led-text-red {
+      color: #fb7185;
+      text-shadow: 0 0 12px rgba(244, 63, 94, 0.7);
+    }
+    .led-text-emerald {
+      color: #34d399;
+      text-shadow: 0 0 10px rgba(52, 211, 153, 0.55);
+    }
+
+    /* Custom Range Sliders */
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-runnable-track {
+      background: #1e293b;
+      height: 8px;
+      border-radius: 999px;
+      border: 1px solid #334155;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      margin-top: -6px;
+      background-color: #38bdf8;
+      height: 18px;
+      width: 18px;
+      border-radius: 999px;
+      border: 2px solid #ffffff;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.8);
+      transition: transform 0.15s ease, background-color 0.15s ease;
+    }
+    input[type="range"]:hover::-webkit-slider-thumb {
+      transform: scale(1.15);
+      background-color: #7dd3fc;
+    }
+    input[type="range"]:disabled::-webkit-slider-thumb {
+      background-color: #64748b;
+      box-shadow: none;
+      cursor: not-allowed;
+    }
+
+    /* Subtle CRT / LED Scanline Overlay for Shelter Sign */
+    .led-matrix-bg {
+      background-color: #090d16;
+      background-image: radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 0);
+      background-size: 4px 4px;
+    }
+
+    @keyframes pulse-fast {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.45; }
+    }
+    .animate-pulse-fast {
+      animation: pulse-fast 0.9s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-gradient-to-b from-[#070b14] via-[#0f172a] to-[#090d16]">
+
+  <!-- ===================================================================== -->
+  <!-- TOP NAVIGATION & GLOBAL CONTROLS                                      -->
+  <!-- ===================================================================== -->
+  <header class="border-b border-slate-800/80 bg-slate-950/90 backdrop-blur-md sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-3">
+      
+      <!-- Brand Title -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-amber-500/20 border border-amber-300/30">
+          <i class="fa-solid fa-bus text-slate-950 text-lg"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-extrabold text-base sm:text-lg tracking-tight text-white">STOCHASTIC TRANSIT</h1>
+            <span class="hidden sm:inline-block text-[11px] font-mono-led uppercase px-2 py-0.5 rounded bg-sky-500/15 text-sky-300 border border-sky-500/30">Probability Lab</span>
+          </div>
+          <p class="text-xs text-slate-400 hidden md:block">Diagnose the route's probability distribution, lock your prediction window, and survive the wait.</p>
+        </div>
+      </div>
+
+      <!-- Mode Switcher, Avatar Toggle & Audio -->
+      <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+        
+        <!-- Game Mode Selection Pills -->
+        <div class="flex items-center bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs font-semibold">
+          <button id="modeBtnBasic" onclick="switchGameMode('basic')" class="px-2.5 py-1.5 rounded-lg transition-all bg-sky-500 text-slate-950 shadow">
+            <i class="fa-solid fa-graduation-cap mr-1"></i>Basic (3)
+          </button>
+          <button id="modeBtnAdvanced" onclick="switchGameMode('advanced')" class="px-2.5 py-1.5 rounded-lg transition-all text-slate-300 hover:text-white">
+            <i class="fa-solid fa-fire-flame-curved mr-1"></i>Advanced (3)
+          </button>
+          <button id="modeBtnCustom" onclick="switchGameMode('custom')" class="px-2.5 py-1.5 rounded-lg transition-all text-slate-300 hover:text-white">
+            <i class="fa-solid fa-sliders mr-1"></i>Pick Model
+          </button>
+        </div>
+
+        <!-- Commuter Avatar Selector (Man / Woman) -->
+        <div class="flex items-center bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs font-semibold" title="Select Commuter Avatar">
+          <span class="text-[11px] text-slate-400 px-2 hidden lg:inline">Commuter:</span>
+          <button id="avatarBtnMan" onclick="setAvatarGender('MAN')" class="px-2.5 py-1.5 rounded-lg transition-all bg-amber-500 text-slate-950 font-bold shadow">
+            <i class="fa-solid fa-person mr-1"></i>Man
+          </button>
+          <button id="avatarBtnWoman" onclick="setAvatarGender('WOMAN')" class="px-2.5 py-1.5 rounded-lg transition-all text-slate-300 hover:text-white">
+            <i class="fa-solid fa-person-dress mr-1"></i>Woman
+          </button>
+        </div>
+
+        <!-- Score Badge -->
+        <div class="flex items-center gap-2 bg-slate-900/90 border border-slate-800 px-3 py-1.5 rounded-xl">
+          <span class="text-[11px] uppercase tracking-wider text-slate-400">Score</span>
+          <span id="headerTotalScore" class="font-mono-led font-bold text-sm sm:text-base led-text-amber">0</span>
+        </div>
+
+        <!-- Sound Toggle -->
+        <button id="soundToggleBtn" onclick="toggleSound()" class="w-9 h-9 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 flex items-center justify-center text-slate-300 transition" title="Toggle Synth Audio">
+          <i id="soundIcon" class="fa-solid fa-volume-high text-sm text-sky-400"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Custom Mode Sub-Bar (Visible when "Pick Model" mode is active) -->
+    <div id="customModeBar" class="hidden bg-slate-900/95 border-t border-slate-800/80 px-3 sm:px-6 py-2">
+      <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-xs font-semibold uppercase tracking-wider text-sky-400"><i class="fa-solid fa-flask mr-1"></i>Select Distribution:</span>
+          <div id="customModelButtons" class="flex flex-wrap gap-1.5">
+            <!-- Dynamically populated from GAME_CONFIG.MODELS -->
+          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800">
+            <input type="checkbox" id="customRandomStartToggle" checked onchange="onCustomStartToggle()" class="rounded accent-sky-400" />
+            <span>Random Walk-Up Offset (<span class="font-mono-led text-amber-300">t₀ &gt; 0</span>)</span>
+          </label>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===================================================================== -->
+  <!-- MAIN WORKSPACE: SPLIT BUS STOP SCENE (LEFT) & TELEMETRY LAB (RIGHT)   -->
+  <!-- ===================================================================== -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 py-4 grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+
+    <!-- =================================================================== -->
+    <!-- LEFT COLUMN (7 COLS): ANIMATED BUS STOP SHELTER & COMMUTER SCENE    -->
+    <!-- =================================================================== -->
+    <section class="lg:col-span-7 flex flex-col gap-3">
+      
+      <!-- Route Header & Round Progress -->
+      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-3.5 sm:p-4 flex flex-wrap items-center justify-between gap-2 shadow-xl">
+        <div>
+          <div class="flex items-center gap-2">
+            <span id="routeBadge" class="font-mono-led text-xs font-bold uppercase px-2.5 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40">ROUTE 101</span>
+            <span id="roundProgressBadge" class="text-xs font-medium text-slate-400">Basic Campaign • Round 1 of 3</span>
+          </div>
+          <h2 id="modelTitle" class="text-lg sm:text-xl font-extrabold text-white mt-0.5">The Blind Shuttle (Uniform Model)</h2>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <span id="formulaBadge" class="font-mono-led text-xs px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-sky-300">
+            X ~ Uniform(0, 20m)
+          </span>
+        </div>
+      </div>
+
+      <!-- BUS STOP SCENE CONTAINER (WITH OVERHEAD DIGITAL LED SHELTER SIGN) -->
+      <div class="relative rounded-2xl overflow-hidden border border-slate-700/80 shadow-2xl bg-[#070b14]">
+        
+        <!-- Digital Transit LED Sign Overlay at Top of Bus Shelter -->
+        <div class="led-matrix-bg border-b-2 border-slate-700 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="flex flex-col">
+              <span class="text-[10px] font-mono-led uppercase tracking-widest text-slate-400">TIME SINCE LAST BUS</span>
+              <div class="flex items-baseline gap-2">
+                <span id="ledClockDisplay" class="font-mono-led text-2xl sm:text-3xl font-extrabold led-text-amber tracking-wider">04:15</span>
+                <span id="ledWalkupTag" class="text-[11px] font-mono-led px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">WALK-UP t₀</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Center Status Ticker -->
+          <div class="flex flex-col items-start sm:items-end">
+            <span class="text-[10px] font-mono-led uppercase tracking-widest text-slate-400">INSTANTANEOUS HAZARD / ODDS NOW</span>
+            <div class="flex items-center gap-2">
+              <span id="ledHazardStatus" class="font-mono-led text-xs sm:text-sm font-bold led-text-cyan">MODERATE (5.0%/min)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Interactive Visual Scene Canvas -->
+        <div class="relative w-full h-[320px] sm:h-[380px]">
+          <canvas id="busStopCanvas" class="w-full h-full block"></canvas>
+
+          <!-- Floating Mood & Patience Meter Overlay (Bottom-Right of Scene) -->
+          <div class="absolute bottom-3 right-3 left-3 sm:left-auto sm:w-72 bg-slate-950/90 backdrop-blur-md border border-slate-700/80 rounded-xl p-2.5 shadow-lg">
+            <div class="flex items-center justify-between text-xs mb-1">
+              <span class="font-bold text-slate-300 uppercase tracking-wider text-[11px]">Commuter Patience</span>
+              <span id="moodStateLabel" class="font-mono-led font-bold text-emerald-400 text-xs">☕ WARM & HAPPY</span>
+            </div>
+            <div class="w-full h-3 bg-slate-800 rounded-full overflow-hidden border border-slate-700 p-0.5">
+              <div id="patienceBarFill" class="h-full rounded-full transition-all duration-150 bg-gradient-to-r from-emerald-500 to-teal-400" style="width: 85%;"></div>
+            </div>
+            <div class="flex justify-between text-[10px] font-mono-led text-slate-400 mt-1">
+              <span id="coffeeStatusText">Coffee: Steaming Hot (68°C)</span>
+              <span id="condPercentileText">Elapsed: 15%</span>
+            </div>
+          </div>
+
+          <!-- Critical Tail Outlier Warning Banner -->
+          <div id="criticalOutlierAlert" class="hidden absolute top-3 left-1/2 -translate-x-1/2 bg-rose-950/95 border border-rose-500 text-rose-200 px-3.5 py-1.5 rounded-full text-xs font-mono-led font-bold shadow-lg flex items-center gap-2 animate-pulse-fast">
+            <i class="fa-solid fa-triangle-exclamation text-rose-400"></i>
+            <span>CRITICAL WAIT: HEAVY-TAIL OUTLIER (&gt;88% ELAPSED)!</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Educational Route Briefing Card -->
+      <div class="bg-slate-900/80 border border-slate-800/90 rounded-2xl p-4 shadow-lg">
+        <div class="flex items-start gap-3">
+          <div class="w-8 h-8 rounded-lg bg-sky-500/15 border border-sky-500/30 flex items-center justify-center shrink-0 mt-0.5">
+            <i class="fa-solid fa-lightbulb text-sky-400 text-sm"></i>
+          </div>
+          <div class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+            <span class="font-bold text-white uppercase tracking-wide text-xs block mb-0.5">Statistical Route Briefing:</span>
+            <p id="modelLessonText">
+              Every minute without a bus compresses 100% of remaining probability into a shrinking window, causing the hazard rate to skyrocket toward the deadline.
+            </p>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- RIGHT COLUMN (5 COLS): LIVE CONDITIONAL PDF GRAPH & BET CONTROLS    -->
+    <!-- =================================================================== -->
+    <section class="lg:col-span-5 flex flex-col gap-3">
+
+      <!-- PDF TELEMETRY CARD -->
+      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-xl flex flex-col gap-3">
+        
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-sm font-extrabold uppercase tracking-wider text-white flex items-center gap-2">
+              <i class="fa-solid fa-chart-area text-sky-400"></i>
+              <span>Probability Density Curve</span>
+            </h3>
+            <p class="text-[11px] text-slate-400">Drag directly on the graph or use sliders to position your bracket</p>
+          </div>
+          <div class="text-right font-mono-led">
+            <span class="text-[10px] text-slate-400 block">CONDITIONAL MEAN</span>
+            <span id="statCondMean" class="text-xs font-bold text-sky-300">13.0m</span>
+          </div>
+        </div>
+
+        <!-- Interactive PDF Canvas Container -->
+        <div class="relative w-full h-[230px] sm:h-[250px] bg-slate-950 rounded-xl border border-slate-800 overflow-hidden">
+          <canvas id="pdfGraphCanvas" class="w-full h-full block cursor-ew-resize"></canvas>
+        </div>
+
+        <!-- Legend under Graph -->
+        <div class="flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-400 border-b border-slate-800/80 pb-2.5">
+          <div class="flex items-center gap-1.5">
+            <span class="w-3 h-0.5 bg-slate-500 inline-block"></span>
+            <span>Initial f(t)</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-3 h-2 rounded-sm bg-sky-400/50 border border-sky-400 inline-block"></span>
+            <span>Live Conditional f(t | T ≥ t)</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-3 h-2 rounded-sm bg-amber-400/40 border border-amber-400 inline-block"></span>
+            <span>Your Locked Bracket</span>
+          </div>
+        </div>
+
+        <!-- BRACKET SLIDERS & LIVE PAYOUT CALCULATOR -->
+        <div id="setupControlsContainer" class="flex flex-col gap-3">
+          
+          <!-- Sliders Row -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-950/70 p-3 rounded-xl border border-slate-800/80">
+            <!-- Bracket Center Slider -->
+            <div>
+              <div class="flex justify-between text-xs mb-1">
+                <span class="text-slate-300 font-semibold">Window Center</span>
+                <span id="sliderCenterLabel" class="font-mono-led text-amber-300 font-bold">12.5m</span>
+              </div>
+              <input id="bracketCenterSlider" type="range" min="1" max="29" step="0.25" value="12.5" class="w-full" oninput="onBracketSliderChange()" />
+            </div>
+
+            <!-- Bracket Width Slider -->
+            <div>
+              <div class="flex justify-between text-xs mb-1">
+                <span class="text-slate-300 font-semibold">Window Width</span>
+                <span id="sliderWidthLabel" class="font-mono-led text-sky-300 font-bold">3.0m</span>
+              </div>
+              <input id="bracketWidthSlider" type="range" min="1.0" max="8.0" step="0.25" value="3.0" class="w-full" oninput="onBracketSliderChange()" />
+            </div>
+          </div>
+
+          <!-- Live Telemetry Metrics Box (Capture Odds, Risk Multiplier, Potential Payout) -->
+          <div class="grid grid-cols-3 gap-2">
+            <div class="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-center">
+              <span class="text-[10px] font-mono-led uppercase text-slate-400 block">Your Window</span>
+              <span id="metricBracketRange" class="font-mono-led text-xs sm:text-sm font-bold text-white mt-0.5 block">11.0m – 14.0m</span>
+            </div>
+            <div class="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-center">
+              <span class="text-[10px] font-mono-led uppercase text-slate-400 block">Capture Odds</span>
+              <span id="metricCaptureOdds" class="font-mono-led text-xs sm:text-sm font-bold led-text-cyan mt-0.5 block">34.2%</span>
+            </div>
+            <div class="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-center">
+              <span class="text-[10px] font-mono-led uppercase text-slate-400 block">Hit Payout</span>
+              <span id="metricPotentialPayout" class="font-mono-led text-xs sm:text-sm font-bold led-text-amber mt-0.5 block">+1,420 pts</span>
+            </div>
+          </div>
+
+          <!-- Action Button: Lock Prediction & Watch -->
+          <div class="flex items-center gap-2">
+            <button id="lockPredictionBtn" onclick="lockPredictionAndStart()" class="flex-1 py-3 px-4 rounded-xl font-extrabold text-sm sm:text-base text-slate-950 bg-gradient-to-r from-amber-400 via-amber-500 to-orange-500 hover:from-amber-300 hover:to-orange-400 shadow-lg shadow-amber-500/25 active:scale-[0.99] transition-all flex items-center justify-center gap-2">
+              <i class="fa-solid fa-lock"></i>
+              <span>LOCK PREDICTION &amp; WATCH</span>
+            </button>
+
+            <!-- Speed Boost Button during WAITING phase -->
+            <button id="speedToggleBtn" onclick="toggleSimSpeed()" class="hidden py-3 px-3.5 rounded-xl font-mono-led font-bold text-xs bg-slate-800 hover:bg-slate-700 text-sky-300 border border-slate-700 transition" title="Toggle Fast-Forward Speed">
+              1x SPEED
+            </button>
+          </div>
+        </div>
+
+        <!-- =============================================================== -->
+        <!-- POST-ROUND TELEMETRY RESULT PANEL (SHOWN WHEN BUS ARRIVES)      -->
+        <!-- =============================================================== -->
+        <div id="roundResultPanel" class="hidden flex-col gap-3 bg-slate-950/95 border-2 border-slate-700 rounded-xl p-3.5 animate-fadeIn">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+            <div class="flex items-center gap-2.5">
+              <div id="resultIconBadge" class="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 text-lg">
+                <i class="fa-solid fa-check"></i>
+              </div>
+              <div>
+                <h4 id="resultHeadline" class="font-extrabold text-base text-emerald-400">DIRECT HIT! BUS CAUGHT!</h4>
+                <p id="resultSubline" class="text-xs text-slate-300">Arrived at 12.4m (Inside your 11.0m–14.0m window)</p>
+              </div>
+            </div>
+            <div class="text-right">
+              <span class="text-[10px] font-mono-led uppercase text-slate-400 block">ROUND SCORE</span>
+              <span id="resultScoreEarned" class="font-mono-led text-lg font-extrabold led-text-amber">+1,420</span>
+            </div>
+          </div>
+
+          <!-- Telemetry Stamp Grid -->
+          <div class="grid grid-cols-3 gap-2 text-center font-mono-led">
+            <div class="bg-slate-900/90 p-2 rounded-lg border border-slate-800">
+              <span class="text-[10px] text-slate-400 block">ACTUAL ARRIVAL</span>
+              <span id="telemetryActualTime" class="text-xs font-bold text-white">12.40m</span>
+            </div>
+            <div class="bg-slate-900/90 p-2 rounded-lg border border-slate-800">
+              <span class="text-[10px] text-slate-400 block">COND. PERCENTILE</span>
+              <span id="telemetryPercentile" class="text-xs font-bold text-sky-300">54th %ile</span>
+            </div>
+            <div class="bg-slate-900/90 p-2 rounded-lg border border-slate-800">
+              <span class="text-[10px] text-slate-400 block">FINAL MOOD</span>
+              <span id="telemetryFinalMood" class="text-xs font-bold text-amber-300">Impatient</span>
+            </div>
+          </div>
+
+          <!-- Post-Round Educational Insight -->
+          <p id="resultInsightText" class="text-xs text-slate-300 bg-slate-900/70 p-2.5 rounded-lg border border-slate-800/80 leading-relaxed"></p>
+
+          <div class="flex items-center gap-2 pt-1">
+            <button id="nextRoundBtn" onclick="advanceToNextRound()" class="flex-1 py-2.5 px-4 rounded-xl font-extrabold text-sm text-slate-950 bg-gradient-to-r from-sky-400 to-cyan-400 hover:from-sky-300 hover:to-cyan-300 shadow-lg shadow-sky-500/20 transition flex items-center justify-center gap-2">
+              <span>NEXT ROUTE</span>
+              <i class="fa-solid fa-arrow-right"></i>
+            </button>
+            <button onclick="replayCurrentModel()" class="py-2.5 px-3.5 rounded-xl font-semibold text-xs text-slate-300 hover:text-white bg-slate-900 hover:bg-slate-800 border border-slate-700 transition" title="Replay Same Distribution">
+              <i class="fa-solid fa-rotate-right mr-1"></i>Replay
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <!-- ===================================================================== -->
+  <!-- CAMPAIGN SUMMARY MODAL (SHOWN AFTER COMPLETING A 3-ROUND CAMPAIGN)    -->
+  <!-- ===================================================================== -->
+  <div id="campaignModal" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl flex flex-col gap-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 text-xl">
+            <i class="fa-solid fa-trophy"></i>
+          </div>
+          <div>
+            <span id="modalCampaignLabel" class="text-xs font-mono-led uppercase text-sky-400">BASIC CAMPAIGN COMPLETE</span>
+            <h3 class="text-xl font-extrabold text-white">Transit Shift Telemetry Report</h3>
+          </div>
+        </div>
+        <button onclick="closeCampaignModal()" class="text-slate-400 hover:text-white text-lg">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Total Score & Accuracy Summary -->
+      <div class="grid grid-cols-2 gap-3">
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 text-center">
+          <span class="text-xs font-mono-led uppercase text-slate-400 block">Total Shift Score</span>
+          <span id="modalTotalScore" class="font-mono-led text-2xl font-extrabold led-text-amber mt-1 block">3,450</span>
+        </div>
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 text-center">
+          <span class="text-xs font-mono-led uppercase text-slate-400 block">Buses Caught</span>
+          <span id="modalHitRate" class="font-mono-led text-2xl font-extrabold led-text-emerald mt-1 block">2 / 3</span>
+        </div>
+      </div>
+
+      <!-- Round Breakdown List -->
+      <div id="modalRoundHistoryList" class="flex flex-col gap-2 max-h-56 overflow-y-auto pr-1">
+        <!-- Populated dynamically -->
+      </div>
+
+      <!-- Modal Action Buttons -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2">
+        <button onclick="startCampaignFromModal('basic')" class="py-2.5 px-3 rounded-xl font-bold text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">
+          <i class="fa-solid fa-rotate-left mr-1"></i>Replay Basic
+        </button>
+        <button onclick="startCampaignFromModal('advanced')" class="py-2.5 px-3 rounded-xl font-bold text-xs bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 shadow-lg transition">
+          <i class="fa-solid fa-fire-flame-curved mr-1"></i>Play Advanced (3)
+        </button>
+        <button onclick="startCampaignFromModal('custom')" class="py-2.5 px-3 rounded-xl font-bold text-xs bg-sky-500 hover:bg-sky-400 text-slate-950 shadow-lg transition">
+          <i class="fa-solid fa-sliders mr-1"></i>Pick Your Model
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- APPLICATION SCRIPT & TOP-LEVEL GAME_CONFIG CONSTANTS                  -->
+  <!-- ===================================================================== -->
+  <script>
+    /**
+     * ============================================================================
+     * 1. TOP-LEVEL GAME_CONFIG CONSTANTS SECTION
+     * ============================================================================
+     * Edit the values in this object to tune probability distributions, walk-up
+     * offsets, playback speeds, scoring multipliers, and avatar mood thresholds.
+     * ============================================================================
+     */
+    const GAME_CONFIG = {
+      // Maximum time shown on the horizontal X-axis of the PDF graph (in minutes)
+      TIMELINE_MAX_MINS: 30,
+
+      // Simulation & Playback Timing Settings
+      SIMULATION: {
+        baseSpeed: 0.75,           // Simulated minutes elapsed per real-time second outside bracket
+        inBracketSpeed: 0.25,      // Dramatic slow-down speed when time marker enters player's locked bracket
+        enableRandomStart: true,  // Whether rounds start with time already elapsed on the shelter sign
+        minStartFrac: 0.05,       // Minimum random walk-up time as a fraction of the distribution's characteristic scale
+        maxStartFrac: 0.45,       // Maximum random walk-up time as a fraction of the distribution's characteristic scale
+        pdfResolution: 600        // Number of discrete steps used for numerical integration & inverse CDF sampling
+      },
+
+      // Scoring & Bracket Risk-Reward Formula Parameters
+      SCORING: {
+        basePoints: 1000,           // Base score for catching a bus with a reference bracket
+        referenceWidth: 3.5,        // Bracket width (in mins) that gives a 1.0x width multiplier
+        minBracketWidth: 1.0,       // Narrowest selectable prediction bracket (highest multiplier)
+        maxBracketWidth: 8.0,       // Widest selectable prediction bracket (lowest multiplier)
+        defaultBracketWidth: 3.0,   // Default bracket width at the start of a round
+        widthPenaltyExponent: 1.25, // Exponent controlling how steeply narrow brackets boost payout: (refWidth / width)^exp
+        nearMissToleranceMins: 1.0, // If the bus arrives within +/- 1.0 min outside the locked bracket, award a Near Miss
+        nearMissFactor: 0.25        // Fraction of full payout awarded for a Near Miss
+      },
+
+      // Commuter Mood & Weather Thresholds based on Conditional Cumulative Probability F_cond(t)
+      // F_cond(t) represents the fraction of remaining probability already elapsed since walk-up t_start.
+      MOOD_THRESHOLDS: {
+        HAPPY_MAX: 0.45,      // 0.00 to 0.45: Smiling, hot coffee with animated rising steam, clear sky
+        IMPATIENT_MAX: 0.72,  // 0.45 to 0.72: Furrowed brow, lukewarm coffee, tapping foot, checking wristwatch
+        FREEZING_MAX: 0.88    // 0.72 to 0.88: Hunching, shivering, rosy red cheeks, icicle coffee tag, breath puffs, light snow/rain
+                              // Above 0.88 -> FUMING: Deep red face, angry scribble cloud, storm, flashing CRITICAL WAIT alert
+      },
+
+      // Pre-configured Campaign Lineups
+      CAMPAIGNS: {
+        basic: ['UNIFORM', 'GAUSSIAN', 'EXPONENTIAL'],
+        advanced: ['BIMODAL', 'WEIBULL', 'LOGNORMAL']
+      },
+
+      // Detailed Statistical Models (6 Routes)
+      MODELS: {
+        UNIFORM: {
+          id: 'UNIFORM',
+          routeBadge: 'ROUTE 101',
+          name: 'The Blind Shuttle',
+          subtitle: 'Continuous Uniform Distribution',
+          formulaLabel: 'X ~ Uniform(0, 20m)',
+          charScale: 15.0,
+          params: {
+            min: 0.0,   // Earliest possible arrival (mins)
+            max: 20.0   // Guaranteed deadline arrival (mins)
+          },
+          lesson: 'Every minute without a bus compresses 100% of the remaining probability into a shrinking window, causing the conditional PDF roof and hazard rate to skyrocket toward the 20-minute deadline.'
+        },
+
+        GAUSSIAN: {
+          id: 'GAUSSIAN',
+          routeBadge: 'ROUTE 202',
+          name: 'The Swiss Clockwork',
+          subtitle: 'Truncated Normal (Gaussian) Model',
+          formulaLabel: 'X ~ N(μ=13m, σ=3.5m)',
+          charScale: 13.0,
+          params: {
+            mean: 13.0,   // Peak cluster time (mins)
+            stdDev: 3.5   // Standard deviation spread (mins) -> μ + 2σ = 20.0m
+          },
+          lesson: 'Arrivals cluster tightly around the mean (13m). Walking up at 8–10m means the conditional probability surges over the next few minutes—with 95% (2σ) of all arrivals occurring before 20 minutes!'
+        },
+
+        EXPONENTIAL: {
+          id: 'EXPONENTIAL',
+          routeBadge: 'ROUTE 303',
+          name: 'The Memoryless Local',
+          subtitle: 'Poisson Process / Exponential',
+          formulaLabel: 'X ~ Exp(λ=0.15/m, μ≈6.7m)',
+          charScale: 6.7,
+          params: {
+            lambda: 0.15  // Constant hazard rate (arrivals per minute) -> 95th percentile ≈ 20.0m
+          },
+          lesson: 'Inter-arrival times in a Poisson process are completely independent. Waiting 10 minutes gives ZERO advantage over someone who just walked up—yet 95% of all buses arrive within the first 20 minutes!'
+        },
+
+        BIMODAL: {
+          id: 'BIMODAL',
+          routeBadge: 'ROUTE 404',
+          name: 'The Bunching Express',
+          subtitle: 'Bimodal Gaussian Mixture',
+          formulaLabel: '0.5·N(6.0, 1.5²) + 0.5·N(16.0, 2.0²)',
+          charScale: 11.0,
+          params: {
+            mean1: 6.0,
+            stdDev1: 1.5,
+            mean2: 16.0,
+            stdDev2: 2.0, // Wave 2 mean + 2σ = 20.0m
+            weight1: 0.50 // 50% chance early wave, 50% chance late wave
+          },
+          lesson: 'Models two distinct traffic waves. Watch closely as the time marker passes the first peak at 6m without a bus: the second peak at 16m surges dramatically upward to absorb 100% of remaining probability by the 20m mark!'
+        },
+
+        WEIBULL: {
+          id: 'WEIBULL',
+          routeBadge: 'ROUTE 505',
+          name: 'The Rustbelt Fleet',
+          subtitle: 'Weibull Distribution (Aging Hazard)',
+          formulaLabel: 'X ~ Weibull(k=2.4, λ=12.5m)',
+          charScale: 11.0,
+          params: {
+            shapeK: 2.4,      // k > 1 means hazard rate increases with time ("overdue buses catch up")
+            scaleLambda: 12.5 // Scale parameter in minutes -> 95th percentile ≈ 19.7m
+          },
+          lesson: 'With shape parameter k = 2.4 (> 1), the instantaneous hazard rate climbs steadily the longer you wait—with roughly 95% of all buses arriving within the 20-minute window as overdue drivers recover schedule.'
+        },
+
+        LOGNORMAL: {
+          id: 'LOGNORMAL',
+          routeBadge: 'ROUTE 606',
+          name: 'The Cursed Express',
+          subtitle: 'Heavy-Tailed Log-Normal Model',
+          formulaLabel: 'ln(X) ~ N(μ=2.00, σ=0.60)',
+          charScale: 9.0,
+          params: {
+            mu: 2.00,     // Log-scale mean (median = e^2.00 ≈ 7.4m, mode ≈ 5.2m)
+            sigma: 0.60   // Log-scale standard deviation -> 95th percentile ≈ 19.8m
+          },
+          lesson: 'Most buses arrive near the early peak (5–8m), but if you miss that wave, you enter a heavy tail stretching out to 20m where each additional minute of freezing wait barely nudges your immediate odds.'
+        }
+      }
+    };
+
+    /**
+     * ============================================================================
+     * 2. MATHEMATICAL PROBABILITY ENGINE (PDF, CDF, CONDITIONAL & INVERSE SAMPLING)
+     * ============================================================================
+     */
+
+    // Evaluate raw (unnormalized) probability density at time t >= 0 for a given model key
+    function evaluateRawPDF(modelKey, t) {
+      if (t < 0) return 0;
+      const model = GAME_CONFIG.MODELS[modelKey];
+      const p = model.params;
+
+      switch (modelKey) {
+        case 'UNIFORM': {
+          return (t >= p.min && t <= p.max) ? 1.0 / (p.max - p.min) : 0.0;
+        }
+        case 'GAUSSIAN': {
+          const z = (t - p.mean) / p.stdDev;
+          return (1.0 / (p.stdDev * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * z * z);
+        }
+        case 'EXPONENTIAL': {
+          return p.lambda * Math.exp(-p.lambda * t);
+        }
+        case 'BIMODAL': {
+          const z1 = (t - p.mean1) / p.stdDev1;
+          const pdf1 = (1.0 / (p.stdDev1 * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * z1 * z1);
+          const z2 = (t - p.mean2) / p.stdDev2;
+          const pdf2 = (1.0 / (p.stdDev2 * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * z2 * z2);
+          return p.weight1 * pdf1 + (1.0 - p.weight1) * pdf2;
+        }
+        case 'WEIBULL': {
+          if (t <= 0) return 0;
+          const k = p.shapeK;
+          const lam = p.scaleLambda;
+          return (k / lam) * Math.pow(t / lam, k - 1) * Math.exp(-Math.pow(t / lam, k));
+        }
+        case 'LOGNORMAL': {
+          if (t <= 0.0001) return 0;
+          const lnT = Math.log(t);
+          const z = (lnT - p.mu) / p.sigma;
+          return (1.0 / (t * p.sigma * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * z * z);
+        }
+        default:
+          return 0;
+      }
+    }
+
+    // Build a high-resolution numerical lookup table on [0, TIMELINE_MAX_MINS]
+    // Ensures exact normalization on the game's timeline domain [0, 30m]
+    function buildDistributionTable(modelKey) {
+      const N = GAME_CONFIG.SIMULATION.pdfResolution;
+      const maxT = GAME_CONFIG.TIMELINE_MAX_MINS;
+      const dt = maxT / N;
+
+      const tValues = new Float64Array(N + 1);
+      const pdfValues = new Float64Array(N + 1);
+      const cdfValues = new Float64Array(N + 1);
+
+      let totalArea = 0;
+      for (let i = 0; i <= N; i++) {
+        const t = i * dt;
+        tValues[i] = t;
+        pdfValues[i] = evaluateRawPDF(modelKey, t);
+        if (i > 0) {
+          totalArea += 0.5 * (pdfValues[i - 1] + pdfValues[i]) * dt;
+        }
+      }
+
+      // Normalize over [0, TIMELINE_MAX_MINS] so the total integral on the playable timeline is 1.0
+      const normFactor = totalArea > 0 ? 1.0 / totalArea : 1.0;
+      let runningArea = 0;
+      pdfValues[0] *= normFactor;
+      cdfValues[0] = 0;
+
+      for (let i = 1; i <= N; i++) {
+        pdfValues[i] *= normFactor;
+        runningArea += 0.5 * (pdfValues[i - 1] + pdfValues[i]) * dt;
+        cdfValues[i] = Math.min(1.0, runningArea);
+      }
+      cdfValues[N] = 1.0;
+
+      return { tValues, pdfValues, cdfValues, dt, maxT, N };
+    }
+
+    // Interpolate unconditional PDF f(t) from precomputed table
+    function getPDF(table, t) {
+      if (t <= 0) return table.pdfValues[0];
+      if (t >= table.maxT) return table.pdfValues[table.N];
+      const idxFloat = t / table.dt;
+      const i = Math.floor(idxFloat);
+      const frac = idxFloat - i;
+      if (i >= table.N) return table.pdfValues[table.N];
+      return table.pdfValues[i] * (1 - frac) + table.pdfValues[i + 1] * frac;
+    }
+
+    // Interpolate unconditional CDF F(t) from precomputed table
+    function getCDF(table, t) {
+      if (t <= 0) return 0;
+      if (t >= table.maxT) return 1.0;
+      const idxFloat = t / table.dt;
+      const i = Math.floor(idxFloat);
+      const frac = idxFloat - i;
+      if (i >= table.N) return 1.0;
+      return table.cdfValues[i] * (1 - frac) + table.cdfValues[i + 1] * frac;
+    }
+
+    // Compute conditional probability of bus arriving in [a, b] given T >= tCurrent
+    function getConditionalProbabilityInWindow(table, a, b, tCurrent) {
+      const effA = Math.max(a, tCurrent);
+      const effB = Math.max(b, tCurrent);
+      if (effB <= effA) return 0;
+
+      const cdfCurrent = getCDF(table, tCurrent);
+      const remainingMass = Math.max(1e-6, 1.0 - cdfCurrent);
+      const massInWindow = Math.max(0, getCDF(table, effB) - getCDF(table, effA));
+      return Math.min(1.0, massInWindow / remainingMass);
+    }
+
+    // Compute Conditional Mean & Median given T >= tStart
+    function getConditionalStats(table, tStart) {
+      const cdfStart = getCDF(table, tStart);
+      const remMass = Math.max(1e-6, 1.0 - cdfStart);
+
+      let meanSum = 0;
+      let medianT = tStart;
+      let foundMedian = false;
+      const targetCDF = cdfStart + 0.5 * remMass;
+
+      for (let i = 0; i <= table.N; i++) {
+        const t = table.tValues[i];
+        if (t >= tStart) {
+          const condPdf = table.pdfValues[i] / remMass;
+          meanSum += t * condPdf * table.dt;
+          if (!foundMedian && table.cdfValues[i] >= targetCDF) {
+            medianT = t;
+            foundMedian = true;
+          }
+        }
+      }
+      return { mean: meanSum, median: medianT };
+    }
+
+    // Sample actual bus arrival time t_bus from conditional distribution P(T | T >= tStart)
+    function sampleConditionalBusArrival(table, tStart, modelKey) {
+      const cdfStart = getCDF(table, tStart);
+      const u = Math.random(); // Uniform(0, 1)
+      // Avoid extreme 99.95%+ clipping right at 30.0m border
+      const clampedU = 0.01 + u * 0.975;
+      const targetCDF = cdfStart + clampedU * (1.0 - cdfStart);
+
+      // Binary search in table.cdfValues
+      let low = 0;
+      let high = table.N;
+      while (low < high) {
+        const mid = (low + high) >> 1;
+        if (table.cdfValues[mid] < targetCDF) {
+          low = mid + 1;
+        } else {
+          high = mid;
+        }
+      }
+      const idx = Math.max(1, low);
+      const c0 = table.cdfValues[idx - 1];
+      const c1 = table.cdfValues[idx];
+      const frac = c1 > c0 ? (targetCDF - c0) / (c1 - c0) : 0;
+      let sampledT = table.tValues[idx - 1] + frac * table.dt;
+
+      // For Uniform distribution, ensure sampledT stays strictly within [tStart, params.max]
+      if (modelKey === 'UNIFORM') {
+        const maxU = GAME_CONFIG.MODELS.UNIFORM.params.max;
+        sampledT = Math.min(maxU - 0.05, Math.max(tStart + 0.15, sampledT));
+      }
+
+      return Math.max(tStart + 0.15, Math.min(GAME_CONFIG.TIMELINE_MAX_MINS - 0.2, sampledT));
+    }
+
+    /**
+     * ============================================================================
+     * 3. SYNTHESIZED WEB AUDIO SOUND ENGINE (NO EXTERNAL AUDIO FILES NEEDED)
+     * ============================================================================
+     */
+    const SoundEngine = {
+      ctx: null,
+      enabled: true,
+
+      init() {
+        if (!this.ctx) {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (AudioCtx) this.ctx = new AudioCtx();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      },
+
+      playTone(freq, type, duration, gainVal = 0.08) {
+        if (!this.enabled) return;
+        try {
+          this.init();
+          if (!this.ctx) return;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+          gain.gain.setValueAtTime(gainVal, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + duration);
+        } catch (e) {
+          // Ignore audio context restrictions if not interacted yet
+        }
+      },
+
+      playLockIn() {
+        this.playTone(440, 'triangle', 0.12, 0.1);
+        setTimeout(() => this.playTone(660, 'triangle', 0.18, 0.12), 90);
+      },
+
+      playBracketTick(inBracket) {
+        this.playTone(inBracket ? 780 : 340, 'sine', 0.04, inBracket ? 0.06 : 0.025);
+      },
+
+      playBusHonkAndBrakes(isHit) {
+        if (!this.enabled) return;
+        // Dual-tone city bus horn + chime
+        if (isHit) {
+          this.playTone(523.25, 'triangle', 0.18, 0.14);
+          setTimeout(() => this.playTone(659.25, 'triangle', 0.18, 0.14), 130);
+          setTimeout(() => this.playTone(783.99, 'triangle', 0.35, 0.16), 260);
+        } else {
+          this.playTone(311.13, 'sawtooth', 0.22, 0.1);
+          setTimeout(() => this.playTone(233.08, 'sawtooth', 0.35, 0.12), 180);
+        }
+      }
+    };
+
+    function toggleSound() {
+      SoundEngine.enabled = !SoundEngine.enabled;
+      const icon = document.getElementById('soundIcon');
+      if (SoundEngine.enabled) {
+        icon.className = 'fa-solid fa-volume-high text-sm text-sky-400';
+        SoundEngine.playTone(587.33, 'sine', 0.1, 0.08);
+      } else {
+        icon.className = 'fa-solid fa-volume-xmark text-sm text-slate-500';
+      }
+    }
+
+    /**
+     * ============================================================================
+     * 4. GLOBAL GAME STATE
+     * ============================================================================
+     */
+    const GameState = {
+      mode: 'basic',             // 'basic' | 'advanced' | 'custom'
+      roundIndex: 0,             // 0, 1, 2 for campaigns
+      currentModelKey: 'UNIFORM',
+      avatarGender: 'MAN',       // 'MAN' | 'WOMAN'
+      phase: 'SETUP',            // 'SETUP' | 'WAITING' | 'RESULT'
+
+      // Time & Distribution State for Current Round
+      distTable: null,
+      tStart: 0.0,               // Initial walk-up time on the clock (mins)
+      tCurrent: 0.0,             // Current simulated time on the clock (mins)
+      tBus: 10.0,                // Secret sampled arrival time of the bus (mins)
+      customRandomStart: true,   // Custom lab toggle for tStart > 0
+
+      // Player's Prediction Bracket
+      bracketCenter: 10.0,
+      bracketWidth: GAME_CONFIG.SCORING.defaultBracketWidth,
+      bracketStart: 8.5,
+      bracketEnd: 11.5,
+
+      // Locked Snapshot Metrics at moment of Lock-In
+      lockedCaptureProb: 0.0,
+      lockedPotentialScore: 1000,
+      condStatsAtStart: { mean: 10, median: 10 },
+
+      // Playback & Visual Animation State
+      speedMultiplier: 1.0,
+      lastFrameTimestamp: 0,
+      lastTickMinute: -1,
+      busAnimProgress: 0.0,      // 0 = offscreen right, 1 = halted at bus stop curb
+      weatherParticles: [],      // Rain / snow particles for FREEZING and FUMING states
+      steamParticles: [],        // Rising coffee steam particles for HAPPY / IMPATIENT states
+      stars: [],                 // Night sky background stars
+
+      // Scoring & History
+      totalScore: 0,
+      roundHistory: [],
+
+      // Drag interaction on PDF Graph
+      isDraggingGraph: false
+    };
+
+    /**
+     * ============================================================================
+     * 5. GAME INITIALIZATION, CAMPAIGN MANAGEMENT & MODE SWITCHING
+     * ============================================================================
+     */
+    function initEnvironmentParticles() {
+      GameState.stars = [];
+      for (let i = 0; i < 45; i++) {
+        GameState.stars.push({
+          x: Math.random(),
+          y: Math.random() * 0.42,
+          r: 0.7 + Math.random() * 1.4,
+          twinklePhase: Math.random() * Math.PI * 2
+        });
+      }
+
+      GameState.weatherParticles = [];
+      for (let i = 0; i < 85; i++) {
+        GameState.weatherParticles.push({
+          x: Math.random(),
+          y: Math.random(),
+          speedY: 0.35 + Math.random() * 0.55,
+          speedX: -0.12 - Math.random() * 0.15,
+          size: 1.5 + Math.random() * 2.2,
+          isSnow: Math.random() > 0.4
+        });
+      }
+
+      GameState.steamParticles = [];
+      for (let i = 0; i < 14; i++) {
+        GameState.steamParticles.push({
+          offsetY: Math.random() * 28,
+          driftPhase: Math.random() * Math.PI * 2,
+          alpha: 0.2 + Math.random() * 0.5
+        });
+      }
+    }
+
+    function populateCustomModelButtons() {
+      const container = document.getElementById('customModelButtons');
+      container.innerHTML = '';
+      Object.keys(GAME_CONFIG.MODELS).forEach((key) => {
+        const m = GAME_CONFIG.MODELS[key];
+        const btn = document.createElement('button');
+        btn.id = `customBtn_${key}`;
+        btn.onclick = () => selectCustomModel(key);
+        btn.className = 'px-2.5 py-1 rounded-lg text-xs font-semibold transition border border-slate-700 bg-slate-950 text-slate-300 hover:text-white';
+        btn.textContent = `${m.routeBadge.replace('ROUTE ', 'R')}: ${m.name.replace('The ', '')}`;
+        container.appendChild(btn);
+      });
+      updateCustomModelButtonStyles();
+    }
+
+    function updateCustomModelButtonStyles() {
+      Object.keys(GAME_CONFIG.MODELS).forEach((key) => {
+        const btn = document.getElementById(`customBtn_${key}`);
+        if (!btn) return;
+        if (key === GameState.currentModelKey) {
+          btn.className = 'px-2.5 py-1 rounded-lg text-xs font-bold transition border border-sky-400 bg-sky-500/20 text-sky-300 shadow';
+        } else {
+          btn.className = 'px-2.5 py-1 rounded-lg text-xs font-semibold transition border border-slate-800 bg-slate-950 text-slate-400 hover:text-white';
+        }
+      });
+    }
+
+    function switchGameMode(newMode) {
+      GameState.mode = newMode;
+      GameState.roundIndex = 0;
+      GameState.totalScore = 0;
+      GameState.roundHistory = [];
+      updateHeaderScore();
+
+      // Update Mode Pill Styles
+      const modes = ['basic', 'advanced', 'custom'];
+      modes.forEach((m) => {
+        const btn = document.getElementById(`modeBtn${m.charAt(0).toUpperCase() + m.slice(1)}`);
+        if (m === newMode) {
+          btn.className = 'px-2.5 py-1.5 rounded-lg transition-all bg-sky-500 text-slate-950 font-bold shadow';
+        } else {
+          btn.className = 'px-2.5 py-1.5 rounded-lg transition-all text-slate-300 hover:text-white';
+        }
+      });
+
+      const customBar = document.getElementById('customModeBar');
+      if (newMode === 'custom') {
+        customBar.classList.remove('hidden');
+        setupRound(GameState.currentModelKey);
+      } else {
+        customBar.classList.add('hidden');
+        const campaignList = GAME_CONFIG.CAMPAIGNS[newMode];
+        setupRound(campaignList[0]);
+      }
+    }
+
+    function selectCustomModel(modelKey) {
+      GameState.currentModelKey = modelKey;
+      updateCustomModelButtonStyles();
+      setupRound(modelKey);
+    }
+
+    function onCustomStartToggle() {
+      const checkbox = document.getElementById('customRandomStartToggle');
+      GameState.customRandomStart = checkbox.checked;
+      setupRound(GameState.currentModelKey);
+    }
+
+    function setAvatarGender(gender) {
+      GameState.avatarGender = gender;
+      const manBtn = document.getElementById('avatarBtnMan');
+      const womanBtn = document.getElementById('avatarBtnWoman');
+
+      if (gender === 'MAN') {
+        manBtn.className = 'px-2.5 py-1.5 rounded-lg transition-all bg-amber-500 text-slate-950 font-bold shadow';
+        womanBtn.className = 'px-2.5 py-1.5 rounded-lg transition-all text-slate-300 hover:text-white';
+      } else {
+        womanBtn.className = 'px-2.5 py-1.5 rounded-lg transition-all bg-amber-500 text-slate-950 font-bold shadow';
+        manBtn.className = 'px-2.5 py-1.5 rounded-lg transition-all text-slate-300 hover:text-white';
+      }
+    }
+
+    /**
+     * ============================================================================
+     * 6. ROUND SETUP & BRACKET PREDICTION METRICS
+     * ============================================================================
+     */
+    function setupRound(modelKey) {
+      GameState.currentModelKey = modelKey;
+      GameState.phase = 'SETUP';
+      GameState.speedMultiplier = 1.0;
+      GameState.busAnimProgress = 0.0;
+      GameState.lastTickMinute = -1;
+
+      const model = GAME_CONFIG.MODELS[modelKey];
+      GameState.distTable = buildDistributionTable(modelKey);
+
+      // Determine walk-up start time tStart
+      const useRandomOffset = (GameState.mode === 'custom')
+        ? GameState.customRandomStart
+        : GAME_CONFIG.SIMULATION.enableRandomStart;
+
+      if (useRandomOffset) {
+        const minF = GAME_CONFIG.SIMULATION.minStartFrac;
+        const maxF = GAME_CONFIG.SIMULATION.maxStartFrac;
+        const rawOffset = model.charScale * (minF + Math.random() * (maxF - minF));
+        // Round to nearest 0.25 min for clean LED display
+        GameState.tStart = Math.round(rawOffset * 4) / 4;
+      } else {
+        GameState.tStart = 0.0;
+      }
+
+      GameState.tCurrent = GameState.tStart;
+
+      // Sample secret bus arrival time tBus >= tStart from true conditional distribution
+      GameState.tBus = sampleConditionalBusArrival(GameState.distTable, GameState.tStart, modelKey);
+      GameState.condStatsAtStart = getConditionalStats(GameState.distTable, GameState.tStart);
+
+      // Position default player bracket sensibly ahead of tStart
+      GameState.bracketWidth = GAME_CONFIG.SCORING.defaultBracketWidth;
+      const defaultCenter = Math.min(
+        GAME_CONFIG.TIMELINE_MAX_MINS - GameState.bracketWidth / 2 - 0.5,
+        Math.max(GameState.tStart + GameState.bracketWidth / 2 + 1.0, Math.round(GameState.condStatsAtStart.median * 2) / 2)
+      );
+      GameState.bracketCenter = defaultCenter;
+      syncBracketBounds();
+
+      // Update UI Elements for Route Header
+      document.getElementById('routeBadge').textContent = model.routeBadge;
+      document.getElementById('modelTitle').textContent = `${model.name} (${model.subtitle})`;
+      document.getElementById('formulaBadge').textContent = model.formulaLabel;
+      document.getElementById('modelLessonText').textContent = model.lesson;
+      document.getElementById('statCondMean').textContent = `${GameState.condStatsAtStart.mean.toFixed(1)}m`;
+
+      if (GameState.mode === 'basic') {
+        document.getElementById('roundProgressBadge').textContent = `Basic Campaign • Round ${GameState.roundIndex + 1} of 3`;
+      } else if (GameState.mode === 'advanced') {
+        document.getElementById('roundProgressBadge').textContent = `Advanced Campaign • Round ${GameState.roundIndex + 1} of 3`;
+      } else {
+        document.getElementById('roundProgressBadge').textContent = `Custom Probability Lab • Free Play`;
+        updateCustomModelButtonStyles();
+      }
+
+      // Reset Controls & Result Panel visibility
+      document.getElementById('setupControlsContainer').classList.remove('hidden');
+      document.getElementById('roundResultPanel').classList.add('hidden');
+      document.getElementById('roundResultPanel').classList.remove('flex');
+      document.getElementById('criticalOutlierAlert').classList.add('hidden');
+
+      const centerSlider = document.getElementById('bracketCenterSlider');
+      const widthSlider = document.getElementById('bracketWidthSlider');
+      centerSlider.disabled = false;
+      widthSlider.disabled = false;
+      centerSlider.min = (GameState.tStart + 0.5).toFixed(2);
+      centerSlider.max = (GAME_CONFIG.TIMELINE_MAX_MINS - 0.5).toFixed(2);
+      centerSlider.value = GameState.bracketCenter;
+      widthSlider.value = GameState.bracketWidth;
+
+      const lockBtn = document.getElementById('lockPredictionBtn');
+      lockBtn.disabled = false;
+      lockBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+      lockBtn.innerHTML = `<i class="fa-solid fa-lock"></i><span>LOCK PREDICTION &amp; WATCH</span>`;
+
+      const speedBtn = document.getElementById('speedToggleBtn');
+      speedBtn.classList.add('hidden');
+      speedBtn.textContent = '1x SPEED';
+
+      updateBracketTelemetryUI();
+      updateLiveWalkupAndMoodUI();
+    }
+
+    // Clamp bracketStart and bracketEnd so the window always stays >= tStart and <= TIMELINE_MAX_MINS
+    function syncBracketBounds() {
+      const halfW = GameState.bracketWidth / 2;
+      const minCenter = GameState.tStart + halfW;
+      const maxCenter = GAME_CONFIG.TIMELINE_MAX_MINS - halfW;
+      GameState.bracketCenter = Math.max(minCenter, Math.min(maxCenter, GameState.bracketCenter));
+      GameState.bracketStart = GameState.bracketCenter - halfW;
+      GameState.bracketEnd = GameState.bracketCenter + halfW;
+    }
+
+    function onBracketSliderChange() {
+      if (GameState.phase !== 'SETUP') return;
+      const centerSlider = document.getElementById('bracketCenterSlider');
+      const widthSlider = document.getElementById('bracketWidthSlider');
+      GameState.bracketWidth = parseFloat(widthSlider.value);
+      GameState.bracketCenter = parseFloat(centerSlider.value);
+      syncBracketBounds();
+      centerSlider.value = GameState.bracketCenter;
+      updateBracketTelemetryUI();
+    }
+
+    function calculatePayoutAndOdds() {
+      const captureProb = getConditionalProbabilityInWindow(
+        GameState.distTable,
+        GameState.bracketStart,
+        GameState.bracketEnd,
+        GameState.tCurrent
+      );
+
+      // Width multiplier rewards narrower windows
+      const sc = GAME_CONFIG.SCORING;
+      const widthMultiplier = Math.pow(sc.referenceWidth / GameState.bracketWidth, sc.widthPenaltyExponent);
+
+      // Difficulty bonus rewards windows that don't just sit on a 95% sure-thing
+      const difficultyFactor = 0.75 + 0.65 * (1.0 - Math.min(0.9, captureProb));
+      const potentialScore = Math.round((sc.basePoints * widthMultiplier * difficultyFactor) / 10) * 10;
+
+      return { captureProb, potentialScore, widthMultiplier };
+    }
+
+    function updateBracketTelemetryUI() {
+      document.getElementById('sliderCenterLabel').textContent = `${GameState.bracketCenter.toFixed(2)}m`;
+      document.getElementById('sliderWidthLabel').textContent = `${GameState.bracketWidth.toFixed(2)}m`;
+      document.getElementById('metricBracketRange').textContent = `${GameState.bracketStart.toFixed(1)}m – ${GameState.bracketEnd.toFixed(1)}m`;
+
+      const { captureProb, potentialScore } = calculatePayoutAndOdds();
+      const oddsPct = (captureProb * 100).toFixed(1);
+      document.getElementById('metricCaptureOdds').textContent = `${oddsPct}%`;
+      document.getElementById('metricPotentialPayout').textContent = `+${potentialScore.toLocaleString()} pts`;
+    }
+
+    /**
+     * ============================================================================
+     * 7. PHASE 2: LOCK PREDICTION & WATCH TIME MARCH ON
+     * ============================================================================
+     */
+    function lockPredictionAndStart() {
+      if (GameState.phase !== 'SETUP') return;
+      SoundEngine.playLockIn();
+
+      const { captureProb, potentialScore } = calculatePayoutAndOdds();
+      GameState.lockedCaptureProb = captureProb;
+      GameState.lockedPotentialScore = potentialScore;
+      GameState.phase = 'WAITING';
+
+      // Disable sliders & show Watching state
+      document.getElementById('bracketCenterSlider').disabled = true;
+      document.getElementById('bracketWidthSlider').disabled = true;
+
+      const lockBtn = document.getElementById('lockPredictionBtn');
+      lockBtn.disabled = true;
+      lockBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      lockBtn.innerHTML = `<i class="fa-solid fa-satellite-dish animate-pulse"></i><span>WATCHING LIVE TIMELINE...</span>`;
+
+      const speedBtn = document.getElementById('speedToggleBtn');
+      speedBtn.classList.remove('hidden');
+    }
+
+    function toggleSimSpeed() {
+      if (GameState.speedMultiplier === 1.0) {
+        GameState.speedMultiplier = 2.2;
+        document.getElementById('speedToggleBtn').textContent = '2.2x FAST';
+      } else {
+        GameState.speedMultiplier = 1.0;
+        document.getElementById('speedToggleBtn').textContent = '1x SPEED';
+      }
+    }
+
+    // Format minutes float into MM:SS for the LED shelter sign
+    function formatMinutesToMMSS(mins) {
+      const totalSeconds = Math.max(0, Math.floor(mins * 60));
+      const m = Math.floor(totalSeconds / 60);
+      const s = totalSeconds % 60;
+      return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+
+    // Compute current conditional cumulative probability elapsed since walk-up tStart:
+    // F_cond(tCurrent) = (F(tCurrent) - F(tStart)) / (1 - F(tStart))
+    function getConditionalElapsedFraction() {
+      const cdfStart = getCDF(GameState.distTable, GameState.tStart);
+      const cdfNow = getCDF(GameState.distTable, GameState.tCurrent);
+      const remAtStart = Math.max(1e-6, 1.0 - cdfStart);
+      return Math.min(1.0, Math.max(0.0, (cdfNow - cdfStart) / remAtStart));
+    }
+
+    // Determine Commuter Mood State from GAME_CONFIG.MOOD_THRESHOLDS
+    function getCurrentCommuterMood() {
+      const fCond = getConditionalElapsedFraction();
+      const th = GAME_CONFIG.MOOD_THRESHOLDS;
+      if (fCond <= th.HAPPY_MAX) return 'HAPPY';
+      if (fCond <= th.IMPATIENT_MAX) return 'IMPATIENT';
+      if (fCond <= th.FREEZING_MAX) return 'FREEZING';
+      return 'FUMING';
+    }
+
+    // Update Shelter LED Sign, Hazard Rate Display, and Commuter Patience Bar
+    function updateLiveWalkupAndMoodUI() {
+      document.getElementById('ledClockDisplay').textContent = formatMinutesToMMSS(GameState.tCurrent);
+
+      const walkupTag = document.getElementById('ledWalkupTag');
+      if (GameState.phase === 'SETUP') {
+        walkupTag.textContent = GameState.tStart > 0 ? `WALK-UP (+${GameState.tStart.toFixed(1)}m)` : `START t₀ = 0:00`;
+        walkupTag.className = 'text-[11px] font-mono-led px-1.5 py-0.5 rounded bg-slate-800 text-amber-300';
+      } else if (GameState.phase === 'WAITING') {
+        const inWin = GameState.tCurrent >= GameState.bracketStart && GameState.tCurrent <= GameState.bracketEnd;
+        walkupTag.textContent = inWin ? 'IN YOUR WINDOW!' : 'LIVE CLOCK';
+        walkupTag.className = inWin
+          ? 'text-[11px] font-mono-led px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 animate-pulse'
+          : 'text-[11px] font-mono-led px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300';
+      } else {
+        walkupTag.textContent = 'BUS AT CURB';
+        walkupTag.className = 'text-[11px] font-mono-led px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300';
+      }
+
+      // Compute Live Instantaneous Hazard Rate h(t) = f(t) / (1 - F(t))
+      const pdfNow = getPDF(GameState.distTable, GameState.tCurrent);
+      const cdfNow = getCDF(GameState.distTable, GameState.tCurrent);
+      const survivalNow = Math.max(0.005, 1.0 - cdfNow);
+      const hazardPerMin = Math.min(0.99, pdfNow / survivalNow);
+      const hazardPct = (hazardPerMin * 100).toFixed(1);
+
+      const hazardEl = document.getElementById('ledHazardStatus');
+      if (hazardPerMin < 0.045) {
+        hazardEl.textContent = `VERY LOW (${hazardPct}%/min)`;
+        hazardEl.className = 'font-mono-led text-xs sm:text-sm font-bold led-text-red';
+      } else if (hazardPerMin < 0.14) {
+        hazardEl.textContent = `MODERATE (${hazardPct}%/min)`;
+        hazardEl.className = 'font-mono-led text-xs sm:text-sm font-bold led-text-cyan';
+      } else {
+        hazardEl.textContent = `HIGH SURGE (${hazardPct}%/min)`;
+        hazardEl.className = 'font-mono-led text-xs sm:text-sm font-bold led-text-emerald';
+      }
+
+      // Update Live Conditional Odds in Bracket while waiting
+      if (GameState.phase === 'WAITING') {
+        const liveBracketProb = getConditionalProbabilityInWindow(
+          GameState.distTable,
+          GameState.bracketStart,
+          GameState.bracketEnd,
+          GameState.tCurrent
+        );
+        document.getElementById('metricCaptureOdds').textContent = `${(liveBracketProb * 100).toFixed(1)}%`;
+      }
+
+      // Update Patience Meter & Coffee Temperature
+      const fCond = getConditionalElapsedFraction();
+      const patiencePct = Math.max(4, Math.round((1.0 - fCond) * 100));
+      const mood = getCurrentCommuterMood();
+
+      const barFill = document.getElementById('patienceBarFill');
+      const moodLabel = document.getElementById('moodStateLabel');
+      const coffeeText = document.getElementById('coffeeStatusText');
+      const condPctText = document.getElementById('condPercentileText');
+      const outlierAlert = document.getElementById('criticalOutlierAlert');
+
+      barFill.style.width = `${patiencePct}%`;
+      condPctText.textContent = `Elapsed Odds: ${(fCond * 100).toFixed(0)}%`;
+
+      if (mood === 'HAPPY') {
+        moodLabel.textContent = '☕ WARM & HAPPY';
+        moodLabel.className = 'font-mono-led font-bold text-emerald-400 text-xs';
+        barFill.className = 'h-full rounded-full transition-all duration-150 bg-gradient-to-r from-emerald-500 to-teal-400';
+        const tempC = Math.round(70 - fCond * 35);
+        coffeeText.textContent = `Coffee: Steaming Hot (${tempC}°C)`;
+        outlierAlert.classList.add('hidden');
+      } else if (mood === 'IMPATIENT') {
+        moodLabel.textContent = '⌚ IMPATIENT';
+        moodLabel.className = 'font-mono-led font-bold text-amber-400 text-xs';
+        barFill.className = 'h-full rounded-full transition-all duration-150 bg-gradient-to-r from-amber-500 to-yellow-400';
+        const tempC = Math.round(45 - (fCond - 0.45) * 65);
+        coffeeText.textContent = `Coffee: Lukewarm (${tempC}°C)`;
+        outlierAlert.classList.add('hidden');
+      } else if (mood === 'FREEZING') {
+        moodLabel.textContent = '❄️ FREEZING & SHIVERING';
+        moodLabel.className = 'font-mono-led font-bold text-sky-300 text-xs';
+        barFill.className = 'h-full rounded-full transition-all duration-150 bg-gradient-to-r from-sky-500 to-rose-400';
+        coffeeText.textContent = `Coffee: Ice Cold (4°C) ❄️`;
+        outlierAlert.classList.add('hidden');
+      } else {
+        moodLabel.textContent = '🤬 CRITICAL WAIT!';
+        moodLabel.className = 'font-mono-led font-bold text-rose-400 text-xs animate-pulse';
+        barFill.className = 'h-full rounded-full transition-all duration-150 bg-gradient-to-r from-rose-600 to-red-500';
+        coffeeText.textContent = `Coffee: Frozen Solid (-2°C) 🧊`;
+        if (GameState.phase === 'WAITING') {
+          outlierAlert.classList.remove('hidden');
+        }
+      }
+    }
+
+    /**
+     * ============================================================================
+     * 8. PHASE 3: BUS ARRIVAL & ROUND TELEMETRY EVALUATION
+     * ============================================================================
+     */
+    function triggerBusArrival() {
+      GameState.phase = 'RESULT';
+      GameState.tCurrent = GameState.tBus;
+      updateLiveWalkupAndMoodUI();
+
+      // Determine Hit / Near Miss / Miss
+      const tArr = GameState.tBus;
+      const inBracket = (tArr >= GameState.bracketStart && tArr <= GameState.bracketEnd);
+      const nearTolerance = GAME_CONFIG.SCORING.nearMissToleranceMins;
+      const isNearMiss = !inBracket && (
+        Math.abs(tArr - GameState.bracketStart) <= nearTolerance ||
+        Math.abs(tArr - GameState.bracketEnd) <= nearTolerance
+      );
+
+      let pointsEarned = 0;
+      let outcomeType = 'MISS';
+      if (inBracket) {
+        outcomeType = 'HIT';
+        pointsEarned = GameState.lockedPotentialScore;
+      } else if (isNearMiss) {
+        outcomeType = 'NEAR_MISS';
+        pointsEarned = Math.round((GameState.lockedPotentialScore * GAME_CONFIG.SCORING.nearMissFactor) / 10) * 10;
+      }
+
+      GameState.totalScore += pointsEarned;
+      updateHeaderScore();
+      SoundEngine.playBusHonkAndBrakes(inBracket);
+
+      const fCondAtArrival = getConditionalElapsedFraction();
+      const percentileInt = Math.min(99, Math.max(1, Math.round(fCondAtArrival * 100)));
+      const finalMood = getCurrentCommuterMood();
+
+      // Record in campaign history
+      const model = GAME_CONFIG.MODELS[GameState.currentModelKey];
+      GameState.roundHistory.push({
+        routeBadge: model.routeBadge,
+        modelName: model.name,
+        tStart: GameState.tStart,
+        bracketStart: GameState.bracketStart,
+        bracketEnd: GameState.bracketEnd,
+        tBus: GameState.tBus,
+        outcomeType,
+        pointsEarned,
+        percentileInt
+      });
+
+      // Populate Result Panel UI
+      document.getElementById('setupControlsContainer').classList.add('hidden');
+      const resultPanel = document.getElementById('roundResultPanel');
+      resultPanel.classList.remove('hidden');
+      resultPanel.classList.add('flex');
+
+      const iconBadge = document.getElementById('resultIconBadge');
+      const headline = document.getElementById('resultHeadline');
+      const subline = document.getElementById('resultSubline');
+      const scoreEl = document.getElementById('resultScoreEarned');
+
+      if (outcomeType === 'HIT') {
+        iconBadge.className = 'w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 text-lg';
+        iconBadge.innerHTML = `<i class="fa-solid fa-bus"></i>`;
+        headline.className = 'font-extrabold text-base text-emerald-400';
+        headline.textContent = 'DIRECT HIT! YOU CAUGHT THE BUS!';
+        subline.textContent = `Bus arrived at ${tArr.toFixed(2)}m — right inside your [${GameState.bracketStart.toFixed(1)}m – ${GameState.bracketEnd.toFixed(1)}m] bracket!`;
+        scoreEl.textContent = `+${pointsEarned.toLocaleString()}`;
+      } else if (outcomeType === 'NEAR_MISS') {
+        iconBadge.className = 'w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 text-lg';
+        iconBadge.innerHTML = `<i class="fa-solid fa-person-running"></i>`;
+        headline.className = 'font-extrabold text-base text-amber-400';
+        headline.textContent = 'CLOSE CALL! SPRINTED FOR PARTIAL CREDIT!';
+        subline.textContent = `Bus arrived at ${tArr.toFixed(2)}m — within ${nearTolerance.toFixed(1)}m of your [${GameState.bracketStart.toFixed(1)}m – ${GameState.bracketEnd.toFixed(1)}m] window.`;
+        scoreEl.textContent = `+${pointsEarned.toLocaleString()}`;
+      } else {
+        iconBadge.className = 'w-9 h-9 rounded-xl bg-rose-500/20 border border-rose-500/40 flex items-center justify-center text-rose-400 text-lg';
+        iconBadge.innerHTML = `<i class="fa-solid fa-snowflake"></i>`;
+        headline.className = 'font-extrabold text-base text-rose-400';
+        const earlyOrLate = tArr < GameState.bracketStart ? 'EARLY' : 'OVERDUE';
+        headline.textContent = `MISSED WINDOW (${earlyOrLate})!`;
+        subline.textContent = `Bus arrived at ${tArr.toFixed(2)}m outside your [${GameState.bracketStart.toFixed(1)}m – ${GameState.bracketEnd.toFixed(1)}m] bet.`;
+        scoreEl.textContent = `+0`;
+      }
+
+      document.getElementById('telemetryActualTime').textContent = `${tArr.toFixed(2)}m`;
+      document.getElementById('telemetryPercentile').textContent = `${percentileInt}th %ile`;
+      document.getElementById('telemetryFinalMood').textContent = finalMood;
+
+      const insightEl = document.getElementById('resultInsightText');
+      insightEl.innerHTML = `<strong class="text-sky-300">Telemetry Analysis:</strong> Given your walk-up at <strong>${GameState.tStart.toFixed(1)}m</strong>, the conditional median arrival was <strong>${GameState.condStatsAtStart.median.toFixed(1)}m</strong>. Your locked bracket captured <strong>${(GameState.lockedCaptureProb * 100).toFixed(1)}%</strong> of the conditional probability mass, and this bus rolled at the <strong>${percentileInt}th percentile</strong>.`;
+
+      // Update Next button label depending on campaign progress
+      const nextBtn = document.getElementById('nextRoundBtn');
+      if (GameState.mode !== 'custom' && GameState.roundIndex >= 2) {
+        nextBtn.innerHTML = `<span>VIEW SHIFT REPORT</span><i class="fa-solid fa-flag-checkered"></i>`;
+      } else if (GameState.mode === 'custom') {
+        nextBtn.innerHTML = `<span>NEW ROLL ON THIS ROUTE</span><i class="fa-solid fa-dice"></i>`;
+      } else {
+        nextBtn.innerHTML = `<span>NEXT ROUTE (${GameState.roundIndex + 2}/3)</span><i class="fa-solid fa-arrow-right"></i>`;
+      }
+    }
+
+    function advanceToNextRound() {
+      if (GameState.mode === 'custom') {
+        setupRound(GameState.currentModelKey);
+        return;
+      }
+
+      const campaignList = GAME_CONFIG.CAMPAIGNS[GameState.mode];
+      if (GameState.roundIndex < campaignList.length - 1) {
+        GameState.roundIndex++;
+        setupRound(campaignList[GameState.roundIndex]);
+      } else {
+        showCampaignSummaryModal();
+      }
+    }
+
+    function replayCurrentModel() {
+      setupRound(GameState.currentModelKey);
+    }
+
+    function updateHeaderScore() {
+      document.getElementById('headerTotalScore').textContent = GameState.totalScore.toLocaleString();
+    }
+
+    function showCampaignSummaryModal() {
+      const modal = document.getElementById('campaignModal');
+      modal.classList.remove('hidden');
+
+      document.getElementById('modalCampaignLabel').textContent =
+        GameState.mode === 'basic' ? 'BASIC CAMPAIGN COMPLETE (3 ROUTES)' : 'ADVANCED CAMPAIGN COMPLETE (3 ROUTES)';
+      document.getElementById('modalTotalScore').textContent = GameState.totalScore.toLocaleString();
+
+      const hits = GameState.roundHistory.filter(r => r.outcomeType === 'HIT' || r.outcomeType === 'NEAR_MISS').length;
+      document.getElementById('modalHitRate').textContent = `${hits} / ${GameState.roundHistory.length}`;
+
+      const listEl = document.getElementById('modalRoundHistoryList');
+      listEl.innerHTML = '';
+      GameState.roundHistory.forEach((item, idx) => {
+        const row = document.createElement('div');
+        row.className = 'bg-slate-950 border border-slate-800 rounded-xl p-3 flex items-center justify-between gap-2 text-xs';
+        const badgeColor = item.outcomeType === 'HIT'
+          ? 'text-emerald-400 bg-emerald-500/15 border-emerald-500/30'
+          : item.outcomeType === 'NEAR_MISS'
+            ? 'text-amber-400 bg-amber-500/15 border-amber-500/30'
+            : 'text-rose-400 bg-rose-500/15 border-rose-500/30';
+
+        row.innerHTML = `
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="font-mono-led font-bold text-amber-300">${item.routeBadge}</span>
+              <span class="font-bold text-white">${item.modelName}</span>
+              <span class="font-mono-led text-[10px] px-2 py-0.5 rounded border ${badgeColor}">${item.outcomeType}</span>
+            </div>
+            <div class="text-slate-400 font-mono-led text-[11px] mt-0.5">
+              Bet: [${item.bracketStart.toFixed(1)}m–${item.bracketEnd.toFixed(1)}m] • Actual: ${item.tBus.toFixed(2)}m (${item.percentileInt}%ile)
+            </div>
+          </div>
+          <div class="font-mono-led font-bold text-sm text-amber-300">+${item.pointsEarned.toLocaleString()}</div>
+        `;
+        listEl.appendChild(row);
+      });
+    }
+
+    function closeCampaignModal() {
+      document.getElementById('campaignModal').classList.add('hidden');
+    }
+
+    function startCampaignFromModal(targetMode) {
+      closeCampaignModal();
+      switchGameMode(targetMode);
+    }
+
+    /**
+     * ============================================================================
+     * 9. INTERACTIVE PDF GRAPH CANVAS RENDERER & DRAG CONTROLLER
+     * ============================================================================
+     */
+    const pdfCanvas = document.getElementById('pdfGraphCanvas');
+    const pdfCtx = pdfCanvas.getContext('2d');
+
+    function setupPDFGraphInteractions() {
+      const getMinutesFromPointer = (clientX) => {
+        const rect = pdfCanvas.getBoundingClientRect();
+        const padLeft = 52;
+        const padRight = 18;
+        const plotW = Math.max(10, rect.width - padLeft - padRight);
+        const relX = clientX - rect.left - padLeft;
+        const frac = Math.max(0, Math.min(1, relX / plotW));
+        return frac * GAME_CONFIG.TIMELINE_MAX_MINS;
+      };
+
+      const handlePointerMove = (clientX) => {
+        if (!GameState.isDraggingGraph || GameState.phase !== 'SETUP') return;
+        const clickedMins = getMinutesFromPointer(clientX);
+        GameState.bracketCenter = Math.round(clickedMins * 4) / 4;
+        syncBracketBounds();
+        document.getElementById('bracketCenterSlider').value = GameState.bracketCenter;
+        updateBracketTelemetryUI();
+      };
+
+      pdfCanvas.addEventListener('mousedown', (e) => {
+        if (GameState.phase !== 'SETUP') return;
+        GameState.isDraggingGraph = true;
+        handlePointerMove(e.clientX);
+      });
+      window.addEventListener('mousemove', (e) => handlePointerMove(e.clientX));
+      window.addEventListener('mouseup', () => { GameState.isDraggingGraph = false; });
+
+      pdfCanvas.addEventListener('touchstart', (e) => {
+        if (GameState.phase !== 'SETUP' || !e.touches[0]) return;
+        GameState.isDraggingGraph = true;
+        handlePointerMove(e.touches[0].clientX);
+        e.preventDefault();
+      }, { passive: false });
+      pdfCanvas.addEventListener('touchmove', (e) => {
+        if (!GameState.isDraggingGraph || !e.touches[0]) return;
+        handlePointerMove(e.touches[0].clientX);
+        e.preventDefault();
+      }, { passive: false });
+      window.addEventListener('touchend', () => { GameState.isDraggingGraph = false; });
+    }
+
+    function renderPDFGraph() {
+      const rect = pdfCanvas.parentElement.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      if (pdfCanvas.width !== Math.floor(rect.width * dpr) || pdfCanvas.height !== Math.floor(rect.height * dpr)) {
+        pdfCanvas.width = Math.floor(rect.width * dpr);
+        pdfCanvas.height = Math.floor(rect.height * dpr);
+      }
+
+      const ctx = pdfCtx;
+      ctx.save();
+      ctx.scale(dpr, dpr);
+
+      const W = rect.width;
+      const H = rect.height;
+      const padLeft = 52;
+      const padRight = 18;
+      const padTop = 26;
+      const padBottom = 30;
+      const plotW = W - padLeft - padRight;
+      const plotH = H - padTop - padBottom;
+      const maxT = GAME_CONFIG.TIMELINE_MAX_MINS;
+
+      ctx.clearRect(0, 0, W, H);
+
+      const table = GameState.distTable;
+      if (!table) {
+        ctx.restore();
+        return;
+      }
+
+      // Compute dynamic Y-axis scale so renormalized conditional PDF fits cleanly
+      const cdfCurrent = getCDF(table, GameState.tCurrent);
+      const remMass = Math.max(0.06, 1.0 - cdfCurrent);
+
+      let maxUncondPDF = 0.01;
+      for (let i = 0; i <= table.N; i++) {
+        if (table.pdfValues[i] > maxUncondPDF) maxUncondPDF = table.pdfValues[i];
+      }
+      // Cap Y-axis scaling so extreme renormalization near deadline stays legible
+      const yMax = Math.min(0.45, Math.max(maxUncondPDF * 1.45, (maxUncondPDF / Math.max(0.25, remMass)) * 1.15));
+
+      const xForT = (t) => padLeft + (t / maxT) * plotW;
+      const yForPDF = (p) => padTop + plotH - Math.min(plotH, (p / yMax) * plotH);
+
+      // 1. Background Grid Lines & Y-Axis %/min Ticks
+      // Y-axis unit title at top-left of the chart
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = '700 9px "JetBrains Mono", monospace';
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText('%/min', padLeft - 4, padTop - 6);
+
+      // Dynamic round step size for Y-axis %/min tick marks
+      const yMaxPct = yMax * 100;
+      let stepPct = 5;
+      if (yMaxPct <= 6) stepPct = 1;
+      else if (yMaxPct <= 12) stepPct = 2;
+      else if (yMaxPct <= 22) stepPct = 5;
+      else if (yMaxPct <= 35) stepPct = 5;
+      else stepPct = 10;
+
+      // Horizontal grid lines & Y-axis %/min tick marks
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      ctx.font = '600 9px "JetBrains Mono", monospace';
+
+      for (let val = 0; val <= yMaxPct; val += stepPct) {
+        const p = val / 100;
+        const y = yForPDF(p);
+        if (val > 0 && y < padTop + 8) continue; // Keep clear of top margin
+
+        // Horizontal grid line across plot (faint background guide)
+        if (val > 0) {
+          ctx.strokeStyle = 'rgba(51, 65, 85, 0.40)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(padLeft, y);
+          ctx.lineTo(padLeft + plotW, y);
+          ctx.stroke();
+        }
+
+        // Y-axis tick mark notch
+        ctx.strokeStyle = '#64748b';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(padLeft - 4, y);
+        ctx.lineTo(padLeft, y);
+        ctx.stroke();
+
+        // %/min tick label
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillText(`${val}%/min`, padLeft - 6, y);
+      }
+
+      ctx.textBaseline = 'alphabetic';
+
+      // Vertical grid lines & X-axis time ticks
+      ctx.strokeStyle = 'rgba(51, 65, 85, 0.45)';
+      ctx.lineWidth = 1;
+      for (let m = 0; m <= maxT; m += 5) {
+        const x = xForT(m);
+        ctx.beginPath();
+        ctx.moveTo(x, padTop);
+        ctx.lineTo(x, padTop + plotH);
+        ctx.stroke();
+
+        // X-axis tick notch
+        ctx.strokeStyle = '#64748b';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(x, padTop + plotH);
+        ctx.lineTo(x, padTop + plotH + 4);
+        ctx.stroke();
+
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '600 10px "JetBrains Mono", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(`${m}m`, x, padTop + plotH + 16);
+      }
+
+      // 2. Shaded Elapsed Area [0, tCurrent] (Greyed Out Past)
+      if (GameState.tCurrent > 0) {
+        ctx.beginPath();
+        ctx.moveTo(xForT(0), padTop + plotH);
+        for (let i = 0; i <= table.N; i++) {
+          const t = table.tValues[i];
+          if (t > GameState.tCurrent) break;
+          ctx.lineTo(xForT(t), yForPDF(table.pdfValues[i]));
+        }
+        ctx.lineTo(xForT(GameState.tCurrent), padTop + plotH);
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(71, 85, 105, 0.28)';
+        ctx.fill();
+      }
+
+      // 3. Shaded Live Conditional PDF Curve [tCurrent, maxT]
+      ctx.beginPath();
+      ctx.moveTo(xForT(GameState.tCurrent), padTop + plotH);
+      for (let i = 0; i <= table.N; i++) {
+        const t = table.tValues[i];
+        if (t < GameState.tCurrent) continue;
+        const condP = table.pdfValues[i] / remMass;
+        ctx.lineTo(xForT(t), yForPDF(condP));
+      }
+      ctx.lineTo(xForT(maxT), padTop + plotH);
+      ctx.closePath();
+      const skyGrad = ctx.createLinearGradient(0, padTop, 0, padTop + plotH);
+      skyGrad.addColorStop(0, 'rgba(56, 189, 248, 0.42)');
+      skyGrad.addColorStop(1, 'rgba(56, 189, 248, 0.04)');
+      ctx.fillStyle = skyGrad;
+      ctx.fill();
+
+      // 4. Shaded Player Prediction Bracket Area under Conditional Curve
+      const bStart = GameState.bracketStart;
+      const bEnd = GameState.bracketEnd;
+      const xBStart = xForT(bStart);
+      const xBEnd = xForT(bEnd);
+
+      // Vertical bracket column highlight
+      const bracketMissed = GameState.tCurrent > bEnd && GameState.phase !== 'SETUP';
+      ctx.fillStyle = bracketMissed
+        ? 'rgba(244, 63, 94, 0.12)'
+        : 'rgba(251, 191, 36, 0.12)';
+      ctx.fillRect(xBStart, padTop, Math.max(2, xBEnd - xBStart), plotH);
+
+      // Shade integral area inside [max(bStart, tCurrent), bEnd]
+      const activeStart = Math.max(bStart, GameState.tCurrent);
+      if (bEnd > activeStart) {
+        ctx.beginPath();
+        ctx.moveTo(xForT(activeStart), padTop + plotH);
+        const steps = 40;
+        for (let s = 0; s <= steps; s++) {
+          const t = activeStart + (s / steps) * (bEnd - activeStart);
+          const condP = getPDF(table, t) / remMass;
+          ctx.lineTo(xForT(t), yForPDF(condP));
+        }
+        ctx.lineTo(xForT(bEnd), padTop + plotH);
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(251, 191, 36, 0.48)';
+        ctx.fill();
+      }
+
+      // Bracket border lines & top handle bar
+      ctx.strokeStyle = bracketMissed ? '#f43f5e' : '#fbbf24';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 3]);
+      ctx.beginPath();
+      ctx.moveTo(xBStart, padTop);
+      ctx.lineTo(xBStart, padTop + plotH);
+      ctx.moveTo(xBEnd, padTop);
+      ctx.lineTo(xBEnd, padTop + plotH);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Top Bracket Pill Label
+      const pillCenter = 0.5 * (xBStart + xBEnd);
+      ctx.fillStyle = bracketMissed ? '#f43f5e' : '#fbbf24';
+      ctx.font = '700 10px "JetBrains Mono", monospace';
+      ctx.textAlign = 'center';
+      const bracketLabelText = bracketMissed
+        ? 'WINDOW MISSED!'
+        : `BET [${bStart.toFixed(1)}–${bEnd.toFixed(1)}m]`;
+      ctx.fillText(bracketLabelText, Math.max(padLeft + 42, Math.min(W - padRight - 42, pillCenter)), padTop - 7);
+
+      // 5. Original Unconditional PDF Curve (Faded Dashed Reference)
+      ctx.beginPath();
+      ctx.strokeStyle = 'rgba(148, 163, 184, 0.45)';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([3, 3]);
+      for (let i = 0; i <= table.N; i++) {
+        const x = xForT(table.tValues[i]);
+        const y = yForPDF(table.pdfValues[i]);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // 6. Live Conditional PDF Stroke Curve [tCurrent, maxT]
+      ctx.beginPath();
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 2.5;
+      let started = false;
+      for (let i = 0; i <= table.N; i++) {
+        const t = table.tValues[i];
+        if (t < GameState.tCurrent) continue;
+        const x = xForT(t);
+        const y = yForPDF(table.pdfValues[i] / remMass);
+        if (!started) {
+          ctx.moveTo(x, y);
+          started = true;
+        } else {
+          ctx.lineTo(x, y);
+        }
+      }
+      ctx.stroke();
+
+      // 7. Live Time Marker ("CURRENT TIME")
+      const xNow = xForT(GameState.tCurrent);
+      ctx.strokeStyle = '#f43f5e';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(xNow, padTop - 2);
+      ctx.lineTo(xNow, padTop + plotH);
+      ctx.stroke();
+
+      // Pulsing dot on the curve at tCurrent
+      const curCondP = getPDF(table, GameState.tCurrent) / remMass;
+      const yNow = yForPDF(curCondP);
+      ctx.fillStyle = '#f43f5e';
+      ctx.beginPath();
+      ctx.arc(xNow, yNow, 4.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Time Marker Text Tag
+      ctx.fillStyle = '#fb7185';
+      ctx.font = '700 10px "JetBrains Mono", monospace';
+      ctx.textAlign = xNow > W - 85 ? 'right' : 'left';
+      const labelOffset = xNow > W - 85 ? -6 : 6;
+      ctx.fillText(`t=${GameState.tCurrent.toFixed(1)}m`, xNow + labelOffset, padTop + 12);
+
+      // 8. If Round Finished, Stamp Exact Bus Arrival Pin
+      if (GameState.phase === 'RESULT') {
+        const xBus = xForT(GameState.tBus);
+        ctx.strokeStyle = '#34d399';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(xBus, padTop);
+        ctx.lineTo(xBus, padTop + plotH);
+        ctx.stroke();
+
+        ctx.fillStyle = '#10b981';
+        ctx.font = '800 10px "JetBrains Mono", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(`🚌 ${GameState.tBus.toFixed(2)}m`, Math.max(padLeft + 30, Math.min(W - padRight - 30, xBus)), padTop + plotH - 8);
+      }
+
+      // Axes baseline
+      ctx.strokeStyle = '#475569';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(padLeft, padTop);
+      ctx.lineTo(padLeft, padTop + plotH);
+      ctx.lineTo(padLeft + plotW, padTop + plotH);
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    /**
+     * ============================================================================
+     * 10. ANIMATED BUS STOP SCENE & COMMUTER AVATAR RENDERER (MAN / WOMAN)
+     * ============================================================================
+     */
+    const sceneCanvas = document.getElementById('busStopCanvas');
+    const sceneCtx = sceneCanvas.getContext('2d');
+
+    function renderBusStopScene(timestamp) {
+      const rect = sceneCanvas.parentElement.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      if (sceneCanvas.width !== Math.floor(rect.width * dpr) || sceneCanvas.height !== Math.floor(rect.height * dpr)) {
+        sceneCanvas.width = Math.floor(rect.width * dpr);
+        sceneCanvas.height = Math.floor(rect.height * dpr);
+      }
+
+      const ctx = sceneCtx;
+      ctx.save();
+      ctx.scale(dpr, dpr);
+
+      const W = rect.width;
+      const H = rect.height;
+      const mood = getCurrentCommuterMood();
+      const fCond = getConditionalElapsedFraction();
+      const timeSec = timestamp * 0.001;
+
+      // 1. Nocturnal Sky Gradient (Shifts colder/stormier as mood worsens)
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, H * 0.72);
+      if (mood === 'HAPPY') {
+        skyGrad.addColorStop(0, '#091124');
+        skyGrad.addColorStop(1, '#1e293b');
+      } else if (mood === 'IMPATIENT') {
+        skyGrad.addColorStop(0, '#080e1e');
+        skyGrad.addColorStop(1, '#17253b');
+      } else if (mood === 'FREEZING') {
+        skyGrad.addColorStop(0, '#070b16');
+        skyGrad.addColorStop(1, '#111e32');
+      } else {
+        skyGrad.addColorStop(0, '#0f0714');
+        skyGrad.addColorStop(1, '#1f1629');
+      }
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, W, H);
+
+      // 2. Twinkling Stars (Fade out during storm)
+      const starOpacity = mood === 'FUMING' ? 0.15 : mood === 'FREEZING' ? 0.4 : 0.85;
+      GameState.stars.forEach((st) => {
+        const alpha = starOpacity * (0.5 + 0.5 * Math.sin(timeSec * 2.2 + st.twinklePhase));
+        ctx.fillStyle = `rgba(226, 232, 240, ${alpha})`;
+        ctx.beginPath();
+        ctx.arc(st.x * W, st.y * H, st.r, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // 3. Distant City Skyline Silhouettes & Warm Windows
+      const horizonY = H * 0.68;
+      ctx.fillStyle = '#0b1322';
+      const buildings = [
+        { x: 0.02, w: 0.11, h: 0.28 },
+        { x: 0.14, w: 0.09, h: 0.36 },
+        { x: 0.25, w: 0.13, h: 0.24 },
+        { x: 0.42, w: 0.10, h: 0.32 },
+        { x: 0.55, w: 0.14, h: 0.27 },
+        { x: 0.71, w: 0.12, h: 0.38 },
+        { x: 0.85, w: 0.14, h: 0.29 }
+      ];
+      buildings.forEach((b) => {
+        const bx = b.x * W;
+        const bw = b.w * W;
+        const bh = b.h * H;
+        const by = horizonY - bh;
+        ctx.fillStyle = '#0d1627';
+        ctx.fillRect(bx, by, bw, bh);
+        // Subtle lit apartment windows
+        ctx.fillStyle = 'rgba(251, 191, 36, 0.22)';
+        for (let wy = by + 12; wy < horizonY - 14; wy += 16) {
+          for (let wx = bx + 8; wx < bx + bw - 12; wx += 14) {
+            if ((Math.floor(wx + wy) % 3) === 0) {
+              ctx.fillRect(wx, wy, 5, 7);
+            }
+          }
+        }
+      });
+
+      // 4. Streetlight Glow in Background
+      const lampX = W * 0.78;
+      const lampY = horizonY - 115;
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(lampX, horizonY);
+      ctx.lineTo(lampX, lampY);
+      ctx.lineTo(lampX - 24, lampY);
+      ctx.stroke();
+
+      const lampGlow = ctx.createRadialGradient(lampX - 24, lampY, 2, lampX - 24, lampY + 40, 130);
+      lampGlow.addColorStop(0, 'rgba(251, 191, 36, 0.45)');
+      lampGlow.addColorStop(1, 'rgba(251, 191, 36, 0.0)');
+      ctx.fillStyle = lampGlow;
+      ctx.beginPath();
+      ctx.arc(lampX - 24, lampY + 25, 130, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 5. Wet Asphalt Street & Sidewalk Curb
+      ctx.fillStyle = '#090f1a';
+      ctx.fillRect(0, horizonY, W, H - horizonY);
+
+      // Sidewalk platform
+      const curbY = horizonY + 18;
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(0, horizonY - 6, W * 0.65, 24);
+      ctx.fillStyle = '#334155';
+      ctx.fillRect(0, curbY - 4, W * 0.65, 5);
+
+      // Road lane dashes
+      ctx.strokeStyle = 'rgba(251, 191, 36, 0.35)';
+      ctx.lineWidth = 3;
+      ctx.setLineDash([28, 22]);
+      ctx.beginPath();
+      ctx.moveTo(0, H - 36);
+      ctx.lineTo(W, H - 36);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // 6. Bus Shelter Glass & Steel Frame (Left-Center)
+      const shelterX = Math.max(24, W * 0.07);
+      const shelterW = Math.min(310, W * 0.48);
+      const shelterTopY = 32;
+      const shelterBottomY = curbY - 2;
+
+      // Glass back panels with nocturnal reflection
+      const glassGrad = ctx.createLinearGradient(shelterX, shelterTopY, shelterX + shelterW, shelterBottomY);
+      glassGrad.addColorStop(0, 'rgba(30, 58, 138, 0.22)');
+      glassGrad.addColorStop(0.5, 'rgba(56, 189, 248, 0.08)');
+      glassGrad.addColorStop(1, 'rgba(15, 23, 42, 0.35)');
+      ctx.fillStyle = glassGrad;
+      ctx.fillRect(shelterX, shelterTopY, shelterW, shelterBottomY - shelterTopY);
+
+      // Shelter vertical metal pillars
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 6;
+      ctx.strokeRect(shelterX, shelterTopY, shelterW, shelterBottomY - shelterTopY);
+      ctx.beginPath();
+      ctx.moveTo(shelterX + shelterW * 0.5, shelterTopY);
+      ctx.lineTo(shelterX + shelterW * 0.5, shelterBottomY);
+      ctx.stroke();
+
+      // Shelter arched roof canopy
+      ctx.fillStyle = '#1e293b';
+      ctx.beginPath();
+      ctx.roundRect(shelterX - 14, shelterTopY - 14, shelterW + 28, 18, 8);
+      ctx.fill();
+      ctx.strokeStyle = '#475569';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Warm overhead shelter light cone
+      const canopyGlow = ctx.createRadialGradient(
+        shelterX + shelterW * 0.45, shelterTopY + 10, 5,
+        shelterX + shelterW * 0.45, shelterTopY + 90, 160
+      );
+      canopyGlow.addColorStop(0, 'rgba(56, 189, 248, 0.20)');
+      canopyGlow.addColorStop(1, 'rgba(56, 189, 248, 0)');
+      ctx.fillStyle = canopyGlow;
+      ctx.fillRect(shelterX, shelterTopY, shelterW, shelterBottomY - shelterTopY);
+
+      // Wooden / Steel Bench inside Shelter
+      const benchX = shelterX + 26;
+      const benchW = shelterW - 52;
+      const benchY = shelterBottomY - 52;
+      // Bench legs
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(benchX + 14, benchY + 12, 8, 40);
+      ctx.fillRect(benchX + benchW - 22, benchY + 12, 8, 40);
+      // Bench slats
+      ctx.fillStyle = '#78350f';
+      ctx.beginPath();
+      ctx.roundRect(benchX, benchY, benchW, 13, 4);
+      ctx.fill();
+      ctx.strokeStyle = '#92400e';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // 7. Draw Commuter Avatar (Man or Woman) Sitting on Bench + Coffee Cup
+      const avatarX = benchX + benchW * 0.46;
+      const avatarSeatY = benchY + 2;
+      drawCommuterAvatar(ctx, avatarX, avatarSeatY, GameState.avatarGender, mood, fCond, timeSec);
+
+      // 8. Draw Arriving City Bus when in RESULT phase
+      if (GameState.phase === 'RESULT') {
+        GameState.busAnimProgress = Math.min(1.0, GameState.busAnimProgress + 0.045);
+        drawArrivingBus(ctx, W, horizonY, GameState.busAnimProgress);
+      }
+
+      // 9. Weather Overlay (Rain / Snow Flurries in FREEZING & FUMING moods)
+      if (mood === 'FREEZING' || mood === 'FUMING') {
+        const intensity = mood === 'FUMING' ? 1.0 : 0.45;
+        const count = Math.floor(GameState.weatherParticles.length * intensity);
+        for (let i = 0; i < count; i++) {
+          const p = GameState.weatherParticles[i];
+          p.y += p.speedY * (mood === 'FUMING' ? 0.022 : 0.012);
+          p.x += p.speedX * (mood === 'FUMING' ? 0.015 : 0.008);
+          if (p.y > 1.0) { p.y = -0.02; p.x = Math.random(); }
+          if (p.x < 0.0) p.x = 1.0;
+
+          const px = p.x * W;
+          const py = p.y * H;
+          if (p.isSnow) {
+            ctx.fillStyle = 'rgba(226, 232, 240, 0.75)';
+            ctx.beginPath();
+            ctx.arc(px, py, p.size, 0, Math.PI * 2);
+            ctx.fill();
+          } else {
+            ctx.strokeStyle = 'rgba(125, 211, 252, 0.55)';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(px, py);
+            ctx.lineTo(px - 4, py + 11);
+            ctx.stroke();
+          }
+        }
+      }
+
+      ctx.restore();
+    }
+
+    // Procedural Commuter Illustration (Supports MAN and WOMAN across all 4 Mood States)
+    function drawCommuterAvatar(ctx, cx, seatY, gender, mood, fCond, timeSec) {
+      ctx.save();
+
+      // Shiver horizontal jitter when FREEZING or FUMING
+      let shiverX = 0;
+      let hunchY = 0;
+      if (mood === 'FREEZING') {
+        shiverX = Math.sin(timeSec * 38) * 1.4;
+        hunchY = 5;
+      } else if (mood === 'FUMING') {
+        shiverX = Math.sin(timeSec * 55) * 2.5;
+        hunchY = 8;
+      }
+
+      ctx.translate(cx + shiverX, seatY);
+
+      // 1. Legs & Boots
+      const pantsColor = gender === 'WOMAN' ? '#1e3a8a' : '#1e293b';
+      ctx.strokeStyle = pantsColor;
+      ctx.lineWidth = 13;
+      ctx.lineCap = 'round';
+
+      // Left leg
+      ctx.beginPath();
+      ctx.moveTo(-11, -4);
+      ctx.lineTo(-14, 34);
+      ctx.stroke();
+
+      // Right leg (taps impatiently in IMPATIENT state)
+      const tapAngle = mood === 'IMPATIENT' ? Math.max(0, Math.sin(timeSec * 11)) * 6 : 0;
+      ctx.beginPath();
+      ctx.moveTo(11, -4);
+      ctx.lineTo(14, 34);
+      ctx.stroke();
+
+      // Winter Boots
+      ctx.fillStyle = gender === 'WOMAN' ? '#451a03' : '#27272a';
+      ctx.beginPath();
+      ctx.roundRect(-22, 32, 18, 11, 4);
+      ctx.fill();
+
+      ctx.save();
+      ctx.translate(8, 36);
+      ctx.rotate((-tapAngle * Math.PI) / 180);
+      ctx.beginPath();
+      ctx.roundRect(0, -4, 19, 11, 4);
+      ctx.fill();
+      ctx.restore();
+
+      // 2. Winter Coat / Torso
+      const coatColor = gender === 'WOMAN' ? '#881337' : '#365314'; // Burgundy parka vs Olive parka
+      const coatBorder = gender === 'WOMAN' ? '#be123c' : '#4d7c0f';
+      ctx.fillStyle = coatColor;
+      ctx.strokeStyle = coatBorder;
+      ctx.lineWidth = 2;
+
+      ctx.beginPath();
+      ctx.roundRect(-26, -64 + hunchY, 52, 62 - hunchY * 0.5, 16);
+      ctx.fill();
+      ctx.stroke();
+
+      // Fluffy Fur Hood Trim around collar
+      ctx.fillStyle = '#d6d3d1';
+      ctx.beginPath();
+      ctx.ellipse(0, -62 + hunchY, 26, 9, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Warm Knitted Scarf
+      ctx.fillStyle = gender === 'WOMAN' ? '#f59e0b' : '#991b1b';
+      ctx.beginPath();
+      ctx.roundRect(-20, -67 + hunchY, 40, 14, 6);
+      ctx.fill();
+      // Scarf tail
+      ctx.fillRect(6, -56 + hunchY, 10, 22);
+
+      // Arms (Crossed tightly when freezing/fuming, relaxed when happy)
+      ctx.strokeStyle = coatColor;
+      ctx.lineWidth = 12;
+      if (mood === 'FREEZING' || mood === 'FUMING') {
+        // Crossed arms shivering
+        ctx.beginPath();
+        ctx.moveTo(-22, -46 + hunchY);
+        ctx.lineTo(14, -26 + hunchY);
+        ctx.moveTo(22, -46 + hunchY);
+        ctx.lineTo(-14, -26 + hunchY);
+        ctx.stroke();
+      } else {
+        // Relaxed arms, checking wristwatch in IMPATIENT
+        ctx.beginPath();
+        ctx.moveTo(-23, -48);
+        ctx.lineTo(-16, -18);
+        ctx.moveTo(23, -48);
+        if (mood === 'IMPATIENT') {
+          ctx.lineTo(8, -32); // Raised wrist to check watch
+        } else {
+          ctx.lineTo(18, -18);
+        }
+        ctx.stroke();
+      }
+
+      // 3. Head, Hair & Facial Expressions
+      const headY = -88 + hunchY;
+      const skinColor = '#fcd34d';
+
+      // If Woman, draw back hair silhouette before face
+      if (gender === 'WOMAN') {
+        ctx.fillStyle = '#29170b';
+        ctx.beginPath();
+        ctx.arc(0, headY + 2, 26, 0, Math.PI * 2);
+        ctx.fill();
+        // Flowing shoulder locks
+        ctx.beginPath();
+        ctx.roundRect(-27, headY, 12, 34, 6);
+        ctx.roundRect(15, headY, 12, 34, 6);
+        ctx.fill();
+      }
+
+      // Face oval
+      ctx.fillStyle = '#fde68a';
+      ctx.beginPath();
+      ctx.arc(0, headY, 21, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#b45309';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Rosy / Freezing Red Cheeks & Nose (intensifies with fCond)
+      if (mood === 'FREEZING' || mood === 'FUMING') {
+        const blushAlpha = mood === 'FUMING' ? 0.78 : 0.52;
+        ctx.fillStyle = `rgba(244, 63, 94, ${blushAlpha})`;
+        ctx.beginPath();
+        ctx.ellipse(-11, headY + 4, 6.5, 4.2, 0, 0, Math.PI * 2);
+        ctx.ellipse(11, headY + 4, 6.5, 4.2, 0, 0, Math.PI * 2);
+        ctx.ellipse(0, headY + 2, 4.0, 3.0, 0, 0, Math.PI * 2); // Red cold nose
+        ctx.fill();
+      }
+
+      // Eyes & Eyebrows
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.arc(-8, headY - 2, 2.3, 0, Math.PI * 2);
+      ctx.arc(8, headY - 2, 2.3, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Eyelashes for Woman avatar
+      if (gender === 'WOMAN') {
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(-10, headY - 4);
+        ctx.lineTo(-12, headY - 6);
+        ctx.moveTo(10, headY - 4);
+        ctx.lineTo(12, headY - 6);
+        ctx.stroke();
+      }
+
+      // Eyebrows based on mood
+      ctx.strokeStyle = '#29170b';
+      ctx.lineWidth = 2.4;
+      ctx.beginPath();
+      if (mood === 'HAPPY') {
+        ctx.moveTo(-12, headY - 8);
+        ctx.lineTo(-4, headY - 8);
+        ctx.moveTo(4, headY - 8);
+        ctx.lineTo(12, headY - 8);
+      } else if (mood === 'IMPATIENT') {
+        ctx.moveTo(-12, headY - 9);
+        ctx.lineTo(-4, headY - 6);
+        ctx.moveTo(4, headY - 6);
+        ctx.lineTo(12, headY - 9);
+      } else {
+        // Deeply furrowed angry/freezing brows
+        ctx.moveTo(-13, headY - 10);
+        ctx.lineTo(-3, headY - 5);
+        ctx.moveTo(3, headY - 5);
+        ctx.lineTo(13, headY - 10);
+      }
+      ctx.stroke();
+
+      // Mouth based on mood
+      ctx.strokeStyle = '#7c2d12';
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      if (mood === 'HAPPY') {
+        ctx.arc(0, headY + 6, 6, 0.15 * Math.PI, 0.85 * Math.PI);
+      } else if (mood === 'IMPATIENT') {
+        ctx.moveTo(-6, headY + 9);
+        ctx.lineTo(6, headY + 8);
+      } else {
+        // Grimacing / Frowning mouth
+        ctx.arc(0, headY + 14, 7, 1.15 * Math.PI, 1.85 * Math.PI);
+      }
+      ctx.stroke();
+
+      // Top Hair / Winter Beanie Hat
+      if (gender === 'MAN') {
+        // Tousled brown hair
+        ctx.fillStyle = '#3f230f';
+        ctx.beginPath();
+        ctx.arc(0, headY - 5, 21.5, Math.PI, 2 * Math.PI);
+        ctx.lineTo(21, headY - 2);
+        ctx.quadraticCurveTo(8, headY - 14, -6, headY - 11);
+        ctx.quadraticCurveTo(-15, headY - 13, -21, headY - 2);
+        ctx.fill();
+      } else {
+        // Stylish winter knit beanie + bangs for Woman
+        ctx.fillStyle = '#f43f5e';
+        ctx.beginPath();
+        ctx.arc(0, headY - 7, 21, Math.PI, 2 * Math.PI);
+        ctx.fill();
+        // Pom-pom on beanie
+        ctx.fillStyle = '#fef2f2';
+        ctx.beginPath();
+        ctx.arc(0, headY - 29, 6.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // 4. Shivering Lines & Cold Breath Puff when FREEZING / FUMING
+      if (mood === 'FREEZING' || mood === 'FUMING') {
+        // Shiver contour marks beside shoulders
+        ctx.strokeStyle = 'rgba(186, 230, 253, 0.75)';
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.moveTo(-34, -50 + hunchY);
+        ctx.lineTo(-37, -42 + hunchY);
+        ctx.lineTo(-33, -34 + hunchY);
+        ctx.moveTo(34, -50 + hunchY);
+        ctx.lineTo(37, -42 + hunchY);
+        ctx.lineTo(33, -34 + hunchY);
+        ctx.stroke();
+
+        // Visible cold breath cloud puffing out
+        const breathCycle = (timeSec * 0.9) % 1.0;
+        const puffX = 22 + breathCycle * 22;
+        const puffY = headY + 6 - breathCycle * 8;
+        const puffAlpha = (1.0 - breathCycle) * 0.55;
+        ctx.fillStyle = `rgba(224, 242, 254, ${puffAlpha})`;
+        ctx.beginPath();
+        ctx.arc(puffX, puffY, 6 + breathCycle * 7, 0, Math.PI * 2);
+        ctx.arc(puffX + 7, puffY - 3, 5 + breathCycle * 5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // 5. Angry Scribble Thought Bubble when FUMING (>88% tail outlier)
+      if (mood === 'FUMING') {
+        const bx = -44;
+        const by = headY - 28;
+        ctx.fillStyle = '#ffffff';
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(bx, by, 18, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Chaotic black scribble inside thought bubble
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        for (let a = 0; a < 18; a++) {
+          const ang = a * 2.1 + timeSec * 8;
+          const r = 4 + (a % 3) * 4;
+          const sx = bx + Math.cos(ang) * r;
+          const sy = by + Math.sin(ang * 1.3) * r;
+          if (a === 0) ctx.moveTo(sx, sy);
+          else ctx.lineTo(sx, sy);
+        }
+        ctx.stroke();
+      }
+
+      // 6. Coffee Cup Sitting Next to Commuter on the Bench
+      const cupX = -48 - shiverX; // Keep cup steady on bench
+      const cupY = -20;
+
+      // Cup body
+      ctx.fillStyle = '#f8fafc';
+      ctx.beginPath();
+      ctx.moveTo(cupX - 8, cupY);
+      ctx.lineTo(cupX + 8, cupY);
+      ctx.lineTo(cupX + 6, cupY + 20);
+      ctx.lineTo(cupX - 6, cupY + 20);
+      ctx.closePath();
+      ctx.fill();
+
+      // Cardboard sleeve
+      ctx.fillStyle = '#b45309';
+      ctx.fillRect(cupX - 7, cupY + 6, 14, 8);
+
+      // Coffee lid
+      ctx.fillStyle = '#e2e8f0';
+      ctx.fillRect(cupX - 9, cupY - 3, 18, 4);
+
+      // Rising Steam (HAPPY / IMPATIENT) vs Blue Icicle Tag (FREEZING / FUMING)
+      if (mood === 'HAPPY' || mood === 'IMPATIENT') {
+        const steamAlphaBase = mood === 'HAPPY' ? 0.65 : 0.25;
+        ctx.strokeStyle = `rgba(241, 245, 249, ${steamAlphaBase})`;
+        ctx.lineWidth = 1.8;
+        for (let s = -1; s <= 1; s += 2) {
+          const wave = Math.sin(timeSec * 3.5 + s) * 3;
+          ctx.beginPath();
+          ctx.moveTo(cupX + s * 3, cupY - 5);
+          ctx.quadraticCurveTo(cupX + s * 3 + wave, cupY - 15, cupX + s * 2 - wave, cupY - 25);
+          ctx.stroke();
+        }
+      } else {
+        // Cold / Frozen Coffee Icicle Badge
+        ctx.fillStyle = '#38bdf8';
+        ctx.beginPath();
+        ctx.moveTo(cupX + 7, cupY + 4);
+        ctx.lineTo(cupX + 12, cupY + 4);
+        ctx.lineTo(cupX + 9.5, cupY + 14);
+        ctx.closePath();
+        ctx.fill();
+
+        // Little snowflake icon above cold cup
+        ctx.fillStyle = '#7dd3fc';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('❄️', cupX, cupY - 8);
+      }
+
+      ctx.restore();
+    }
+
+    // Draw Glowing City Bus Pulling Up to Curb in RESULT Phase
+    function drawArrivingBus(ctx, W, horizonY, progress) {
+      ctx.save();
+      // Ease out cubic
+      const ease = 1 - Math.pow(1 - progress, 3);
+      const targetX = W * 0.50;
+      const startX = W + 240;
+      const busX = startX + (targetX - startX) * ease;
+      const busY = horizonY - 82;
+      const busW = 230;
+      const busH = 92;
+
+      // Headlight Beams illuminating wet street
+      const beamGrad = ctx.createLinearGradient(busX - 180, busY + 75, busX, busY + 75);
+      beamGrad.addColorStop(0, 'rgba(254, 240, 138, 0)');
+      beamGrad.addColorStop(1, 'rgba(254, 240, 138, 0.45)');
+      ctx.fillStyle = beamGrad;
+      ctx.beginPath();
+      ctx.moveTo(busX, busY + 62);
+      ctx.lineTo(busX - 180, busY + 45);
+      ctx.lineTo(busX - 180, busY + 98);
+      ctx.lineTo(busX, busY + 84);
+      ctx.closePath();
+      ctx.fill();
+
+      // Bus Chassis
+      ctx.fillStyle = '#0284c7';
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.roundRect(busX, busY, busW, busH, 12);
+      ctx.fill();
+      ctx.stroke();
+
+      // Amber LED Destination Header on Front/Side of Bus
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(busX + 12, busY + 8, 95, 18);
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = '700 11px "JetBrains Mono", monospace';
+      ctx.fillText(GAME_CONFIG.MODELS[GameState.currentModelKey].routeBadge, busX + 20, busY + 21);
+
+      // Illuminated Passenger Windows
+      ctx.fillStyle = '#fef3c7';
+      for (let wx = busX + 52; wx < busX + busW - 25; wx += 42) {
+        ctx.beginPath();
+        ctx.roundRect(wx, busY + 30, 32, 26, 4);
+        ctx.fill();
+      }
+
+      // Front Door
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(busX + 14, busY + 30, 28, 54);
+      ctx.fillStyle = 'rgba(186, 230, 253, 0.55)';
+      ctx.fillRect(busX + 17, busY + 33, 10, 48);
+      ctx.fillRect(busX + 29, busY + 33, 10, 48);
+
+      // Wheels
+      ctx.fillStyle = '#090d16';
+      ctx.strokeStyle = '#64748b';
+      ctx.lineWidth = 3;
+      [busX + 55, busX + busW - 45].forEach((wx) => {
+        ctx.beginPath();
+        ctx.arc(wx, busY + busH, 15, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      });
+
+      ctx.restore();
+    }
+
+    /**
+     * ============================================================================
+     * 11. MAIN ANIMATION & SIMULATION LOOP
+     * ============================================================================
+     */
+    function mainLoop(timestamp) {
+      if (!GameState.lastFrameTimestamp) GameState.lastFrameTimestamp = timestamp;
+      const dtSec = Math.min(0.1, (timestamp - GameState.lastFrameTimestamp) / 1000);
+      GameState.lastFrameTimestamp = timestamp;
+
+      // Advance clock if in WAITING phase
+      if (GameState.phase === 'WAITING') {
+        const inBracket = (GameState.tCurrent >= GameState.bracketStart && GameState.tCurrent <= GameState.bracketEnd);
+        const baseRate = inBracket
+          ? GAME_CONFIG.SIMULATION.inBracketSpeed
+          : GAME_CONFIG.SIMULATION.baseSpeed;
+
+        GameState.tCurrent += dtSec * baseRate * GameState.speedMultiplier;
+
+        // Play subtle audio tick each simulated half-minute
+        const halfMinStep = Math.floor(GameState.tCurrent * 2);
+        if (halfMinStep !== GameState.lastTickMinute) {
+          GameState.lastTickMinute = halfMinStep;
+          SoundEngine.playBracketTick(inBracket);
+        }
+
+        // Check if bus has arrived!
+        if (GameState.tCurrent >= GameState.tBus) {
+          triggerBusArrival();
+        } else {
+          updateLiveWalkupAndMoodUI();
+        }
+      }
+
+      // Render both canvases
+      renderBusStopScene(timestamp);
+      renderPDFGraph();
+
+      requestAnimationFrame(mainLoop);
+    }
+
+    // Start the lab on window load
+    window.onload = function () {
+      initEnvironmentParticles();
+      populateCustomModelButtons();
+      setupPDFGraphInteractions();
+      switchGameMode('basic'); // Starts Default 3-Round Basic Campaign
+      requestAnimationFrame(mainLoop);
+    };
+  </script>
+</body>
+</html>
