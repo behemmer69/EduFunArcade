@@ -129,17 +129,97 @@
       <!-- Mode Switcher, Avatar Toggle & Audio -->
       <div class="flex flex-wrap items-center gap-2 sm:gap-3">
         
-        <!-- Game Mode Selection Pills -->
-        <div class="flex items-center bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs font-semibold">
-          <button id="modeBtnBasic" onclick="switchGameMode('basic')" class="px-2.5 py-1.5 rounded-lg transition-all bg-sky-500 text-slate-950 shadow">
-            <i class="fa-solid fa-graduation-cap mr-1"></i>Basic (3)
-          </button>
-          <button id="modeBtnAdvanced" onclick="switchGameMode('advanced')" class="px-2.5 py-1.5 rounded-lg transition-all text-slate-300 hover:text-white">
-            <i class="fa-solid fa-fire-flame-curved mr-1"></i>Advanced (3)
-          </button>
-          <button id="modeBtnCustom" onclick="switchGameMode('custom')" class="px-2.5 py-1.5 rounded-lg transition-all text-slate-300 hover:text-white">
-            <i class="fa-solid fa-sliders mr-1"></i>Pick Model
-          </button>
+        <!-- Game Selection Menu: Single Simulation Select Button + Popover + Random Offset Option -->
+        <div class="flex flex-wrap items-center gap-2">
+          <!-- Simulation Select Dropdown Anchor -->
+          <div class="relative" id="simSelectContainer">
+            <!-- Single Simulation Select Button -->
+            <button id="simSelectBtn" onclick="toggleSimSelectMenu()" class="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-700 text-xs font-semibold text-white shadow-lg transition-all focus:outline-none focus:ring-1 focus:ring-sky-400" title="Select simulation mode or specific route model">
+              <i id="simSelectIcon" class="fa-solid fa-graduation-cap text-sky-400"></i>
+              <span class="text-slate-400 hidden xs:inline">Simulation:</span>
+              <span id="simSelectBtnLabel" class="font-bold text-sky-300">Basic Models (3)</span>
+              <i id="simSelectChevron" class="fa-solid fa-chevron-down text-[10px] text-slate-400 transition-transform duration-200"></i>
+            </button>
+
+            <!-- Floating Selection Popover Window (Stage 1 & Stage 2) -->
+            <div id="simSelectDropdown" class="hidden absolute top-full left-0 mt-2 z-50 w-72 sm:w-80 bg-slate-950/95 backdrop-blur-xl border border-slate-700/90 rounded-2xl shadow-2xl p-3 flex flex-col gap-2.5 text-xs">
+              
+              <!-- STAGE 1: Top-Level Simulation Mode Radio Group -->
+              <div id="simSelectStage1" class="flex flex-col gap-2">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                  <span class="font-mono-led font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+                    <i class="fa-solid fa-sliders text-sky-400"></i>Simulation Select
+                  </span>
+                  <button type="button" onclick="closeSimSelectMenu()" class="text-slate-400 hover:text-white text-xs p-1" title="Close">
+                    <i class="fa-solid fa-xmark"></i>
+                  </button>
+                </div>
+
+                <!-- Radio Choice 1: Basic Models (3) -->
+                <label onclick="onSimModeRadioSelect('basic')" class="flex items-start gap-3 p-2.5 rounded-xl border border-slate-800 bg-slate-900/70 hover:bg-slate-800/80 hover:border-sky-500/50 cursor-pointer transition select-none group">
+                  <input type="radio" name="simModeRadio" value="basic" checked class="mt-0.5 accent-sky-400 pointer-events-none" />
+                  <div class="flex-1 pointer-events-none">
+                    <div class="font-bold text-white group-hover:text-sky-300 transition flex items-center gap-1.5">
+                      <i class="fa-solid fa-graduation-cap text-sky-400"></i>Basic Models (3)
+                    </div>
+                    <div class="text-[11px] text-slate-400 mt-0.5">3-round beginner campaign (Uniform, Gaussian, Exponential)</div>
+                  </div>
+                </label>
+
+                <!-- Radio Choice 2: Advanced Models (3) -->
+                <label onclick="onSimModeRadioSelect('advanced')" class="flex items-start gap-3 p-2.5 rounded-xl border border-slate-800 bg-slate-900/70 hover:bg-slate-800/80 hover:border-amber-500/50 cursor-pointer transition select-none group">
+                  <input type="radio" name="simModeRadio" value="advanced" class="mt-0.5 accent-sky-400 pointer-events-none" />
+                  <div class="flex-1 pointer-events-none">
+                    <div class="font-bold text-white group-hover:text-amber-300 transition flex items-center gap-1.5">
+                      <i class="fa-solid fa-fire-flame-curved text-amber-400"></i>Advanced Models (3)
+                    </div>
+                    <div class="text-[11px] text-slate-400 mt-0.5">3-round expert campaign (Bimodal, Weibull, Log-Normal)</div>
+                  </div>
+                </label>
+
+                <!-- Radio Choice 3: Specific Model (opens stage 2) -->
+                <label onclick="openSpecificModelStage()" class="flex items-start justify-between gap-2 p-2.5 rounded-xl border border-slate-800 bg-slate-900/70 hover:bg-slate-800/80 hover:border-purple-500/50 cursor-pointer transition select-none group">
+                  <div class="flex items-start gap-3 flex-1 pointer-events-none">
+                    <input type="radio" name="simModeRadio" value="specific" class="mt-0.5 accent-sky-400 pointer-events-none" />
+                    <div>
+                      <div class="font-bold text-white group-hover:text-purple-300 transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-flask text-purple-400"></i>Specific Model
+                      </div>
+                      <div class="text-[11px] text-slate-400 mt-0.5">Choose 1 of 6 individual route probability models</div>
+                    </div>
+                  </div>
+                  <i class="fa-solid fa-chevron-right text-xs text-slate-500 group-hover:text-purple-400 transition self-center"></i>
+                </label>
+              </div>
+
+              <!-- STAGE 2: 6 Specific Route Models Radio Group -->
+              <div id="simSelectStage2" class="hidden flex flex-col gap-2">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                  <button type="button" onclick="backToMainSimStage()" class="text-xs font-semibold text-slate-400 hover:text-sky-300 flex items-center gap-1.5 transition">
+                    <i class="fa-solid fa-arrow-left"></i><span>Back</span>
+                  </button>
+                  <span class="font-mono-led font-bold uppercase tracking-wider text-slate-300">
+                    Specific Model
+                  </span>
+                  <button type="button" onclick="closeSimSelectMenu()" class="text-slate-400 hover:text-white text-xs p-1" title="Close">
+                    <i class="fa-solid fa-xmark"></i>
+                  </button>
+                </div>
+
+                <!-- Radio List of the 6 Model Types -->
+                <div id="specificModelRadioList" class="flex flex-col gap-1.5 max-h-72 overflow-y-auto pr-1">
+                  <!-- Dynamically populated from GAME_CONFIG.MODELS -->
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Random Walk-Up Offset Option (Available for All Game Modes) -->
+          <label id="randomWalkUpToggleLabel" class="flex items-center gap-2 bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-800 text-xs font-semibold text-slate-300 cursor-pointer hover:border-slate-700 hover:text-white transition select-none" title="Toggle random elapsed arrival offset (t₀ > 0) across all game modes">
+            <input type="checkbox" id="globalRandomStartToggle" checked onchange="onGlobalRandomStartToggle()" class="rounded accent-sky-400 cursor-pointer" />
+            <span class="whitespace-nowrap">Random Offset (<span class="font-mono-led text-amber-300">t₀ &gt; 0</span>)</span>
+          </label>
         </div>
 
         <!-- Commuter Avatar Selector (Man / Woman) -->
@@ -163,24 +243,6 @@
         <button id="soundToggleBtn" onclick="toggleSound()" class="w-9 h-9 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 flex items-center justify-center text-slate-300 transition" title="Toggle Synth Audio">
           <i id="soundIcon" class="fa-solid fa-volume-high text-sm text-sky-400"></i>
         </button>
-      </div>
-    </div>
-
-    <!-- Custom Mode Sub-Bar (Visible when "Pick Model" mode is active) -->
-    <div id="customModeBar" class="hidden bg-slate-900/95 border-t border-slate-800/80 px-3 sm:px-6 py-2">
-      <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
-        <div class="flex flex-wrap items-center gap-2">
-          <span class="text-xs font-semibold uppercase tracking-wider text-sky-400"><i class="fa-solid fa-flask mr-1"></i>Select Distribution:</span>
-          <div id="customModelButtons" class="flex flex-wrap gap-1.5">
-            <!-- Dynamically populated from GAME_CONFIG.MODELS -->
-          </div>
-        </div>
-        <div class="flex items-center gap-3">
-          <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800">
-            <input type="checkbox" id="customRandomStartToggle" checked onchange="onCustomStartToggle()" class="rounded accent-sky-400" />
-            <span>Random Walk-Up Offset (<span class="font-mono-led text-amber-300">t₀ &gt; 0</span>)</span>
-          </label>
-        </div>
       </div>
     </div>
   </header>
@@ -262,22 +324,6 @@
           </div>
         </div>
       </div>
-
-      <!-- Educational Route Briefing Card -->
-      <div class="bg-slate-900/80 border border-slate-800/90 rounded-2xl p-4 shadow-lg">
-        <div class="flex items-start gap-3">
-          <div class="w-8 h-8 rounded-lg bg-sky-500/15 border border-sky-500/30 flex items-center justify-center shrink-0 mt-0.5">
-            <i class="fa-solid fa-lightbulb text-sky-400 text-sm"></i>
-          </div>
-          <div class="text-xs sm:text-sm text-slate-300 leading-relaxed">
-            <span class="font-bold text-white uppercase tracking-wide text-xs block mb-0.5">Statistical Route Briefing:</span>
-            <p id="modelLessonText">
-              Every minute without a bus compresses 100% of remaining probability into a shrinking window, causing the hazard rate to skyrocket toward the deadline.
-            </p>
-          </div>
-        </div>
-      </div>
-
     </section>
 
     <!-- =================================================================== -->
@@ -428,6 +474,21 @@
         </div>
 
       </div>
+
+      <!-- Educational Route Briefing Card (Positioned under Lock Prediction & Watch for optimal mobile & desktop layout) -->
+      <div class="bg-slate-900/80 border border-slate-800/90 rounded-2xl p-4 shadow-lg">
+        <div class="flex items-start gap-3">
+          <div class="w-8 h-8 rounded-lg bg-sky-500/15 border border-sky-500/30 flex items-center justify-center shrink-0 mt-0.5">
+            <i class="fa-solid fa-lightbulb text-sky-400 text-sm"></i>
+          </div>
+          <div class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+            <span class="font-bold text-white uppercase tracking-wide text-xs block mb-0.5">Statistical Route Briefing:</span>
+            <p id="modelLessonText">
+              Every minute without a bus compresses 100% of remaining probability into a shrinking window, causing the hazard rate to skyrocket toward the deadline.
+            </p>
+          </div>
+        </div>
+      </div>
     </section>
   </main>
 
@@ -477,7 +538,7 @@
           <i class="fa-solid fa-fire-flame-curved mr-1"></i>Play Advanced (3)
         </button>
         <button onclick="startCampaignFromModal('custom')" class="py-2.5 px-3 rounded-xl font-bold text-xs bg-sky-500 hover:bg-sky-400 text-slate-950 shadow-lg transition">
-          <i class="fa-solid fa-sliders mr-1"></i>Pick Your Model
+          <i class="fa-solid fa-sliders mr-1"></i>Pick a Model
         </button>
       </div>
     </div>
@@ -524,9 +585,10 @@
       // Commuter Mood & Weather Thresholds based on Conditional Cumulative Probability F_cond(t)
       // F_cond(t) represents the fraction of remaining probability already elapsed since walk-up t_start.
       MOOD_THRESHOLDS: {
-        HAPPY_MAX: 0.45,      // 0.00 to 0.45: Smiling, hot coffee with animated rising steam, clear sky
-        IMPATIENT_MAX: 0.72,  // 0.45 to 0.72: Furrowed brow, lukewarm coffee, tapping foot, checking wristwatch
-        FREEZING_MAX: 0.88    // 0.72 to 0.88: Hunching, shivering, rosy red cheeks, icicle coffee tag, breath puffs, light snow/rain
+        HAPPY_MAX: 0.30,      // 0.00 to 0.30: Smiling, hot coffee with animated rising steam, clear sky
+        BORED_MAX: 0.58,      // 0.30 to 0.58: Resting chin / slouched, scrolling glowing phone, warm coffee, bored sigh
+        IMPATIENT_MAX: 0.78,  // 0.58 to 0.78: Furrowed brow, lukewarm coffee, tapping foot, checking wristwatch
+        FREEZING_MAX: 0.88    // 0.78 to 0.88: Hunching, shivering, rosy red cheeks, icicle coffee tag, breath puffs, light snow/rain
                               // Above 0.88 -> FUMING: Deep red face, angry scribble cloud, storm, flashing CRITICAL WAIT alert
       },
 
@@ -892,7 +954,8 @@
       tStart: 0.0,               // Initial walk-up time on the clock (mins)
       tCurrent: 0.0,             // Current simulated time on the clock (mins)
       tBus: 10.0,                // Secret sampled arrival time of the bus (mins)
-      customRandomStart: true,   // Custom lab toggle for tStart > 0
+      randomOffsetEnabled: true, // Random walk-up offset t0 > 0 enabled across all modes
+      customRandomStart: true,   // Kept for backward compatibility
 
       // Player's Prediction Bracket
       bracketCenter: 10.0,
@@ -911,7 +974,8 @@
       lastTickMinute: -1,
       busAnimProgress: 0.0,      // 0 = offscreen right, 1 = halted at bus stop curb
       weatherParticles: [],      // Rain / snow particles for FREEZING and FUMING states
-      steamParticles: [],        // Rising coffee steam particles for HAPPY / IMPATIENT states
+      steamParticles: [],        // Rising coffee steam particles for HAPPY / BORED / IMPATIENT states
+      clouds: [],                // Drifting nocturnal clouds across night sky
       stars: [],                 // Night sky background stars
 
       // Scoring & History
@@ -929,12 +993,25 @@
      */
     function initEnvironmentParticles() {
       GameState.stars = [];
-      for (let i = 0; i < 45; i++) {
+      for (let i = 0; i < 52; i++) {
         GameState.stars.push({
           x: Math.random(),
-          y: Math.random() * 0.42,
-          r: 0.7 + Math.random() * 1.4,
-          twinklePhase: Math.random() * Math.PI * 2
+          y: Math.random() * 0.44,
+          r: 0.6 + Math.random() * 1.4,
+          twinklePhase: Math.random() * Math.PI * 2,
+          isBright: Math.random() < 0.16
+        });
+      }
+
+      GameState.clouds = [];
+      for (let i = 0; i < 4; i++) {
+        GameState.clouds.push({
+          x: (i / 4) + Math.random() * 0.2,
+          y: 0.04 + Math.random() * 0.22,
+          w: 0.22 + Math.random() * 0.20,
+          h: 0.06 + Math.random() * 0.05,
+          speedX: 0.0025 + Math.random() * 0.0035,
+          alpha: 0.08 + Math.random() * 0.10
         });
       }
 
@@ -960,31 +1037,138 @@
       }
     }
 
-    function populateCustomModelButtons() {
-      const container = document.getElementById('customModelButtons');
-      container.innerHTML = '';
-      Object.keys(GAME_CONFIG.MODELS).forEach((key) => {
-        const m = GAME_CONFIG.MODELS[key];
-        const btn = document.createElement('button');
-        btn.id = `customBtn_${key}`;
-        btn.onclick = () => selectCustomModel(key);
-        btn.className = 'px-2.5 py-1 rounded-lg text-xs font-semibold transition border border-slate-700 bg-slate-950 text-slate-300 hover:text-white';
-        btn.textContent = `${m.routeBadge.replace('ROUTE ', 'R')}: ${m.name.replace('The ', '')}`;
-        container.appendChild(btn);
-      });
-      updateCustomModelButtonStyles();
+    /**
+     * SIMULATION SELECT MENU & TWO-STAGE RADIO CONTROLLER
+     */
+    function updateSimSelectButtonLabel() {
+      const btnLabel = document.getElementById('simSelectBtnLabel');
+      const icon = document.getElementById('simSelectIcon');
+      if (!btnLabel) return;
+      if (GameState.mode === 'basic') {
+        btnLabel.textContent = 'Basic Models (3)';
+        btnLabel.className = 'font-bold text-sky-300';
+        if (icon) icon.className = 'fa-solid fa-graduation-cap text-sky-400';
+      } else if (GameState.mode === 'advanced') {
+        btnLabel.textContent = 'Advanced Models (3)';
+        btnLabel.className = 'font-bold text-amber-300';
+        if (icon) icon.className = 'fa-solid fa-fire-flame-curved text-amber-400';
+      } else {
+        const m = GAME_CONFIG.MODELS[GameState.currentModelKey];
+        const route = m ? m.routeBadge.replace('ROUTE ', 'R') : 'Route';
+        const name = m ? m.name.replace('The ', '') : 'Custom';
+        btnLabel.textContent = `${route}: ${name}`;
+        btnLabel.className = 'font-bold text-purple-300';
+        if (icon) icon.className = 'fa-solid fa-flask text-purple-400';
+      }
     }
 
-    function updateCustomModelButtonStyles() {
+    function populateSpecificModelRadios() {
+      const list = document.getElementById('specificModelRadioList');
+      if (!list) return;
+      list.innerHTML = '';
       Object.keys(GAME_CONFIG.MODELS).forEach((key) => {
-        const btn = document.getElementById(`customBtn_${key}`);
-        if (!btn) return;
-        if (key === GameState.currentModelKey) {
-          btn.className = 'px-2.5 py-1 rounded-lg text-xs font-bold transition border border-sky-400 bg-sky-500/20 text-sky-300 shadow';
+        const m = GAME_CONFIG.MODELS[key];
+        const isChecked = (GameState.mode === 'custom' && key === GameState.currentModelKey);
+        const label = document.createElement('label');
+        label.className = `flex items-center gap-2.5 p-2 rounded-xl border transition cursor-pointer select-none group ${
+          isChecked 
+            ? 'border-sky-400 bg-sky-500/15 text-white shadow-sm' 
+            : 'border-slate-800 bg-slate-900/60 hover:bg-slate-800/80 hover:border-slate-700 text-slate-300 hover:text-white'
+        }`;
+        label.innerHTML = `
+          <input type="radio" name="specificRouteRadio" value="${key}" ${isChecked ? 'checked' : ''} class="accent-sky-400 pointer-events-none" />
+          <div class="flex-1 min-w-0 pointer-events-none">
+            <div class="flex items-center justify-between gap-1">
+              <span class="font-bold text-xs truncate group-hover:text-sky-300 transition">${m.routeBadge}: ${m.name.replace('The ', '')}</span>
+              <span class="text-[10px] font-mono-led px-1.5 py-0.5 rounded bg-slate-800 text-sky-300 whitespace-nowrap">${m.tag}</span>
+            </div>
+            <div class="text-[11px] text-slate-400 truncate">${m.subtitle}</div>
+          </div>
+        `;
+        label.onclick = () => {
+          onSpecificModelRadioSelect(key);
+        };
+        list.appendChild(label);
+      });
+    }
+
+    function openSimSelectMenu() {
+      const dropdown = document.getElementById('simSelectDropdown');
+      if (!dropdown) return;
+      dropdown.classList.remove('hidden');
+      const chevron = document.getElementById('simSelectChevron');
+      if (chevron) chevron.style.transform = 'rotate(180deg)';
+
+      // Always reset to Stage 1 when opened
+      const stage1 = document.getElementById('simSelectStage1');
+      const stage2 = document.getElementById('simSelectStage2');
+      if (stage1) stage1.classList.remove('hidden');
+      if (stage2) stage2.classList.add('hidden');
+
+      // Sync active radio in Stage 1
+      const simRadios = document.querySelectorAll('input[name="simModeRadio"]');
+      simRadios.forEach((r) => {
+        if (GameState.mode === 'custom') {
+          r.checked = (r.value === 'specific');
         } else {
-          btn.className = 'px-2.5 py-1 rounded-lg text-xs font-semibold transition border border-slate-800 bg-slate-950 text-slate-400 hover:text-white';
+          r.checked = (r.value === GameState.mode);
         }
       });
+
+      // Refresh Stage 2 specific model list
+      populateSpecificModelRadios();
+    }
+
+    function closeSimSelectMenu() {
+      const dropdown = document.getElementById('simSelectDropdown');
+      if (!dropdown) return;
+      dropdown.classList.add('hidden');
+      const chevron = document.getElementById('simSelectChevron');
+      if (chevron) chevron.style.transform = 'rotate(0deg)';
+    }
+
+    function toggleSimSelectMenu() {
+      const dropdown = document.getElementById('simSelectDropdown');
+      if (!dropdown) return;
+      if (dropdown.classList.contains('hidden')) {
+        openSimSelectMenu();
+      } else {
+        closeSimSelectMenu();
+      }
+    }
+
+    function onSimModeRadioSelect(mode) {
+      if (mode === 'specific') {
+        openSpecificModelStage();
+      } else {
+        switchGameMode(mode);
+        closeSimSelectMenu();
+      }
+    }
+
+    function openSpecificModelStage() {
+      // Ensure the 'specific' radio in Stage 1 is marked
+      const specificRadio = document.querySelector('input[name="simModeRadio"][value="specific"]');
+      if (specificRadio) specificRadio.checked = true;
+
+      const stage1 = document.getElementById('simSelectStage1');
+      const stage2 = document.getElementById('simSelectStage2');
+      if (stage1) stage1.classList.add('hidden');
+      if (stage2) stage2.classList.remove('hidden');
+
+      populateSpecificModelRadios();
+    }
+
+    function backToMainSimStage() {
+      const stage1 = document.getElementById('simSelectStage1');
+      const stage2 = document.getElementById('simSelectStage2');
+      if (stage2) stage2.classList.add('hidden');
+      if (stage1) stage1.classList.remove('hidden');
+    }
+
+    function onSpecificModelRadioSelect(modelKey) {
+      selectCustomModel(modelKey);
+      closeSimSelectMenu();
     }
 
     function switchGameMode(newMode) {
@@ -993,39 +1177,76 @@
       GameState.totalScore = 0;
       GameState.roundHistory = [];
       updateHeaderScore();
+      updateSimSelectButtonLabel();
 
-      // Update Mode Pill Styles
-      const modes = ['basic', 'advanced', 'custom'];
-      modes.forEach((m) => {
-        const btn = document.getElementById(`modeBtn${m.charAt(0).toUpperCase() + m.slice(1)}`);
-        if (m === newMode) {
-          btn.className = 'px-2.5 py-1.5 rounded-lg transition-all bg-sky-500 text-slate-950 font-bold shadow';
-        } else {
-          btn.className = 'px-2.5 py-1.5 rounded-lg transition-all text-slate-300 hover:text-white';
-        }
-      });
-
-      const customBar = document.getElementById('customModeBar');
       if (newMode === 'custom') {
-        customBar.classList.remove('hidden');
         setupRound(GameState.currentModelKey);
       } else {
-        customBar.classList.add('hidden');
         const campaignList = GAME_CONFIG.CAMPAIGNS[newMode];
         setupRound(campaignList[0]);
       }
+      closeSimSelectMenu();
     }
 
     function selectCustomModel(modelKey) {
+      GameState.mode = 'custom';
       GameState.currentModelKey = modelKey;
-      updateCustomModelButtonStyles();
+      GameState.roundIndex = 0;
+      GameState.totalScore = 0;
+      GameState.roundHistory = [];
+      updateHeaderScore();
+      updateSimSelectButtonLabel();
+      populateSpecificModelRadios();
+      closeSimSelectMenu();
       setupRound(modelKey);
     }
 
+    // Dismiss dropdown on outside clicks or Escape key
+    document.addEventListener('click', (e) => {
+      const container = document.getElementById('simSelectContainer');
+      if (container && !container.contains(e.target)) {
+        closeSimSelectMenu();
+      }
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeSimSelectMenu();
+      }
+    });
+
+    // Aliases / Compatibility wrappers for existing calls
+    function populateCustomModelButtons() {
+      populateSpecificModelRadios();
+    }
+    function updateCustomModelButtonStyles() {
+      updateSimSelectButtonLabel();
+      populateSpecificModelRadios();
+    }
+    function openPickModelMenu() {
+      openSimSelectMenu();
+      openSpecificModelStage();
+    }
+    function closePickModelMenu() {
+      closeSimSelectMenu();
+    }
+    function togglePickModelMenu() {
+      toggleSimSelectMenu();
+    }
+
+    function onGlobalRandomStartToggle() {
+      const checkbox = document.getElementById('globalRandomStartToggle');
+      if (checkbox) {
+        GameState.randomOffsetEnabled = checkbox.checked;
+        GameState.customRandomStart = checkbox.checked;
+      }
+      // If currently in SETUP phase, immediately regenerate the round with the updated offset setting
+      if (GameState.phase === 'SETUP') {
+        setupRound(GameState.currentModelKey);
+      }
+    }
+
     function onCustomStartToggle() {
-      const checkbox = document.getElementById('customRandomStartToggle');
-      GameState.customRandomStart = checkbox.checked;
-      setupRound(GameState.currentModelKey);
+      onGlobalRandomStartToggle();
     }
 
     function setAvatarGender(gender) {
@@ -1057,10 +1278,10 @@
       const model = GAME_CONFIG.MODELS[modelKey];
       GameState.distTable = buildDistributionTable(modelKey);
 
-      // Determine walk-up start time tStart
-      const useRandomOffset = (GameState.mode === 'custom')
-        ? GameState.customRandomStart
-        : GAME_CONFIG.SIMULATION.enableRandomStart;
+      // Determine walk-up start time tStart based on global random offset setting (applies to all modes)
+      const useRandomOffset = (GameState.randomOffsetEnabled !== undefined)
+        ? GameState.randomOffsetEnabled
+        : (GameState.mode === 'custom' ? GameState.customRandomStart : GAME_CONFIG.SIMULATION.enableRandomStart);
 
       if (useRandomOffset) {
         const minF = GAME_CONFIG.SIMULATION.minStartFrac;
@@ -1241,6 +1462,7 @@
       const fCond = getConditionalElapsedFraction();
       const th = GAME_CONFIG.MOOD_THRESHOLDS;
       if (fCond <= th.HAPPY_MAX) return 'HAPPY';
+      if (fCond <= th.BORED_MAX) return 'BORED';
       if (fCond <= th.IMPATIENT_MAX) return 'IMPATIENT';
       if (fCond <= th.FREEZING_MAX) return 'FREEZING';
       return 'FUMING';
@@ -1316,11 +1538,18 @@
         const tempC = Math.round(70 - fCond * 35);
         coffeeText.textContent = `Coffee: Steaming Hot (${tempC}°C)`;
         outlierAlert.classList.add('hidden');
+      } else if (mood === 'BORED') {
+        moodLabel.textContent = '🥱 RESTLESS & BORED';
+        moodLabel.className = 'font-mono-led font-bold text-teal-300 text-xs';
+        barFill.className = 'h-full rounded-full transition-all duration-150 bg-gradient-to-r from-teal-400 to-cyan-500';
+        const tempC = Math.round(58 - (fCond - 0.30) * 45);
+        coffeeText.textContent = `Coffee: Warm (${tempC}°C)`;
+        outlierAlert.classList.add('hidden');
       } else if (mood === 'IMPATIENT') {
         moodLabel.textContent = '⌚ IMPATIENT';
         moodLabel.className = 'font-mono-led font-bold text-amber-400 text-xs';
         barFill.className = 'h-full rounded-full transition-all duration-150 bg-gradient-to-r from-amber-500 to-yellow-400';
-        const tempC = Math.round(45 - (fCond - 0.45) * 65);
+        const tempC = Math.round(45 - (fCond - 0.58) * 65);
         coffeeText.textContent = `Coffee: Lukewarm (${tempC}°C)`;
         outlierAlert.classList.add('hidden');
       } else if (mood === 'FREEZING') {
@@ -1428,7 +1657,13 @@
 
       document.getElementById('telemetryActualTime').textContent = `${tArr.toFixed(2)}m`;
       document.getElementById('telemetryPercentile').textContent = `${percentileInt}th %ile`;
-      document.getElementById('telemetryFinalMood').textContent = finalMood;
+      const moodTextEl = document.getElementById('telemetryFinalMood');
+      moodTextEl.textContent = finalMood.charAt(0) + finalMood.slice(1).toLowerCase();
+      if (finalMood === 'HAPPY') moodTextEl.className = 'text-xs font-bold text-emerald-400';
+      else if (finalMood === 'BORED') moodTextEl.className = 'text-xs font-bold text-teal-300';
+      else if (finalMood === 'IMPATIENT') moodTextEl.className = 'text-xs font-bold text-amber-400';
+      else if (finalMood === 'FREEZING') moodTextEl.className = 'text-xs font-bold text-sky-300';
+      else moodTextEl.className = 'text-xs font-bold text-rose-400 animate-pulse';
 
       const insightEl = document.getElementById('resultInsightText');
       insightEl.innerHTML = `<strong class="text-sky-300">Telemetry Analysis:</strong> Given your walk-up at <strong>${GameState.tStart.toFixed(1)}m</strong>, the conditional median arrival was <strong>${GameState.condStatsAtStart.median.toFixed(1)}m</strong>. Your locked bracket captured <strong>${(GameState.lockedCaptureProb * 100).toFixed(1)}%</strong> of the conditional probability mass, and this bus rolled at the <strong>${percentileInt}th percentile</strong>.`;
@@ -1888,6 +2123,9 @@
       if (mood === 'HAPPY') {
         skyGrad.addColorStop(0, '#091124');
         skyGrad.addColorStop(1, '#1e293b');
+      } else if (mood === 'BORED') {
+        skyGrad.addColorStop(0, '#081022');
+        skyGrad.addColorStop(1, '#19263e');
       } else if (mood === 'IMPATIENT') {
         skyGrad.addColorStop(0, '#080e1e');
         skyGrad.addColorStop(1, '#17253b');
@@ -1901,27 +2139,110 @@
       ctx.fillStyle = skyGrad;
       ctx.fillRect(0, 0, W, H);
 
-      // 2. Twinkling Stars (Fade out during storm)
+      // 2. Luminous Crescent Moon with Atmospheric Halo
+      const moonX = W * 0.74;
+      const moonY = H * 0.15;
       const starOpacity = mood === 'FUMING' ? 0.15 : mood === 'FREEZING' ? 0.4 : 0.85;
+
+      const moonGlow = ctx.createRadialGradient(moonX, moonY, 4, moonX, moonY, 46);
+      moonGlow.addColorStop(0, `rgba(254, 243, 199, ${0.30 * starOpacity})`);
+      moonGlow.addColorStop(0.5, `rgba(254, 243, 199, ${0.08 * starOpacity})`);
+      moonGlow.addColorStop(1, 'rgba(254, 243, 199, 0)');
+      ctx.fillStyle = moonGlow;
+      ctx.beginPath();
+      ctx.arc(moonX, moonY, 46, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Crescent Moon body
+      ctx.fillStyle = `rgba(254, 240, 138, ${starOpacity})`;
+      ctx.beginPath();
+      ctx.arc(moonX, moonY, 11, 0, Math.PI * 2);
+      ctx.fill();
+      // Cutout for crescent phase
+      ctx.fillStyle = (mood === 'FUMING') ? '#0f0714' : (mood === 'FREEZING' ? '#070b16' : (mood === 'BORED' ? '#081022' : '#091124'));
+      ctx.beginPath();
+      ctx.arc(moonX + 4.5, moonY - 2.5, 9.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 3. Drifting Nocturnal Clouds across Sky
+      if (GameState.clouds) {
+        GameState.clouds.forEach((cl) => {
+          cl.x += cl.speedX * 0.08;
+          if (cl.x > 1.25) cl.x = -0.3;
+          const cx = cl.x * W;
+          const cy = cl.y * H;
+          const cw = cl.w * W;
+          const ch = cl.h * H;
+          const cGrad = ctx.createRadialGradient(cx, cy, 2, cx, cy, cw * 0.5);
+          cGrad.addColorStop(0, `rgba(148, 163, 184, ${cl.alpha * starOpacity})`);
+          cGrad.addColorStop(1, 'rgba(148, 163, 184, 0)');
+          ctx.fillStyle = cGrad;
+          ctx.beginPath();
+          ctx.ellipse(cx, cy, cw * 0.5, ch * 0.5, 0, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      }
+
+      // 4. Twinkling Stars with subtle optical flares on bright stars
       GameState.stars.forEach((st) => {
-        const alpha = starOpacity * (0.5 + 0.5 * Math.sin(timeSec * 2.2 + st.twinklePhase));
+        const alpha = starOpacity * (0.45 + 0.55 * Math.sin(timeSec * 2.2 + st.twinklePhase));
         ctx.fillStyle = `rgba(226, 232, 240, ${alpha})`;
         ctx.beginPath();
         ctx.arc(st.x * W, st.y * H, st.r, 0, Math.PI * 2);
         ctx.fill();
+        if (st.isBright && alpha > 0.65) {
+          ctx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.45})`;
+          ctx.lineWidth = 0.8;
+          ctx.beginPath();
+          ctx.moveTo(st.x * W - 3, st.y * H); ctx.lineTo(st.x * W + 3, st.y * H);
+          ctx.moveTo(st.x * W, st.y * H - 3); ctx.lineTo(st.x * W, st.y * H + 3);
+          ctx.stroke();
+        }
       });
 
-      // 3. Distant City Skyline Silhouettes & Warm Windows
+      // 5. Multi-Layer Distant City Skyline
       const horizonY = H * 0.68;
-      ctx.fillStyle = '#0b1322';
+
+      // Layer A: Far Background Silhouette Towers & Radio Antennas with Red Beacons
+      const farTowers = [
+        { x: 0.08, w: 0.07, h: 0.42 },
+        { x: 0.35, w: 0.08, h: 0.38 },
+        { x: 0.64, w: 0.06, h: 0.45 },
+        { x: 0.92, w: 0.08, h: 0.36 }
+      ];
+      const beaconBlink = Math.sin(timeSec * 3.0) > 0.1 ? 0.95 : 0.15;
+      farTowers.forEach((ft) => {
+        const ftx = ft.x * W;
+        const ftw = ft.w * W;
+        const fth = ft.h * H;
+        const fty = horizonY - fth;
+        ctx.fillStyle = '#070c17';
+        ctx.fillRect(ftx, fty, ftw, fth);
+
+        // Radio mast & red aviation warning light on top
+        const antX = ftx + ftw * 0.5;
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(antX, fty);
+        ctx.lineTo(antX, fty - 16);
+        ctx.stroke();
+
+        ctx.fillStyle = `rgba(239, 68, 68, ${beaconBlink})`;
+        ctx.beginPath();
+        ctx.arc(antX, fty - 16, 2.0, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // Layer B: Mid-ground Urban Buildings with Windows & Roof Water Tanks
       const buildings = [
-        { x: 0.02, w: 0.11, h: 0.28 },
-        { x: 0.14, w: 0.09, h: 0.36 },
-        { x: 0.25, w: 0.13, h: 0.24 },
-        { x: 0.42, w: 0.10, h: 0.32 },
-        { x: 0.55, w: 0.14, h: 0.27 },
-        { x: 0.71, w: 0.12, h: 0.38 },
-        { x: 0.85, w: 0.14, h: 0.29 }
+        { x: 0.02, w: 0.11, h: 0.28, hasTank: false },
+        { x: 0.14, w: 0.09, h: 0.36, hasTank: true },
+        { x: 0.24, w: 0.13, h: 0.24, hasTank: false },
+        { x: 0.41, w: 0.10, h: 0.32, hasTank: true },
+        { x: 0.53, w: 0.14, h: 0.27, hasTank: false },
+        { x: 0.70, w: 0.12, h: 0.37, hasTank: true },
+        { x: 0.84, w: 0.15, h: 0.29, hasTank: false }
       ];
       buildings.forEach((b) => {
         const bx = b.x * W;
@@ -1930,18 +2251,36 @@
         const by = horizonY - bh;
         ctx.fillStyle = '#0d1627';
         ctx.fillRect(bx, by, bw, bh);
-        // Subtle lit apartment windows
-        ctx.fillStyle = 'rgba(251, 191, 36, 0.22)';
-        for (let wy = by + 12; wy < horizonY - 14; wy += 16) {
-          for (let wx = bx + 8; wx < bx + bw - 12; wx += 14) {
-            if ((Math.floor(wx + wy) % 3) === 0) {
+
+        // Rooftop water tank
+        if (b.hasTank) {
+          ctx.fillStyle = '#1e293b';
+          ctx.fillRect(bx + bw * 0.35, by - 12, 14, 12);
+          ctx.strokeStyle = '#334155';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(bx + bw * 0.35, by - 12, 14, 12);
+        }
+
+        // Lit apartment windows (varying warm amber & faint cyan hues)
+        for (let wy = by + 12; wy < horizonY - 14; wy += 15) {
+          for (let wx = bx + 8; wx < bx + bw - 10; wx += 13) {
+            const seed = Math.floor(wx * 3 + wy * 7);
+            if (seed % 4 === 0) {
+              ctx.fillStyle = (seed % 8 === 0) ? 'rgba(56, 189, 248, 0.22)' : 'rgba(251, 191, 36, 0.26)';
               ctx.fillRect(wx, wy, 5, 7);
             }
           }
         }
       });
 
-      // 4. Streetlight Glow in Background
+      // Atmospheric Horizon Fog Haze
+      const horizonFog = ctx.createLinearGradient(0, horizonY - 26, 0, horizonY);
+      horizonFog.addColorStop(0, 'rgba(15, 23, 42, 0)');
+      horizonFog.addColorStop(1, 'rgba(15, 23, 42, 0.55)');
+      ctx.fillStyle = horizonFog;
+      ctx.fillRect(0, horizonY - 26, W, 26);
+
+      // 6. Streetlight Glow in Background
       const lampX = W * 0.78;
       const lampY = horizonY - 115;
       ctx.strokeStyle = '#334155';
@@ -1960,19 +2299,54 @@
       ctx.arc(lampX - 24, lampY + 25, 130, 0, Math.PI * 2);
       ctx.fill();
 
-      // 5. Wet Asphalt Street & Sidewalk Curb
-      ctx.fillStyle = '#090f1a';
+      // 7. Wet Asphalt Street & Specular Puddle Reflections
+      ctx.fillStyle = '#070d17';
       ctx.fillRect(0, horizonY, W, H - horizonY);
+
+      // Specular puddle reflection under streetlight
+      const streetReflection = ctx.createLinearGradient(0, horizonY, 0, H);
+      streetReflection.addColorStop(0, 'rgba(251, 191, 36, 0.16)');
+      streetReflection.addColorStop(0.4, 'rgba(251, 191, 36, 0.05)');
+      streetReflection.addColorStop(1, 'rgba(251, 191, 36, 0.0)');
+      ctx.fillStyle = streetReflection;
+      ctx.fillRect(lampX - 55, horizonY, 110, H - horizonY);
 
       // Sidewalk platform
       const curbY = horizonY + 18;
       ctx.fillStyle = '#1e293b';
       ctx.fillRect(0, horizonY - 6, W * 0.65, 24);
+
+      // 3D Curb Highlight edge
       ctx.fillStyle = '#334155';
       ctx.fillRect(0, curbY - 4, W * 0.65, 5);
+      ctx.fillStyle = '#475569';
+      ctx.fillRect(0, curbY - 5, W * 0.65, 1.5);
 
-      // Road lane dashes
-      ctx.strokeStyle = 'rgba(251, 191, 36, 0.35)';
+      // High-Visibility Yellow Warning Tactile Strip along curb edge
+      ctx.fillStyle = 'rgba(245, 158, 11, 0.42)';
+      for (let tx = 4; tx < W * 0.64; tx += 9) {
+        ctx.fillRect(tx, curbY - 10, 5, 2.5);
+      }
+
+      // Storm drain grate along curb
+      const shelterX = Math.max(24, W * 0.07);
+      const shelterW = Math.min(310, W * 0.48);
+      const grateX = Math.min(W * 0.60, shelterX + shelterW + 35);
+      const grateY = curbY + 2;
+      ctx.fillStyle = '#0b1120';
+      ctx.fillRect(grateX, grateY, 34, 11);
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 1.2;
+      ctx.strokeRect(grateX, grateY, 34, 11);
+      for (let gx = grateX + 4; gx < grateX + 32; gx += 5) {
+        ctx.beginPath();
+        ctx.moveTo(gx, grateY + 2);
+        ctx.lineTo(gx, grateY + 9);
+        ctx.stroke();
+      }
+
+      // Road lane dashes with subtle wet specular gloss
+      ctx.strokeStyle = 'rgba(251, 191, 36, 0.38)';
       ctx.lineWidth = 3;
       ctx.setLineDash([28, 22]);
       ctx.beginPath();
@@ -1981,19 +2355,92 @@
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // 6. Bus Shelter Glass & Steel Frame (Left-Center)
-      const shelterX = Math.max(24, W * 0.07);
-      const shelterW = Math.min(310, W * 0.48);
+      // 8. Bus Stop Sign Totem Pole at Curb
+      const totemX = shelterX + shelterW + 16;
+      if (totemX < W * 0.70) {
+        const totemBaseY = curbY - 2;
+        const totemTopY = horizonY - 68;
+        // Pole
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = 3.5;
+        ctx.beginPath();
+        ctx.moveTo(totemX, totemBaseY);
+        ctx.lineTo(totemX, totemTopY);
+        ctx.stroke();
+
+        // Yellow reflective collar
+        ctx.fillStyle = '#f59e0b';
+        ctx.fillRect(totemX - 2.5, totemTopY + 28, 5, 7);
+
+        // Sign topper
+        ctx.fillStyle = '#0284c7';
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.roundRect(totemX - 13, totemTopY, 26, 20, 4);
+        ctx.fill();
+        ctx.stroke();
+
+        // Bus symbol & route text
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 8px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('🚏', totemX, totemTopY + 10);
+        ctx.font = '700 7px "JetBrains Mono", monospace';
+        ctx.fillText('BUS', totemX, totemTopY + 17);
+      }
+
+      // 9. Modern Bus Shelter Glass & Steel Structure
       const shelterTopY = 32;
       const shelterBottomY = curbY - 2;
 
-      // Glass back panels with nocturnal reflection
+      // Cyan specular reflection pool on wet road under shelter
+      const shelterReflection = ctx.createLinearGradient(0, horizonY, 0, H);
+      shelterReflection.addColorStop(0, 'rgba(56, 189, 248, 0.12)');
+      shelterReflection.addColorStop(0.35, 'rgba(56, 189, 248, 0.03)');
+      shelterReflection.addColorStop(1, 'rgba(56, 189, 248, 0.0)');
+      ctx.fillStyle = shelterReflection;
+      ctx.fillRect(shelterX, horizonY, shelterW, H - horizonY);
+
+      // Glass back panels with nocturnal reflection & diagonal specular glares
       const glassGrad = ctx.createLinearGradient(shelterX, shelterTopY, shelterX + shelterW, shelterBottomY);
       glassGrad.addColorStop(0, 'rgba(30, 58, 138, 0.22)');
       glassGrad.addColorStop(0.5, 'rgba(56, 189, 248, 0.08)');
       glassGrad.addColorStop(1, 'rgba(15, 23, 42, 0.35)');
       ctx.fillStyle = glassGrad;
       ctx.fillRect(shelterX, shelterTopY, shelterW, shelterBottomY - shelterTopY);
+
+      // Diagonal glass glare line
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(shelterX + 18, shelterBottomY);
+      ctx.lineTo(shelterX + shelterW * 0.45, shelterTopY);
+      ctx.moveTo(shelterX + 38, shelterBottomY);
+      ctx.lineTo(shelterX + shelterW * 0.52, shelterTopY);
+      ctx.stroke();
+
+      // Transit System Schematic Map Poster mounted on back glass
+      const mapX = shelterX + 16;
+      const mapY = shelterTopY + 28;
+      const mapW = Math.min(68, shelterW * 0.26);
+      const mapH = 46;
+      ctx.fillStyle = 'rgba(248, 250, 252, 0.18)';
+      ctx.strokeStyle = 'rgba(148, 163, 184, 0.35)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect(mapX, mapY, mapW, mapH, 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Schematic route lines on map
+      ctx.lineWidth = 1.6;
+      ctx.strokeStyle = '#ef4444'; // Red Line
+      ctx.beginPath(); ctx.moveTo(mapX + 5, mapY + 38); ctx.lineTo(mapX + mapW - 6, mapY + 8); ctx.stroke();
+      ctx.strokeStyle = '#38bdf8'; // Blue Line
+      ctx.beginPath(); ctx.moveTo(mapX + 8, mapY + 12); ctx.lineTo(mapX + mapW - 10, mapY + 36); ctx.stroke();
+      ctx.strokeStyle = '#fbbf24'; // Amber Line
+      ctx.beginPath(); ctx.moveTo(mapX + 6, mapY + 24); ctx.lineTo(mapX + mapW - 6, mapY + 24); ctx.stroke();
 
       // Shelter vertical metal pillars
       ctx.strokeStyle = '#334155';
@@ -2004,7 +2451,7 @@
       ctx.lineTo(shelterX + shelterW * 0.5, shelterBottomY);
       ctx.stroke();
 
-      // Shelter arched roof canopy
+      // Shelter arched roof canopy with metallic highlight
       ctx.fillStyle = '#1e293b';
       ctx.beginPath();
       ctx.roundRect(shelterX - 14, shelterTopY - 14, shelterW + 28, 18, 8);
@@ -2013,12 +2460,17 @@
       ctx.lineWidth = 2;
       ctx.stroke();
 
+      // Modern ceiling LED strip luminaire fixture inside roof
+      ctx.fillStyle = '#38bdf8';
+      ctx.fillRect(shelterX + shelterW * 0.25, shelterTopY - 4, shelterW * 0.5, 4);
+
       // Warm overhead shelter light cone
       const canopyGlow = ctx.createRadialGradient(
         shelterX + shelterW * 0.45, shelterTopY + 10, 5,
         shelterX + shelterW * 0.45, shelterTopY + 90, 160
       );
-      canopyGlow.addColorStop(0, 'rgba(56, 189, 248, 0.20)');
+      canopyGlow.addColorStop(0, 'rgba(56, 189, 248, 0.22)');
+      canopyGlow.addColorStop(0.6, 'rgba(56, 189, 248, 0.08)');
       canopyGlow.addColorStop(1, 'rgba(56, 189, 248, 0)');
       ctx.fillStyle = canopyGlow;
       ctx.fillRect(shelterX, shelterTopY, shelterW, shelterBottomY - shelterTopY);
@@ -2027,11 +2479,18 @@
       const benchX = shelterX + 26;
       const benchW = shelterW - 52;
       const benchY = shelterBottomY - 52;
+
+      // Soft ambient shadow beneath bench
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+      ctx.beginPath();
+      ctx.ellipse(benchX + benchW * 0.5, shelterBottomY - 2, benchW * 0.48, 6, 0, 0, Math.PI * 2);
+      ctx.fill();
+
       // Bench legs
       ctx.fillStyle = '#0f172a';
       ctx.fillRect(benchX + 14, benchY + 12, 8, 40);
       ctx.fillRect(benchX + benchW - 22, benchY + 12, 8, 40);
-      // Bench slats
+      // Bench slats with wood tone
       ctx.fillStyle = '#78350f';
       ctx.beginPath();
       ctx.roundRect(benchX, benchY, benchW, 13, 4);
@@ -2040,18 +2499,18 @@
       ctx.lineWidth = 1.5;
       ctx.stroke();
 
-      // 7. Draw Commuter Avatar (Man or Woman) Sitting on Bench + Coffee Cup
+      // 10. Draw Commuter Avatar (Man or Woman) Sitting on Bench + Coffee Cup
       const avatarX = benchX + benchW * 0.46;
       const avatarSeatY = benchY + 2;
       drawCommuterAvatar(ctx, avatarX, avatarSeatY, GameState.avatarGender, mood, fCond, timeSec);
 
-      // 8. Draw Arriving City Bus when in RESULT phase
+      // 11. Draw Arriving City Bus when in RESULT phase
       if (GameState.phase === 'RESULT') {
         GameState.busAnimProgress = Math.min(1.0, GameState.busAnimProgress + 0.045);
         drawArrivingBus(ctx, W, horizonY, GameState.busAnimProgress);
       }
 
-      // 9. Weather Overlay (Rain / Snow Flurries in FREEZING & FUMING moods)
+      // 12. Weather Overlay (Rain / Snow Flurries in FREEZING & FUMING moods)
       if (mood === 'FREEZING' || mood === 'FUMING') {
         const intensity = mood === 'FUMING' ? 1.0 : 0.45;
         const count = Math.floor(GameState.weatherParticles.length * intensity);
@@ -2083,14 +2542,17 @@
       ctx.restore();
     }
 
-    // Procedural Commuter Illustration (Supports MAN and WOMAN across all 4 Mood States)
+    // Procedural Commuter Illustration (Supports MAN and WOMAN across all 5 Mood States: HAPPY, BORED, IMPATIENT, FREEZING, FUMING)
     function drawCommuterAvatar(ctx, cx, seatY, gender, mood, fCond, timeSec) {
       ctx.save();
 
-      // Shiver horizontal jitter when FREEZING or FUMING
+      // Breathing animation & shivering
+      const breatheY = Math.sin(timeSec * 2.8) * 0.9;
       let shiverX = 0;
       let hunchY = 0;
-      if (mood === 'FREEZING') {
+      if (mood === 'BORED') {
+        hunchY = 2; // Slight slouch
+      } else if (mood === 'FREEZING') {
         shiverX = Math.sin(timeSec * 38) * 1.4;
         hunchY = 5;
       } else if (mood === 'FUMING') {
@@ -2098,7 +2560,7 @@
         hunchY = 8;
       }
 
-      ctx.translate(cx + shiverX, seatY);
+      ctx.translate(cx + shiverX, seatY + breatheY);
 
       // 1. Legs & Boots
       const pantsColor = gender === 'WOMAN' ? '#1e3a8a' : '#1e293b';
@@ -2159,9 +2621,11 @@
       // Scarf tail
       ctx.fillRect(6, -56 + hunchY, 10, 22);
 
-      // Arms (Crossed tightly when freezing/fuming, relaxed when happy)
+      // Arms & Hands based on Mood
       ctx.strokeStyle = coatColor;
       ctx.lineWidth = 12;
+      const skinColor = '#fcd34d';
+
       if (mood === 'FREEZING' || mood === 'FUMING') {
         // Crossed arms shivering
         ctx.beginPath();
@@ -2170,23 +2634,77 @@
         ctx.moveTo(22, -46 + hunchY);
         ctx.lineTo(-14, -26 + hunchY);
         ctx.stroke();
-      } else {
-        // Relaxed arms, checking wristwatch in IMPATIENT
+      } else if (mood === 'BORED') {
+        // BORED: Left arm resting on lap, Right arm holding glowing smartphone
+        ctx.beginPath();
+        ctx.moveTo(-23, -48);
+        ctx.lineTo(-15, -18);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(23, -48);
+        ctx.lineTo(10, -22);
+        ctx.stroke();
+
+        // Glowing smartphone in right hand
+        const phoneX = 8;
+        const phoneY = -28;
+        ctx.fillStyle = '#0f172a';
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.roundRect(phoneX, phoneY, 11, 18, 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Glowing screen
+        const screenGlow = ctx.createLinearGradient(phoneX, phoneY, phoneX + 9, phoneY + 16);
+        screenGlow.addColorStop(0, '#38bdf8');
+        screenGlow.addColorStop(1, '#0284c7');
+        ctx.fillStyle = screenGlow;
+        ctx.fillRect(phoneX + 1.5, phoneY + 2, 8, 14);
+
+        // Soft screen light cast on face & chest
+        const faceGlow = ctx.createRadialGradient(phoneX + 5, phoneY + 9, 2, phoneX + 5, phoneY + 9, 26);
+        faceGlow.addColorStop(0, 'rgba(56, 189, 248, 0.35)');
+        faceGlow.addColorStop(1, 'rgba(56, 189, 248, 0)');
+        ctx.fillStyle = faceGlow;
+        ctx.beginPath();
+        ctx.arc(phoneX + 5, phoneY + 9, 26, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Thumb scrolling animation
+        const thumbY = phoneY + 8 + Math.sin(timeSec * 4) * 3;
+        ctx.fillStyle = skinColor;
+        ctx.beginPath();
+        ctx.ellipse(phoneX + 2, thumbY, 2.5, 3.5, 0.2, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (mood === 'IMPATIENT') {
+        // Checking wristwatch on raised arm
         ctx.beginPath();
         ctx.moveTo(-23, -48);
         ctx.lineTo(-16, -18);
         ctx.moveTo(23, -48);
-        if (mood === 'IMPATIENT') {
-          ctx.lineTo(8, -32); // Raised wrist to check watch
-        } else {
-          ctx.lineTo(18, -18);
-        }
+        ctx.lineTo(8, -32); // Raised wrist
+        ctx.stroke();
+
+        // Wristwatch face
+        ctx.fillStyle = '#f59e0b';
+        ctx.beginPath();
+        ctx.arc(8, -32, 4.5, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        // HAPPY: Relaxed resting arms
+        ctx.beginPath();
+        ctx.moveTo(-23, -48);
+        ctx.lineTo(-16, -18);
+        ctx.moveTo(23, -48);
+        ctx.lineTo(18, -18);
         ctx.stroke();
       }
 
       // 3. Head, Hair & Facial Expressions
       const headY = -88 + hunchY;
-      const skinColor = '#fcd34d';
 
       // If Woman, draw back hair silhouette before face
       if (gender === 'WOMAN') {
@@ -2210,23 +2728,39 @@
       ctx.lineWidth = 1.5;
       ctx.stroke();
 
-      // Rosy / Freezing Red Cheeks & Nose (intensifies with fCond)
+      // Rosy / Freezing Red Cheeks & Nose (intensifies in cold)
       if (mood === 'FREEZING' || mood === 'FUMING') {
         const blushAlpha = mood === 'FUMING' ? 0.78 : 0.52;
         ctx.fillStyle = `rgba(244, 63, 94, ${blushAlpha})`;
         ctx.beginPath();
         ctx.ellipse(-11, headY + 4, 6.5, 4.2, 0, 0, Math.PI * 2);
         ctx.ellipse(11, headY + 4, 6.5, 4.2, 0, 0, Math.PI * 2);
-        ctx.ellipse(0, headY + 2, 4.0, 3.0, 0, 0, Math.PI * 2); // Red cold nose
+        ctx.ellipse(0, headY + 2, 4.0, 3.0, 0, 0, Math.PI * 2);
         ctx.fill();
       }
 
-      // Eyes & Eyebrows
-      ctx.fillStyle = '#0f172a';
-      ctx.beginPath();
-      ctx.arc(-8, headY - 2, 2.3, 0, Math.PI * 2);
-      ctx.arc(8, headY - 2, 2.3, 0, Math.PI * 2);
-      ctx.fill();
+      // Eyes based on Mood
+      if (mood === 'BORED') {
+        // Sleepy / half-lidded eyes looking down at phone
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.arc(-8, headY - 0.5, 2.2, 0, Math.PI); // bottom half arc
+        ctx.arc(8, headY - 0.5, 2.2, 0, Math.PI);
+        ctx.fill();
+        // Drooping eyelid line
+        ctx.strokeStyle = '#92400e';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(-11, headY - 1); ctx.lineTo(-5, headY - 1);
+        ctx.moveTo(5, headY - 1); ctx.lineTo(11, headY - 1);
+        ctx.stroke();
+      } else {
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.arc(-8, headY - 2, 2.3, 0, Math.PI * 2);
+        ctx.arc(8, headY - 2, 2.3, 0, Math.PI * 2);
+        ctx.fill();
+      }
 
       // Eyelashes for Woman avatar
       if (gender === 'WOMAN') {
@@ -2249,6 +2783,12 @@
         ctx.lineTo(-4, headY - 8);
         ctx.moveTo(4, headY - 8);
         ctx.lineTo(12, headY - 8);
+      } else if (mood === 'BORED') {
+        // Flat droopy horizontal brows
+        ctx.moveTo(-11, headY - 6.5);
+        ctx.lineTo(-4, headY - 6.5);
+        ctx.moveTo(4, headY - 6.5);
+        ctx.lineTo(11, headY - 6.5);
       } else if (mood === 'IMPATIENT') {
         ctx.moveTo(-12, headY - 9);
         ctx.lineTo(-4, headY - 6);
@@ -2269,6 +2809,10 @@
       ctx.beginPath();
       if (mood === 'HAPPY') {
         ctx.arc(0, headY + 6, 6, 0.15 * Math.PI, 0.85 * Math.PI);
+      } else if (mood === 'BORED') {
+        // Flat straight neutral mouth
+        ctx.moveTo(-5, headY + 8);
+        ctx.lineTo(5, headY + 8);
       } else if (mood === 'IMPATIENT') {
         ctx.moveTo(-6, headY + 9);
         ctx.lineTo(6, headY + 8);
@@ -2280,7 +2824,6 @@
 
       // Top Hair / Winter Beanie Hat
       if (gender === 'MAN') {
-        // Tousled brown hair
         ctx.fillStyle = '#3f230f';
         ctx.beginPath();
         ctx.arc(0, headY - 5, 21.5, Math.PI, 2 * Math.PI);
@@ -2289,7 +2832,6 @@
         ctx.quadraticCurveTo(-15, headY - 13, -21, headY - 2);
         ctx.fill();
       } else {
-        // Stylish winter knit beanie + bangs for Woman
         ctx.fillStyle = '#f43f5e';
         ctx.beginPath();
         ctx.arc(0, headY - 7, 21, Math.PI, 2 * Math.PI);
@@ -2303,7 +2845,6 @@
 
       // 4. Shivering Lines & Cold Breath Puff when FREEZING / FUMING
       if (mood === 'FREEZING' || mood === 'FUMING') {
-        // Shiver contour marks beside shoulders
         ctx.strokeStyle = 'rgba(186, 230, 253, 0.75)';
         ctx.lineWidth = 1.8;
         ctx.beginPath();
@@ -2315,7 +2856,6 @@
         ctx.lineTo(33, -34 + hunchY);
         ctx.stroke();
 
-        // Visible cold breath cloud puffing out
         const breathCycle = (timeSec * 0.9) % 1.0;
         const puffX = 22 + breathCycle * 22;
         const puffY = headY + 6 - breathCycle * 8;
@@ -2339,7 +2879,6 @@
         ctx.fill();
         ctx.stroke();
 
-        // Chaotic black scribble inside thought bubble
         ctx.strokeStyle = '#0f172a';
         ctx.lineWidth = 1.6;
         ctx.beginPath();
@@ -2354,8 +2893,8 @@
         ctx.stroke();
       }
 
-      // 6. Coffee Cup Sitting Next to Commuter on the Bench
-      const cupX = -48 - shiverX; // Keep cup steady on bench
+      // 6. Coffee Cup Sitting Next to Commuter on Bench
+      const cupX = -48 - shiverX;
       const cupY = -20;
 
       // Cup body
@@ -2376,9 +2915,9 @@
       ctx.fillStyle = '#e2e8f0';
       ctx.fillRect(cupX - 9, cupY - 3, 18, 4);
 
-      // Rising Steam (HAPPY / IMPATIENT) vs Blue Icicle Tag (FREEZING / FUMING)
-      if (mood === 'HAPPY' || mood === 'IMPATIENT') {
-        const steamAlphaBase = mood === 'HAPPY' ? 0.65 : 0.25;
+      // Rising Steam (HAPPY / BORED / IMPATIENT) vs Blue Icicle Tag (FREEZING / FUMING)
+      if (mood === 'HAPPY' || mood === 'BORED' || mood === 'IMPATIENT') {
+        const steamAlphaBase = mood === 'HAPPY' ? 0.65 : (mood === 'BORED' ? 0.40 : 0.20);
         ctx.strokeStyle = `rgba(241, 245, 249, ${steamAlphaBase})`;
         ctx.lineWidth = 1.8;
         for (let s = -1; s <= 1; s += 2) {
@@ -2398,7 +2937,6 @@
         ctx.closePath();
         ctx.fill();
 
-        // Little snowflake icon above cold cup
         ctx.fillStyle = '#7dd3fc';
         ctx.font = 'bold 12px sans-serif';
         ctx.textAlign = 'center';
@@ -2408,71 +2946,141 @@
       ctx.restore();
     }
 
-    // Draw Glowing City Bus Pulling Up to Curb in RESULT Phase
+    // Draw High-Detail City Transit Bus Pulling Up to Curb in RESULT Phase
     function drawArrivingBus(ctx, W, horizonY, progress) {
       ctx.save();
-      // Ease out cubic
       const ease = 1 - Math.pow(1 - progress, 3);
-      const targetX = W * 0.50;
-      const startX = W + 240;
+      const targetX = W * 0.48;
+      const startX = W + 260;
       const busX = startX + (targetX - startX) * ease;
-      const busY = horizonY - 82;
-      const busW = 230;
-      const busH = 92;
+      const busY = horizonY - 86;
+      const busW = 245;
+      const busH = 96;
 
-      // Headlight Beams illuminating wet street
-      const beamGrad = ctx.createLinearGradient(busX - 180, busY + 75, busX, busY + 75);
+      // Volumetric Dual Headlight Beams illuminating wet street
+      const beamGrad = ctx.createLinearGradient(busX - 220, busY + 75, busX, busY + 75);
       beamGrad.addColorStop(0, 'rgba(254, 240, 138, 0)');
-      beamGrad.addColorStop(1, 'rgba(254, 240, 138, 0.45)');
+      beamGrad.addColorStop(0.6, 'rgba(254, 240, 138, 0.22)');
+      beamGrad.addColorStop(1, 'rgba(254, 240, 138, 0.55)');
       ctx.fillStyle = beamGrad;
       ctx.beginPath();
-      ctx.moveTo(busX, busY + 62);
-      ctx.lineTo(busX - 180, busY + 45);
-      ctx.lineTo(busX - 180, busY + 98);
-      ctx.lineTo(busX, busY + 84);
+      ctx.moveTo(busX, busY + 58);
+      ctx.lineTo(busX - 220, busY + 42);
+      ctx.lineTo(busX - 220, busY + 104);
+      ctx.lineTo(busX, busY + 88);
       ctx.closePath();
       ctx.fill();
 
-      // Bus Chassis
-      ctx.fillStyle = '#0284c7';
+      // Asphalt Headlight Puddle Glare
+      ctx.fillStyle = 'rgba(254, 240, 138, 0.16)';
+      ctx.beginPath();
+      ctx.ellipse(busX - 95, horizonY + 18, 90, 8, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Shadow under bus chassis
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+      ctx.beginPath();
+      ctx.roundRect(busX - 6, busY + busH - 4, busW + 12, 16, 6);
+      ctx.fill();
+
+      // Aerodynamic Bus Chassis
+      const chassisGrad = ctx.createLinearGradient(busX, busY, busX, busY + busH);
+      chassisGrad.addColorStop(0, '#0284c7');
+      chassisGrad.addColorStop(0.7, '#0369a1');
+      chassisGrad.addColorStop(1, '#075985');
+      ctx.fillStyle = chassisGrad;
       ctx.strokeStyle = '#38bdf8';
       ctx.lineWidth = 2.5;
       ctx.beginPath();
-      ctx.roundRect(busX, busY, busW, busH, 12);
+      ctx.roundRect(busX, busY, busW, busH, 14);
       ctx.fill();
       ctx.stroke();
 
-      // Amber LED Destination Header on Front/Side of Bus
+      // Front Curved Windshield
       ctx.fillStyle = '#0f172a';
-      ctx.fillRect(busX + 12, busY + 8, 95, 18);
+      ctx.beginPath();
+      ctx.roundRect(busX + 8, busY + 28, 38, 48, [8, 2, 2, 8]);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(186, 230, 253, 0.45)';
+      ctx.fillRect(busX + 11, busY + 31, 32, 42);
+
+      // Windshield Wiper
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.moveTo(busX + 12, busY + 70);
+      ctx.lineTo(busX + 32, busY + 42);
+      ctx.stroke();
+
+      // Exterior Side Rearview Mirror
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(busX - 4, busY + 34, 5, 14);
+      ctx.fillRect(busX - 9, busY + 36, 6, 10);
+
+      // Amber LED Destination Board on Front/Side
+      ctx.fillStyle = '#090d16';
+      ctx.fillRect(busX + 12, busY + 7, 105, 18);
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(busX + 12, busY + 7, 105, 18);
       ctx.fillStyle = '#fbbf24';
       ctx.font = '700 11px "JetBrains Mono", monospace';
-      ctx.fillText(GAME_CONFIG.MODELS[GameState.currentModelKey].routeBadge, busX + 20, busY + 21);
+      ctx.textAlign = 'left';
+      ctx.fillText(GAME_CONFIG.MODELS[GameState.currentModelKey].routeBadge, busX + 18, busY + 20);
 
-      // Illuminated Passenger Windows
-      ctx.fillStyle = '#fef3c7';
-      for (let wx = busX + 52; wx < busX + busW - 25; wx += 42) {
+      // Roof Marker Clearance Lights
+      ctx.fillStyle = '#f59e0b';
+      ctx.beginPath();
+      ctx.arc(busX + 6, busY + 4, 2.5, 0, Math.PI * 2);
+      ctx.arc(busX + busW - 6, busY + 4, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Dual Bright Headlight Fixtures
+      ctx.fillStyle = '#fef08a';
+      ctx.beginPath();
+      ctx.arc(busX + 4, busY + 68, 5, 0, Math.PI * 2);
+      ctx.arc(busX + 4, busY + 80, 5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Illuminated Passenger Windows with Passenger Silhouettes
+      for (let wx = busX + 54; wx < busX + busW - 25; wx += 42) {
+        ctx.fillStyle = '#fef3c7';
         ctx.beginPath();
-        ctx.roundRect(wx, busY + 30, 32, 26, 4);
+        ctx.roundRect(wx, busY + 28, 33, 27, 4);
+        ctx.fill();
+
+        // Passenger silhouette inside window
+        ctx.fillStyle = '#1e293b';
+        ctx.beginPath();
+        ctx.arc(wx + 16, busY + 40, 5.5, 0, Math.PI * 2);
+        ctx.roundRect(wx + 8, busY + 46, 17, 9, 3);
         ctx.fill();
       }
 
-      // Front Door
+      // Passenger Entry Doors with glass panels
       ctx.fillStyle = '#0f172a';
-      ctx.fillRect(busX + 14, busY + 30, 28, 54);
-      ctx.fillStyle = 'rgba(186, 230, 253, 0.55)';
-      ctx.fillRect(busX + 17, busY + 33, 10, 48);
-      ctx.fillRect(busX + 29, busY + 33, 10, 48);
+      ctx.fillRect(busX + 188, busY + 28, 30, 56);
+      ctx.fillStyle = 'rgba(186, 230, 253, 0.40)';
+      ctx.fillRect(busX + 191, busY + 31, 10, 50);
+      ctx.fillRect(busX + 204, busY + 31, 10, 50);
 
-      // Wheels
-      ctx.fillStyle = '#090d16';
-      ctx.strokeStyle = '#64748b';
-      ctx.lineWidth = 3;
-      [busX + 55, busX + busW - 45].forEach((wx) => {
+      // Wheels with alloy rims & rubber tires
+      [busX + 62, busX + busW - 48].forEach((wx) => {
+        // Black rubber tire
+        ctx.fillStyle = '#090d16';
         ctx.beginPath();
-        ctx.arc(wx, busY + busH, 15, 0, Math.PI * 2);
+        ctx.arc(wx, busY + busH, 16, 0, Math.PI * 2);
         ctx.fill();
-        ctx.stroke();
+        // Silver alloy hubcap
+        ctx.fillStyle = '#94a3b8';
+        ctx.beginPath();
+        ctx.arc(wx, busY + busH, 9, 0, Math.PI * 2);
+        ctx.fill();
+        // Center lug
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.arc(wx, busY + busH, 3.5, 0, Math.PI * 2);
+        ctx.fill();
       });
 
       ctx.restore();
@@ -2524,6 +3132,8 @@
       initEnvironmentParticles();
       populateCustomModelButtons();
       setupPDFGraphInteractions();
+      const offsetToggle = document.getElementById('globalRandomStartToggle');
+      if (offsetToggle) offsetToggle.checked = GameState.randomOffsetEnabled;
       switchGameMode('basic'); // Starts Default 3-Round Basic Campaign
       requestAnimationFrame(mainLoop);
     };
