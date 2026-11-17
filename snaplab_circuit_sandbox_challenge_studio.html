@@ -1,0 +1,3804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>SnapLab: Circuit Sandbox &amp; Challenge Studio</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: var(--font-sans);
+      background: radial-gradient(circle at 20% 10%, #1e293b 0%, #0f172a 60%, #090d16 100%);
+      color: #f8fafc;
+      overflow-x: hidden;
+    }
+    .font-mono-tech {
+      font-family: var(--font-mono);
+    }
+    /* Custom subtle scrollbars for Parts Depot */
+    .depot-scroll::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .depot-scroll::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.4);
+      border-radius: 9999px;
+    }
+    .depot-scroll::-webkit-scrollbar-thumb {
+      background: rgba(100, 116, 139, 0.5);
+      border-radius: 9999px;
+    }
+    .depot-scroll::-webkit-scrollbar-thumb:hover {
+      background: rgba(148, 163, 184, 0.8);
+    }
+    /* Tactile button press effect */
+    .tactile-btn {
+      transition: transform 0.08s ease, box-shadow 0.12s ease, background-color 0.15s ease, border-color 0.15s ease;
+    }
+    .tactile-btn:active {
+      transform: translateY(1px) scale(0.985);
+    }
+    /* Glowing play pulse */
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.55); }
+      50% { box-shadow: 0 0 18px 4px rgba(16, 185, 129, 0.25); }
+    }
+    .play-active-glow {
+      animation: pulseGlow 2s infinite;
+    }
+    /* Smooth slide-up entrance for non-blocking victory card */
+    @keyframes cardSlideIn {
+      0% { transform: translateY(14px) scale(0.96); opacity: 0; }
+      100% { transform: translateY(0) scale(1); opacity: 1; }
+    }
+    .victory-card-enter {
+      animation: cardSlideIn 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    /* Custom high-visibility thumb for Expanded Potentiometer Popup Slider */
+    #potPopupSlider {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 12px;
+      border-radius: 9999px;
+      background: linear-gradient(90deg, #581c87 0%, #9333ea 50%, #c084fc 100%);
+      outline: none;
+    }
+    #potPopupSlider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 26px;
+      height: 26px;
+      border-radius: 9999px;
+      background: #f5d0fe;
+      border: 3px solid #a855f7;
+      box-shadow: 0 2px 10px rgba(168, 85, 247, 0.65);
+      cursor: grab;
+      transition: transform 0.1s ease;
+    }
+    #potPopupSlider::-webkit-slider-thumb:active {
+      transform: scale(1.12);
+      cursor: grabbing;
+    }
+    #potPopupSlider::-moz-range-thumb {
+      width: 26px;
+      height: 26px;
+      border-radius: 9999px;
+      background: #f5d0fe;
+      border: 3px solid #a855f7;
+      box-shadow: 0 2px 10px rgba(168, 85, 247, 0.65);
+      cursor: grab;
+    }
+  </style>
+</head>
+<body class="min-h-screen lg:h-screen flex flex-col lg:overflow-hidden">
+
+  <!-- ========================================================================
+       1. TOP HEADER BAR & LAB TOOLS
+       ======================================================================== -->
+  <header class="bg-slate-900/95 border-b border-slate-700/80 backdrop-blur-md px-3 sm:px-4 py-1.5 flex flex-wrap items-center justify-between gap-2 z-20 shrink-0">
+    <!-- Brand Title -->
+    <div class="flex items-center gap-2">
+      <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-400 via-orange-500 to-rose-600 flex items-center justify-center shadow-lg shadow-orange-500/20 border border-amber-300/40 shrink-0">
+        <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+          <circle cx="6" cy="12" r="2.5" fill="currentColor"/>
+          <circle cx="18" cy="12" r="2.5" fill="currentColor"/>
+          <path d="M8.5 12h2l1.5-4 2 8 1.5-4h2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-sm sm:text-base font-extrabold tracking-tight text-white leading-none">
+            SnapLab: <span class="text-amber-300 font-bold">Circuit Sandbox &amp; Challenge Studio</span>
+          </h1>
+        </div>
+        <p class="text-[10px] text-slate-400 hidden sm:block mt-0.5">5×4 Snap-Peg Electronics Lab &amp; Real-Time MNA Physics Solver</p>
+      </div>
+    </div>
+
+    <!-- Mode Switcher ("Challenges" active by default vs "Sandbox Lab") -->
+    <div class="flex items-center bg-slate-800/95 p-0.5 rounded-xl border border-slate-700/80">
+      <button id="btnModeChallenge" type="button" class="tactile-btn px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-500 text-slate-950 shadow flex items-center gap-1.5">
+        <span>Challenges</span>
+        <span id="challengeBadge" class="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-900/90 text-amber-300 border border-slate-700/80 font-mono-tech">0/5</span>
+      </button>
+      <button id="btnModeFreeform" type="button" class="tactile-btn px-2.5 py-1 rounded-lg text-xs font-semibold text-slate-300 hover:text-white">
+        Sandbox Lab
+      </button>
+    </div>
+
+    <!-- Lab Inspection & Audio Tools -->
+    <div class="flex items-center gap-1.5">
+      <!-- Multimeter Probe Toggle Tool -->
+      <button id="btnProbeToggle" type="button" title="Inspect live node Voltage (V) & branch Current (mA)" class="tactile-btn px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600/80 flex items-center gap-1.5">
+        <svg class="w-4 h-4 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <path d="M12 2v6m0 0l-3-3m3 3l3-3M5 12h14a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2z" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span class="hidden md:inline">Multimeter Probe</span>
+      </button>
+
+      <!-- Audio Mute Toggle -->
+      <button id="btnAudioToggle" type="button" title="Toggle Web Audio Synthesizer" class="tactile-btn p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600/80">
+        <svg id="iconAudioOn" class="w-4 h-4 text-sky-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <path d="M11 5L6 9H2v6h4l5 4V5zM15.54 8.46a5 5 0 010 7.07M19.07 4.93a10 10 0 010 14.14" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <svg id="iconAudioOff" class="w-4 h-4 text-rose-400 hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <path d="M11 5L6 9H2v6h4l5 4V5zM23 9l-6 6M17 9l6 6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ========================================================================
+       2. MAIN SPLIT WORKSPACE (LEFT 1/4 PARTS DEPOT | RIGHT 3/4 ASSEMBLY BOARD)
+       ======================================================================== -->
+  <main class="flex-1 min-h-0 flex flex-col lg:flex-row overflow-hidden">
+
+    <!-- LEFT 1/4 PANEL: PARTS DEPOT -->
+    <aside class="w-full lg:w-1/4 lg:min-w-[265px] lg:max-w-[345px] min-h-0 bg-slate-900/80 border-b lg:border-b-0 lg:border-r border-slate-700/80 flex flex-col shrink-0">
+      <!-- Depot Header & Rotate / Eraser Tools -->
+      <div class="px-3.5 py-2.5 border-b border-slate-800 flex items-center justify-between gap-2 bg-slate-900/70 shrink-0">
+        <div>
+          <h2 class="text-xs font-extrabold uppercase tracking-wider text-slate-200">Parts Depot (16)</h2>
+          <p class="text-[11px] text-slate-400">Tap or drag onto 5×4 snap grid</p>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <button id="btnRotateTool" type="button" title="Rotate Placement Orientation (R)" class="tactile-btn px-2.5 py-1.5 rounded-lg text-xs font-bold bg-slate-800 hover:bg-slate-700 text-sky-300 border border-slate-600/80 flex items-center gap-1">
+            <span>↻</span>
+            <span id="rotIndicatorLabel">0°</span>
+          </button>
+          <button id="btnEraseTool" type="button" title="Eraser Tool (Remove Components)" class="tactile-btn px-2.5 py-1.5 rounded-lg text-xs font-bold bg-slate-800 hover:bg-slate-700 text-rose-300 border border-slate-600/80">
+            ✕ Erase
+          </button>
+        </div>
+      </div>
+
+      <!-- Scrollable Parts Grid -->
+      <div id="partsDepotList" class="depot-scroll flex-1 min-h-0 p-2.5 grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-2 gap-2 overflow-y-auto max-h-[205px] lg:max-h-none">
+        <!-- Populated dynamically via JS -->
+      </div>
+
+      <!-- Depot Quick Guide -->
+      <div class="hidden lg:block px-3.5 py-2.5 bg-slate-950/70 border-t border-slate-800 text-[11px] text-slate-400 space-y-1 shrink-0">
+        <div class="flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 shrink-0"></span>
+          <span>Facing pins <strong>auto-snap</strong> with brass bridges</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-amber-400 shrink-0"></span>
+          <span>Click <strong>border gaps</strong> to toggle jumper straps</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-sky-400 shrink-0"></span>
+          <span>Click block to <strong>rotate</strong> (Edit) or <strong>actuate</strong> (Play)</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- RIGHT 3/4 PANEL: CHALLENGE BAR, 5x4 SNAP-PEG CANVAS & DIAGNOSTIC NARRATOR -->
+    <section class="flex-1 min-h-0 flex flex-col justify-between bg-slate-950/45 relative overflow-hidden">
+
+      <!-- TOP CHALLENGE BAR (Visible by default in Challenges Mode) -->
+      <div id="challengePanel" class="bg-gradient-to-r from-slate-900 via-indigo-950/75 to-slate-900 border-b border-indigo-500/35 px-3 sm:px-4 py-1.5 shrink-0">
+        <div class="w-full flex flex-col md:flex-row md:items-center justify-between gap-2">
+          <div class="flex-1 min-w-0">
+            <div class="flex flex-wrap items-center gap-1.5 mb-0.5">
+              <!-- Challenge Selector Pills (1–5) -->
+              <div id="challengeTabs" class="flex items-center gap-1"></div>
+
+              <!-- Status & Target Metric Badges -->
+              <span id="challengeStatusPill" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/40">
+                In Progress
+              </span>
+              <span id="challengeTargetBadge" class="text-[10px] font-mono-tech font-semibold px-2 py-0.5 rounded-full bg-slate-800/90 text-cyan-300 border border-slate-700">
+                Target: 5–25 mA LED
+              </span>
+
+              <!-- Persistent Next Challenge button once solved -->
+              <button id="btnBarNextChallenge" type="button" class="hidden tactile-btn text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow">
+                Next Challenge →
+              </button>
+            </div>
+            <div class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+              <h2 id="challengeTitle" class="text-xs sm:text-sm font-bold text-white shrink-0">Challenge 1 — First Light</h2>
+              <p id="challengeDesc" class="text-[11px] sm:text-xs text-slate-300 leading-snug">
+                Build a closed loop using the 6V DC Battery and 330Ω Resistor to light the Red LED safely between 5 mA and 25 mA.
+              </p>
+            </div>
+          </div>
+
+          <!-- Show Me & Try It Myself (Ghost Guide) Controls -->
+          <div class="flex items-center gap-2 shrink-0">
+            <button id="btnTryMyself" type="button" class="hidden tactile-btn px-2.5 py-1.5 rounded-xl text-xs font-bold bg-sky-600 hover:bg-sky-500 text-white shadow-lg shadow-sky-900/40 border border-sky-400/40">
+              ✨ Try It Myself (Ghost Guide)
+            </button>
+            <button id="btnShowMe" type="button" class="tactile-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 shadow-lg shadow-orange-900/40 flex items-center gap-1.5">
+              <span>🪄</span>
+              <span id="btnShowMeLabel">Show Me</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- PERSISTENT PLAY / STOP TRANSPORT BAR (Pinned above #boardStage; never scrolls out of view or hides) -->
+      <div id="gridTransportBar" class="w-full flex flex-wrap items-center justify-between gap-2 px-3 sm:px-4 py-2 bg-slate-900/95 border-b border-slate-700 shrink-0 z-30">
+        <div class="flex flex-wrap items-center gap-2">
+          <!-- Play / Replay Circuit Button -->
+          <button id="btnPlay" type="button" class="tactile-btn px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-lg shadow-emerald-500/20 flex items-center gap-1.5 border border-emerald-300">
+            <span id="btnPlayIcon">▶</span>
+            <span id="btnPlayLabel">Play Circuit</span>
+          </button>
+
+          <!-- Stop / Edit Button -->
+          <button id="btnStop" type="button" class="tactile-btn px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600 flex items-center gap-1.5">
+            <span>■</span>
+            <span>Stop / Edit</span>
+          </button>
+
+          <!-- Live Simulation Status Pill -->
+          <span id="simStatusPill" class="px-2.5 py-1 rounded-lg text-[10px] sm:text-[11px] font-mono-tech font-bold bg-slate-800/90 text-sky-300 border border-slate-700">
+            EDIT MODE
+          </span>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <!-- Clear Board Button -->
+          <button id="btnClearBoard" type="button" title="Clear Assembly Board" class="tactile-btn px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-rose-950/75 hover:bg-rose-900/85 text-rose-200 border border-rose-700/60 flex items-center gap-1">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>Clear Board</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- CENTER 5x4 SNAP-PEG ASSEMBLY STAGE (Full-width scaled grid with vertical scroll support) -->
+      <div id="boardStage" class="depot-scroll flex-1 min-h-0 w-full relative flex flex-col items-center justify-start px-1 sm:px-2 py-1.5 overflow-y-auto overflow-x-hidden">
+
+        <div id="canvasWrapper" class="w-full flex justify-center shrink-0">
+          <canvas id="circuitCanvas" class="rounded-2xl shadow-2xl cursor-pointer touch-none block"></canvas>
+        </div>
+
+        <!-- Expanded Floating Potentiometer Wiper Popup (#potPopup) -->
+        <div id="potPopup" role="dialog" aria-labelledby="potPopupTitle" class="hidden victory-card-enter absolute bg-slate-900/95 border-2 border-purple-400/90 rounded-2xl p-3.5 shadow-2xl backdrop-blur-md z-30 w-[290px] sm:w-[320px]">
+          <div class="flex items-center justify-between gap-2 pb-2 mb-2.5 border-b border-slate-800">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-purple-400"></span>
+              <h3 id="potPopupTitle" class="text-xs sm:text-sm font-extrabold text-white tracking-tight">
+                5kΩ Potentiometer (R1, C1)
+              </h3>
+            </div>
+            <button id="btnClosePotPopup" type="button" title="Close (Esc)" class="tactile-btn w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-600/80 flex items-center justify-center text-base font-bold leading-none">
+              ×
+            </button>
+          </div>
+
+          <!-- Wide Touch-Friendly Slider -->
+          <div class="py-1.5">
+            <input id="potPopupSlider" type="range" min="1" max="99" step="1" value="50" class="w-full cursor-pointer" />
+          </div>
+
+          <!-- Live Wiper & Resistance Readouts -->
+          <div class="grid grid-cols-3 gap-1.5 my-2.5 font-mono-tech text-[11px]">
+            <div class="bg-slate-950/90 border border-slate-800 rounded-xl px-2 py-1.5 text-center">
+              <div class="text-[9px] text-slate-400 uppercase">Wiper</div>
+              <div id="potPopupPercent" class="text-purple-300 font-bold text-xs">50%</div>
+            </div>
+            <div class="bg-slate-950/90 border border-slate-800 rounded-xl px-2 py-1.5 text-center">
+              <div class="text-[9px] text-slate-400 uppercase">R (A–W)</div>
+              <div id="potPopupRAW" class="text-amber-300 font-bold text-xs">2.50 kΩ</div>
+            </div>
+            <div class="bg-slate-950/90 border border-slate-800 rounded-xl px-2 py-1.5 text-center">
+              <div class="text-[9px] text-slate-400 uppercase">R (W–B)</div>
+              <div id="potPopupRWB" class="text-cyan-300 font-bold text-xs">2.50 kΩ</div>
+            </div>
+          </div>
+
+          <!-- Quick Preset Buttons -->
+          <div class="flex items-center justify-between gap-1.5 pt-1">
+            <button type="button" data-pot-preset="0.10" class="pot-preset-btn tactile-btn flex-1 py-1 rounded-lg bg-slate-800 hover:bg-purple-900/70 text-slate-200 hover:text-purple-200 border border-slate-700 text-[11px] font-mono-tech font-bold">10%</button>
+            <button type="button" data-pot-preset="0.25" class="pot-preset-btn tactile-btn flex-1 py-1 rounded-lg bg-slate-800 hover:bg-purple-900/70 text-slate-200 hover:text-purple-200 border border-slate-700 text-[11px] font-mono-tech font-bold">25%</button>
+            <button type="button" data-pot-preset="0.50" class="pot-preset-btn tactile-btn flex-1 py-1 rounded-lg bg-slate-800 hover:bg-purple-900/70 text-slate-200 hover:text-purple-200 border border-slate-700 text-[11px] font-mono-tech font-bold">50%</button>
+            <button type="button" data-pot-preset="0.75" class="pot-preset-btn tactile-btn flex-1 py-1 rounded-lg bg-slate-800 hover:bg-purple-900/70 text-slate-200 hover:text-purple-200 border border-slate-700 text-[11px] font-mono-tech font-bold">75%</button>
+            <button type="button" data-pot-preset="0.90" class="pot-preset-btn tactile-btn flex-1 py-1 rounded-lg bg-slate-800 hover:bg-purple-900/70 text-slate-200 hover:text-purple-200 border border-slate-700 text-[11px] font-mono-tech font-bold">90%</button>
+          </div>
+        </div>
+
+        <!-- Non-blocking Gap / Snap Feedback Toast -->
+        <div id="boardToast" class="hidden pointer-events-none absolute bottom-3 left-3 bg-slate-900/95 border border-amber-400/60 text-amber-200 px-3.5 py-2 rounded-xl shadow-xl backdrop-blur-md text-xs font-medium z-20 max-w-sm">
+        </div>
+
+        <!-- Floating Multimeter Probe Readout Card (Top-Right) -->
+        <div id="probeReadout" class="hidden pointer-events-none absolute top-3 right-3 bg-slate-900/95 border border-amber-400/60 rounded-xl px-3.5 py-2.5 shadow-xl backdrop-blur-md text-xs z-10 min-w-[195px]">
+          <div class="flex items-center justify-between border-b border-slate-700/80 pb-1 mb-1.5">
+            <span class="font-bold text-amber-400 uppercase tracking-wider text-[10px]">Multimeter Probe</span>
+            <span id="probeCoord" class="font-mono-tech text-slate-400 text-[11px]">Cell --</span>
+          </div>
+          <div id="probeContent" class="space-y-1 font-mono-tech text-[11px] text-slate-200">
+            Hover or tap any snap cell
+          </div>
+        </div>
+
+        <!-- Compact, Non-Blocking, Dismissable Challenge Complete Card (Bottom-Right) -->
+        <div id="victoryBanner" role="dialog" aria-labelledby="victoryHeading" class="hidden victory-card-enter absolute bottom-3 right-3 bg-slate-900/95 border-2 border-emerald-400/90 rounded-2xl p-3.5 shadow-2xl backdrop-blur-md z-30 max-w-sm w-[calc(100%-1.5rem)] sm:w-[360px]">
+          <div class="flex items-start gap-2.5">
+            <div class="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-400/50 flex items-center justify-center text-lg shrink-0 mt-0.5">
+              🏆
+            </div>
+            <div class="flex-1 min-w-0 pr-5">
+              <div id="victoryHeading" class="text-[11px] font-extrabold uppercase tracking-wider text-emerald-300">Challenge Complete!</div>
+              <div id="victoryText" class="text-xs sm:text-sm text-white font-semibold leading-snug mt-0.5">Circuit verified and working safely!</div>
+              <p class="text-[11px] text-slate-400 mt-1">Simulation stays live—inspect the circuit or advance.</p>
+            </div>
+            <!-- Top-right Close ("×") Button -->
+            <button id="btnDismissVictoryX" type="button" title="Dismiss (Esc)" aria-label="Dismiss Challenge Complete card" class="tactile-btn absolute top-2.5 right-2.5 w-7 h-7 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-600/70 flex items-center justify-center text-base font-bold leading-none">
+              ×
+            </button>
+          </div>
+          <!-- Action Buttons Row -->
+          <div class="mt-3 pt-2.5 border-t border-slate-800 flex items-center justify-end gap-2">
+            <button id="btnDismissVictoryInspect" type="button" class="tactile-btn px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600/80 font-semibold text-xs">
+              Dismiss &amp; Inspect Circuit
+            </button>
+            <button id="btnNextChallenge" type="button" class="tactile-btn px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs shadow-lg shadow-emerald-950/50">
+              Next Challenge →
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- BOTTOM LIVE DIAGNOSTIC NARRATOR BAR -->
+      <footer class="bg-slate-900/95 border-t border-slate-700/80 px-3 sm:px-4 py-1.5 shrink-0">
+        <div class="w-full flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <!-- Plain-English Circuit Storyteller -->
+          <div class="flex items-start sm:items-center gap-2 flex-1 min-w-0">
+            <div id="narratorBadge" class="px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider bg-amber-950/90 text-amber-300 border border-amber-500/60 shrink-0 mt-0.5 sm:mt-0">
+              CHALLENGE 1
+            </div>
+            <p id="narratorText" class="text-xs text-slate-200 font-medium leading-snug">
+              Empty 5×4 snap-peg board ready. Select parts from the left depot to build Challenge 1, or click "Show Me" to watch it auto-assemble!
+            </p>
+          </div>
+
+          <!-- Live Electrical Telemetry Pills -->
+          <div class="flex items-center gap-1.5 shrink-0 font-mono-tech text-[11px]">
+            <div class="px-2 py-0.5 rounded-lg bg-slate-800/90 border border-slate-700/80 text-slate-300">
+              <span class="text-slate-500">SUPPLY:</span> <span id="statVoltage" class="text-amber-400 font-bold">0.00V</span>
+            </div>
+            <div class="px-2 py-0.5 rounded-lg bg-slate-800/90 border border-slate-700/80 text-slate-300">
+              <span class="text-slate-500">DRAW:</span> <span id="statCurrent" class="text-cyan-400 font-bold">0.0 mA</span>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </section>
+  </main>
+
+  <script>
+    /**
+     * ============================================================================
+     * SNAPLAB: CIRCUIT SANDBOX & CHALLENGE STUDIO
+     * Complete Single-File MNA Physics Engine, Interactive 5x4 Snap Grid & Audio
+     * ============================================================================
+     */
+
+    // ----------------------------------------------------------------------------
+    // 1. STRICT CLOCKWISE PIN ORIENTATION & 16-PART CATALOG
+    // ----------------------------------------------------------------------------
+    const GRID_COLS = 5;
+    const GRID_ROWS = 4;
+
+    // Clockwise directions: 0 = Top (N), 1 = Right (E), 2 = Bottom (S), 3 = Left (W)
+    const EDGE_NAMES = ['Top', 'Right', 'Bottom', 'Left'];
+    const OPPOSITE_EDGE = [2, 3, 0, 1];
+
+    // Base (rot = 0) port definitions:
+    // - All 2-terminal parts: Port A (+/Anode) = Left (3), Port B (-/Cathode) = Right (1)
+    // - wire_corner: Right (1) & Bottom (2) (┌)
+    // - wire_tee: Left (3), Right (1), Bottom (2) (┬)
+    // - wire_cross: Top (0), Right (1), Bottom (2), Left (3) (┼)
+    // - potentiometer: End A = Left (3), End B = Right (1), Wiper = Bottom (2)
+    // - transistor_npn: Base = Left (3), Collector = Top (0), Emitter = Bottom (2)
+    const PART_CATALOG = [
+      {
+        type: 'battery',
+        name: '6V DC Battery',
+        short: '6V Battery',
+        spec: '6.0V (1Ω int)',
+        color: '#ef4444',
+        accent: '#1e293b',
+        basePins: [
+          { edge: 3, label: '+', polarity: 'pos' },
+          { edge: 1, label: '-', polarity: 'neg' }
+        ],
+        desc: '6.0V DC source (+ Left, - Right at 0°).'
+      },
+      {
+        type: 'wire_straight',
+        name: 'Straight Wire',
+        short: 'Straight —',
+        spec: '0Ω Jumper',
+        color: '#38bdf8',
+        accent: '#0284c7',
+        basePins: [
+          { edge: 3, label: '' },
+          { edge: 1, label: '' }
+        ],
+        desc: 'Zero-resistance straight snap conductor.'
+      },
+      {
+        type: 'wire_corner',
+        name: 'Corner Wire',
+        short: 'Corner ┌',
+        spec: '0Ω Elbow',
+        color: '#38bdf8',
+        accent: '#0284c7',
+        basePins: [
+          { edge: 1, label: '' },
+          { edge: 2, label: '' }
+        ],
+        desc: '90° elbow snap conductor (Right & Bottom at 0°).'
+      },
+      {
+        type: 'wire_tee',
+        name: 'T-Junction Wire',
+        short: 'T-Junct ┬',
+        spec: '0Ω 3-Way',
+        color: '#38bdf8',
+        accent: '#0284c7',
+        basePins: [
+          { edge: 3, label: '' },
+          { edge: 1, label: '' },
+          { edge: 2, label: '' }
+        ],
+        desc: '3-way T-junction conductor (Left, Right, Bottom at 0°).'
+      },
+      {
+        type: 'wire_cross',
+        name: '4-Way Bridge',
+        short: '4-Way ┼',
+        spec: '0Ω 4-Way',
+        color: '#38bdf8',
+        accent: '#0284c7',
+        basePins: [
+          { edge: 0, label: '' },
+          { edge: 1, label: '' },
+          { edge: 2, label: '' },
+          { edge: 3, label: '' }
+        ],
+        desc: '4-way intersection bridging all four sides.'
+      },
+      {
+        type: 'resistor_330',
+        name: '330Ω Resistor',
+        short: '330Ω Res',
+        spec: '330 Ω',
+        color: '#d97706',
+        accent: '#fef3c7',
+        basePins: [
+          { edge: 3, label: '' },
+          { edge: 1, label: '' }
+        ],
+        desc: 'Limits current (~11.4 mA at 6V) to protect LEDs.'
+      },
+      {
+        type: 'resistor_1k',
+        name: '1kΩ Resistor',
+        short: '1kΩ Res',
+        spec: '1,000 Ω',
+        color: '#b45309',
+        accent: '#fde68a',
+        basePins: [
+          { edge: 3, label: '' },
+          { edge: 1, label: '' }
+        ],
+        desc: '1,000Ω resistor for base biasing & RC timing.'
+      },
+      {
+        type: 'led_red',
+        name: 'Red LED',
+        short: 'Red LED',
+        spec: 'Vf 2.0V / 40mA max',
+        color: '#f43f5e',
+        accent: '#fecdd3',
+        basePins: [
+          { edge: 3, label: '+', polarity: 'pos' },
+          { edge: 1, label: '-', polarity: 'neg' }
+        ],
+        desc: 'Polarized diode (Anode + Left, Cathode - Right at 0°). Blows > 40mA!'
+      },
+      {
+        type: 'switch_toggle',
+        name: 'Toggle Switch',
+        short: 'Toggle SW',
+        spec: 'SPST Latching',
+        color: '#14b8a6',
+        accent: '#ccfbf1',
+        basePins: [
+          { edge: 3, label: '' },
+          { edge: 1, label: '' }
+        ],
+        desc: 'Click in Play mode to latch Open or Closed.'
+      },
+      {
+        type: 'switch_push',
+        name: 'Pushbutton',
+        short: 'Pushbutton',
+        spec: 'Momentary NO',
+        color: '#6366f1',
+        accent: '#e0e7ff',
+        basePins: [
+          { edge: 3, label: '' },
+          { edge: 1, label: '' }
+        ],
+        desc: 'Hold or click-pulse in Play mode to close momentarily.'
+      },
+      {
+        type: 'potentiometer',
+        name: '5kΩ Potentiometer',
+        short: '5kΩ Pot',
+        spec: '3-Pin Variable',
+        color: '#a855f7',
+        accent: '#f3e8ff',
+        basePins: [
+          { edge: 3, label: 'A', role: 'A' },
+          { edge: 1, label: 'B', role: 'B' },
+          { edge: 2, label: 'W', role: 'W' }
+        ],
+        desc: '3-terminal 5kΩ pot (A=Left, B=Right, Wiper=Bottom at 0°). Drag slider!'
+      },
+      {
+        type: 'capacitor',
+        name: '1000µF Capacitor',
+        short: '1000µF Cap',
+        spec: '1000 µF',
+        color: '#eab308',
+        accent: '#fef9c3',
+        basePins: [
+          { edge: 3, label: '+', polarity: 'pos' },
+          { edge: 1, label: '-', polarity: 'neg' }
+        ],
+        desc: 'Stores electrical charge (+ Left, - Right at 0°) for RC timers.'
+      },
+      {
+        type: 'inductor',
+        name: '500mH Inductor',
+        short: '500mH Coil',
+        spec: '0.5 H Coil',
+        color: '#f97316',
+        accent: '#ffedd5',
+        basePins: [
+          { edge: 3, label: '' },
+          { edge: 1, label: '' }
+        ],
+        desc: 'Stores magnetic energy; generates voltage kick when current stops.'
+      },
+      {
+        type: 'motor',
+        name: 'DC Motor',
+        short: 'DC Motor',
+        spec: 'Fan Rotor',
+        color: '#64748b',
+        accent: '#f1f5f9',
+        basePins: [
+          { edge: 3, label: '+', polarity: 'pos' },
+          { edge: 1, label: '-', polarity: 'neg' }
+        ],
+        desc: 'Spins rotor blade at RPM proportional to current.'
+      },
+      {
+        type: 'speaker',
+        name: 'Speaker',
+        short: 'Speaker',
+        spec: '32Ω Audio',
+        color: '#ec4899',
+        accent: '#fce7f3',
+        basePins: [
+          { edge: 3, label: '+', polarity: 'pos' },
+          { edge: 1, label: '-', polarity: 'neg' }
+        ],
+        desc: 'Converts branch current & transients into real Web Audio sound.'
+      },
+      {
+        type: 'transistor_npn',
+        name: 'NPN Transistor',
+        short: 'NPN BJT',
+        spec: 'β=80 (B/C/E)',
+        color: '#10b981',
+        accent: '#d1fae5',
+        basePins: [
+          { edge: 3, label: 'B', role: 'B' },
+          { edge: 0, label: 'C', role: 'C' },
+          { edge: 2, label: 'E', role: 'E' }
+        ],
+        desc: 'B=Left, C=Top, E=Bottom at 0°. Base current switches C→E.'
+      }
+    ];
+
+    const PART_MAP = Object.fromEntries(PART_CATALOG.map(p => [p.type, p]));
+
+    // Clockwise rotation: actualDir = (baseDir + rot) % 4
+    function getRotatedPins(type, rot) {
+      const def = PART_MAP[type];
+      if (!def) return [];
+      return def.basePins.map(p => ({
+        ...p,
+        edge: (p.edge + rot) % 4
+      }));
+    }
+
+    function isWireType(type) {
+      return type === 'wire_straight' || type === 'wire_corner' || type === 'wire_tee' || type === 'wire_cross';
+    }
+
+    // ----------------------------------------------------------------------------
+    // 2. WEB AUDIO SYNTHESIZER (Tactile Snaps, Switch Clicks, Speaker, Motor)
+    // ----------------------------------------------------------------------------
+    class SnapAudioEngine {
+      constructor() {
+        this.ctx = null;
+        this.muted = false;
+        this.speakerGain = null;
+        this.speakerOsc = null;
+        this.motorGain = null;
+        this.motorOsc = null;
+        this.initialized = false;
+      }
+
+      init() {
+        if (this.initialized) {
+          if (this.ctx && this.ctx.state === 'suspended') {
+            this.ctx.resume().catch(() => {});
+          }
+          return;
+        }
+        try {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioCtx();
+
+          this.speakerOsc = this.ctx.createOscillator();
+          this.speakerOsc.type = 'triangle';
+          this.speakerOsc.frequency.value = 180;
+          this.speakerGain = this.ctx.createGain();
+          this.speakerGain.gain.value = 0;
+          this.speakerOsc.connect(this.speakerGain);
+          this.speakerGain.connect(this.ctx.destination);
+          this.speakerOsc.start();
+
+          this.motorOsc = this.ctx.createOscillator();
+          this.motorOsc.type = 'sawtooth';
+          this.motorOsc.frequency.value = 60;
+          const motorFilter = this.ctx.createBiquadFilter();
+          motorFilter.type = 'lowpass';
+          motorFilter.frequency.value = 260;
+          this.motorGain = this.ctx.createGain();
+          this.motorGain.gain.value = 0;
+          this.motorOsc.connect(motorFilter);
+          motorFilter.connect(this.motorGain);
+          this.motorGain.connect(this.ctx.destination);
+          this.motorOsc.start();
+
+          this.initialized = true;
+        } catch (e) {
+          console.warn('Web Audio unavailable:', e);
+        }
+      }
+
+      setMuted(m) {
+        this.muted = m;
+        if (this.muted && this.initialized) {
+          this.silenceContinuous();
+        }
+      }
+
+      silenceContinuous() {
+        if (!this.initialized || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        this.speakerGain.gain.setTargetAtTime(0, now, 0.02);
+        this.motorGain.gain.setTargetAtTime(0, now, 0.03);
+      }
+
+      playSnap(pitch = 520) {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(pitch, now);
+        osc.frequency.exponentialRampToValueAtTime(140, now + 0.045);
+
+        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.055);
+      }
+
+      playSwitchClick(on = true) {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(on ? 880 : 620, now);
+        osc.frequency.exponentialRampToValueAtTime(on ? 1200 : 320, now + 0.025);
+
+        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.035);
+      }
+
+      playBurnoutPop() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(320, now);
+        osc.frequency.exponentialRampToValueAtTime(42, now + 0.22);
+
+        gain.gain.setValueAtTime(0.32, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.25);
+      }
+
+      playVictory() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        const notes = [523.25, 659.25, 783.99, 1046.5];
+        notes.forEach((freq, idx) => {
+          const now = this.ctx.currentTime + idx * 0.085;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, now);
+          gain.gain.setValueAtTime(0.14, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.3);
+        });
+      }
+
+      updateSimulationAudio(isPlaying, speakerCurrent, speakerImpulse, motorRPM) {
+        if (!this.initialized || !this.ctx) return;
+        if (!isPlaying || this.muted) {
+          this.silenceContinuous();
+          return;
+        }
+        const now = this.ctx.currentTime;
+
+        if (speakerImpulse > 0.003) {
+          const popOsc = this.ctx.createOscillator();
+          const popGain = this.ctx.createGain();
+          const intensity = Math.min(1, speakerImpulse * 18);
+          popOsc.type = 'triangle';
+          popOsc.frequency.setValueAtTime(220 + intensity * 680, now);
+          popOsc.frequency.exponentialRampToValueAtTime(75, now + 0.09);
+          popGain.gain.setValueAtTime(Math.min(0.35, intensity * 0.28), now);
+          popGain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+          popOsc.connect(popGain);
+          popGain.connect(this.ctx.destination);
+          popOsc.start(now);
+          popOsc.stop(now + 0.11);
+        }
+
+        const absSpk = Math.abs(speakerCurrent);
+        if (absSpk > 0.002) {
+          const targetGain = Math.min(0.06, absSpk * 0.35);
+          const targetFreq = 110 + Math.min(500, absSpk * 1800);
+          this.speakerOsc.frequency.setTargetAtTime(targetFreq, now, 0.03);
+          this.speakerGain.gain.setTargetAtTime(targetGain, now, 0.03);
+        } else {
+          this.speakerGain.gain.setTargetAtTime(0, now, 0.03);
+        }
+
+        const absRpm = Math.abs(motorRPM);
+        if (absRpm > 25) {
+          const mFreq = 55 + Math.min(260, absRpm * 0.11);
+          const mGain = Math.min(0.08, (absRpm / 2000) * 0.07);
+          this.motorOsc.frequency.setTargetAtTime(mFreq, now, 0.04);
+          this.motorGain.gain.setTargetAtTime(mGain, now, 0.04);
+        } else {
+          this.motorGain.gain.setTargetAtTime(0, now, 0.05);
+        }
+      }
+    }
+
+    const audio = new SnapAudioEngine();
+
+    // ----------------------------------------------------------------------------
+    // 3. BOARD DATA STRUCTURES (INITIALIZED CLEANLY TO EMPTY 4x5 GRID)
+    // ----------------------------------------------------------------------------
+    let grid = Array.from({ length: GRID_ROWS }, () => Array(GRID_COLS).fill(null));
+    // Border snap overrides:
+    // null = auto-snap when facing pins exist; false = user disconnected; true = manual jumper strap
+    let hBorders = Array.from({ length: GRID_ROWS }, () => Array(GRID_COLS - 1).fill(null));
+    let vBorders = Array.from({ length: GRID_ROWS - 1 }, () => Array(GRID_COLS).fill(null));
+
+    let ghostPlan = null;
+    let particles = [];
+    let flyingParts = [];
+
+    let toastTimeout = null;
+    function showBoardToast(msg, tone = 'amber') {
+      const el = document.getElementById('boardToast');
+      if (!el) return;
+      el.textContent = msg;
+      el.className = `pointer-events-none absolute bottom-3 left-3 px-3.5 py-2 rounded-xl shadow-xl backdrop-blur-md text-xs font-medium z-20 max-w-sm border ${
+        tone === 'emerald'
+          ? 'bg-emerald-950/95 border-emerald-400/60 text-emerald-200'
+          : 'bg-slate-900/95 border-amber-400/60 text-amber-200'
+      }`;
+      el.classList.remove('hidden');
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        el.classList.add('hidden');
+      }, 2800);
+    }
+
+    function createComponentInstance(type, rot = 0, overrides = {}) {
+      return {
+        type,
+        rot: ((rot % 4) + 4) % 4,
+        closed: false,
+        pressed: false,
+        wiper: 0.5,
+        vCap: 0,
+        iInd: 0,
+        omega: 0,
+        rotorAngle: 0,
+        burned: false,
+        current: 0,
+        baseCurrent: 0,
+        voltage: 0,
+        soundRipple: 0,
+        ...overrides
+      };
+    }
+
+    function hasFacingPorts(isHorizontal, r, c) {
+      const cellA = grid[r][c];
+      const cellB = isHorizontal ? grid[r][c + 1] : grid[r + 1][c];
+      if (!cellA || !cellB) return false;
+      const edgeA = isHorizontal ? 1 : 2;
+      const edgeB = (edgeA + 2) % 4;
+      const pinsA = getRotatedPins(cellA.type, cellA.rot);
+      const pinsB = getRotatedPins(cellB.type, cellB.rot);
+      return pinsA.some(p => p.edge === edgeA) && pinsB.some(p => p.edge === edgeB);
+    }
+
+    function isBorderConnected(isHorizontal, r, c) {
+      const override = isHorizontal ? hBorders[r][c] : vBorders[r][c];
+      if (override === false) return false;
+      if (override === true) return true;
+      return hasFacingPorts(isHorizontal, r, c);
+    }
+
+    function resetTransientStates() {
+      for (let r = 0; r < GRID_ROWS; r++) {
+        for (let c = 0; c < GRID_COLS; c++) {
+          const comp = grid[r][c];
+          if (!comp) continue;
+          comp.vCap = 0;
+          comp.iInd = 0;
+          comp.omega = 0;
+          comp.burned = false;
+          comp.current = 0;
+          comp.baseCurrent = 0;
+          comp.voltage = 0;
+          comp.soundRipple = 0;
+          comp.pressed = false;
+        }
+      }
+      particles = [];
+    }
+
+    // ----------------------------------------------------------------------------
+    // 4. MODIFIED NODAL ANALYSIS (MNA) CIRCUIT SOLVER (20 SUB-STEPS PER FRAME)
+    // ----------------------------------------------------------------------------
+    class UnionFind {
+      constructor(n) {
+        this.parent = Int32Array.from({ length: n }, (_, i) => i);
+      }
+      find(x) {
+        while (this.parent[x] !== x) {
+          this.parent[x] = this.parent[this.parent[x]];
+          x = this.parent[x];
+        }
+        return x;
+      }
+      union(a, b) {
+        const ra = this.find(a);
+        const rb = this.find(b);
+        if (ra !== rb) this.parent[rb] = ra;
+      }
+    }
+
+    function buildElectricalTopology() {
+      const totalEdgeSlots = GRID_ROWS * GRID_COLS * 4;
+      const uf = new UnionFind(totalEdgeSlots);
+      const activeSlots = new Uint8Array(totalEdgeSlots);
+
+      const slotId = (r, c, edge) => (r * GRID_COLS + c) * 4 + edge;
+
+      // 1. Activate component ports and unify internal wire conductors
+      for (let r = 0; r < GRID_ROWS; r++) {
+        for (let c = 0; c < GRID_COLS; c++) {
+          const comp = grid[r][c];
+          if (!comp) continue;
+          const pins = getRotatedPins(comp.type, comp.rot);
+          pins.forEach(p => {
+            activeSlots[slotId(r, c, p.edge)] = 1;
+          });
+          if (isWireType(comp.type)) {
+            for (let i = 1; i < pins.length; i++) {
+              uf.union(slotId(r, c, pins[0].edge), slotId(r, c, pins[i].edge));
+            }
+          }
+        }
+      }
+
+      // 2. Unify facing ports across snapped horizontal & vertical borders
+      for (let r = 0; r < GRID_ROWS; r++) {
+        for (let c = 0; c < GRID_COLS - 1; c++) {
+          if (isBorderConnected(true, r, c)) {
+            const sA = slotId(r, c, 1);
+            const sB = slotId(r, c + 1, 3);
+            if (activeSlots[sA] && activeSlots[sB]) {
+              uf.union(sA, sB);
+            }
+          }
+        }
+      }
+      for (let r = 0; r < GRID_ROWS - 1; r++) {
+        for (let c = 0; c < GRID_COLS; c++) {
+          if (isBorderConnected(false, r, c)) {
+            const sA = slotId(r, c, 2);
+            const sB = slotId(r + 1, c, 0);
+            if (activeSlots[sA] && activeSlots[sB]) {
+              uf.union(sA, sB);
+            }
+          }
+        }
+      }
+
+      // 3. Assign dense MNA node IDs
+      const rootToNode = new Int32Array(totalEdgeSlots).fill(-1);
+      let numNodes = 0;
+      for (let s = 0; s < totalEdgeSlots; s++) {
+        if (activeSlots[s]) {
+          const root = uf.find(s);
+          if (rootToNode[root] === -1) {
+            rootToNode[root] = numNodes++;
+          }
+          rootToNode[s] = rootToNode[root];
+        }
+      }
+
+      // Reference ground: prefer Battery '-' terminal
+      let groundNode = 0;
+      outer: for (let r = 0; r < GRID_ROWS; r++) {
+        for (let c = 0; c < GRID_COLS; c++) {
+          const comp = grid[r][c];
+          if (comp && comp.type === 'battery') {
+            const pins = getRotatedPins('battery', comp.rot);
+            const negPin = pins.find(p => p.polarity === 'neg');
+            if (negPin) {
+              const n = rootToNode[slotId(r, c, negPin.edge)];
+              if (n !== -1) {
+                groundNode = n;
+                break outer;
+              }
+            }
+          }
+        }
+      }
+
+      return {
+        numNodes,
+        groundNode,
+        getNode(r, c, edge) {
+          return rootToNode[slotId(r, c, edge)];
+        }
+      };
+    }
+
+    function solveLinearSystem(A, b, n) {
+      for (let i = 0; i < n; i++) {
+        let maxRow = i;
+        let maxVal = Math.abs(A[i][i]);
+        for (let k = i + 1; k < n; k++) {
+          const v = Math.abs(A[k][i]);
+          if (v > maxVal) {
+            maxVal = v;
+            maxRow = k;
+          }
+        }
+        if (maxRow !== i) {
+          const tmpRow = A[i];
+          A[i] = A[maxRow];
+          A[maxRow] = tmpRow;
+          const tmpB = b[i];
+          b[i] = b[maxRow];
+          b[maxRow] = tmpB;
+        }
+
+        const pivot = A[i][i];
+        if (Math.abs(pivot) < 1e-14) continue;
+
+        for (let k = i + 1; k < n; k++) {
+          const factor = A[k][i] / pivot;
+          if (factor === 0) continue;
+          for (let j = i; j < n; j++) {
+            A[k][j] -= factor * A[i][j];
+          }
+          b[k] -= factor * b[i];
+        }
+      }
+
+      const x = new Float64Array(n);
+      for (let i = n - 1; i >= 0; i--) {
+        let sum = b[i];
+        for (let j = i + 1; j < n; j++) {
+          sum -= A[i][j] * x[j];
+        }
+        const diag = A[i][i];
+        x[i] = Math.abs(diag) < 1e-14 ? 0 : sum / diag;
+      }
+      return x;
+    }
+
+    let latestNodeVoltages = new Float64Array(0);
+    let latestTopology = null;
+
+    function stepCircuitPhysics(frameDt) {
+      const topo = buildElectricalTopology();
+      latestTopology = topo;
+
+      if (topo.numNodes === 0) {
+        latestNodeVoltages = new Float64Array(0);
+        return { speakerImpulse: 0, speakerCurrent: 0, maxMotorRPM: 0, totalBatteryCurrent: 0, supplyVoltage: 0 };
+      }
+
+      const elements = [];
+      for (let r = 0; r < GRID_ROWS; r++) {
+        for (let c = 0; c < GRID_COLS; c++) {
+          const comp = grid[r][c];
+          if (!comp || isWireType(comp.type)) continue;
+          const pins = getRotatedPins(comp.type, comp.rot);
+          const nodes = pins.map(p => topo.getNode(r, c, p.edge));
+          elements.push({ r, c, comp, pins, nodes });
+        }
+      }
+
+      const SUBSTEPS = 20;
+      const dt = frameDt / SUBSTEPS;
+      const N = topo.numNodes;
+      const EFF_CAPACITANCE = 0.0082; // ~2.8s exponential RC decay with 330Ω + Red LED
+
+      const A = Array.from({ length: N }, () => new Float64Array(N));
+      const rhs = new Float64Array(N);
+
+      const stampG = (n1, n2, g) => {
+        if (n1 >= 0) A[n1][n1] += g;
+        if (n2 >= 0) A[n2][n2] += g;
+        if (n1 >= 0 && n2 >= 0) {
+          A[n1][n2] -= g;
+          A[n2][n1] -= g;
+        }
+      };
+
+      const stampI = (nFrom, nTo, curr) => {
+        if (nFrom >= 0) rhs[nFrom] -= curr;
+        if (nTo >= 0) rhs[nTo] += curr;
+      };
+
+      let nodeV = latestNodeVoltages.length === N ? new Float64Array(latestNodeVoltages) : new Float64Array(N);
+      let maxSpeakerImpulse = 0;
+      let lastSpeakerI = 0;
+
+      for (const el of elements) {
+        if (el.comp.type === 'speaker') {
+          lastSpeakerI = el.comp.current;
+        }
+      }
+
+      for (let step = 0; step < SUBSTEPS; step++) {
+        for (let iter = 0; iter < 2; iter++) {
+          for (let i = 0; i < N; i++) {
+            A[i].fill(0);
+            rhs[i] = 0;
+            A[i][i] += 1e-9;
+          }
+
+          for (const el of elements) {
+            const { comp, nodes } = el;
+            const n0 = nodes[0];
+            const n1 = nodes[1];
+
+            switch (comp.type) {
+              case 'battery': {
+                const g = 1.0; // 1 Ohm internal resistance
+                stampG(n0, n1, g);
+                stampI(n1, n0, 6.0 * g);
+                break;
+              }
+              case 'resistor_330':
+                stampG(n0, n1, 1 / 330);
+                break;
+              case 'resistor_1k':
+                stampG(n0, n1, 1 / 1000);
+                break;
+              case 'potentiometer': {
+                const nA = nodes[0], nB = nodes[1], nW = nodes[2];
+                const w = Math.max(0.02, Math.min(0.98, comp.wiper));
+                const rAW = Math.max(15, w * 5000);
+                const rWB = Math.max(15, (1 - w) * 5000);
+                stampG(nA, nW, 1 / rAW);
+                stampG(nW, nB, 1 / rWB);
+                break;
+              }
+              case 'switch_toggle':
+                stampG(n0, n1, comp.closed ? 20.0 : 1e-8);
+                break;
+              case 'switch_push':
+                stampG(n0, n1, comp.pressed ? 20.0 : 1e-8);
+                break;
+              case 'capacitor': {
+                const gc = EFF_CAPACITANCE / dt;
+                stampG(n0, n1, gc);
+                stampI(n1, n0, gc * comp.vCap);
+                break;
+              }
+              case 'inductor': {
+                const L = 0.5;
+                const Rw = 2.0;
+                const gL = dt / (L + Rw * dt);
+                const iEq = (L / (L + Rw * dt)) * comp.iInd;
+                stampG(n0, n1, gL);
+                stampI(n0, n1, iEq);
+                break;
+              }
+              case 'led_red': {
+                if (comp.burned) {
+                  stampG(n0, n1, 1e-8);
+                } else {
+                  const vDiff = (n0 >= 0 ? nodeV[n0] : 0) - (n1 >= 0 ? nodeV[n1] : 0);
+                  const Vf = 2.0;
+                  if (vDiff > Vf) {
+                    const gd = 1 / 20.0;
+                    stampG(n0, n1, gd);
+                    stampI(n1, n0, gd * Vf);
+                  } else {
+                    stampG(n0, n1, 1e-8);
+                  }
+                }
+                break;
+              }
+              case 'motor': {
+                const Rm = 12.0;
+                const ke = 0.015;
+                const gm = 1 / Rm;
+                const vEmf = ke * comp.omega;
+                stampG(n0, n1, gm);
+                stampI(n1, n0, gm * vEmf);
+                break;
+              }
+              case 'speaker':
+                stampG(n0, n1, 1 / 32.0);
+                break;
+              case 'transistor_npn': {
+                const nB = nodes[0], nC = nodes[1], nE = nodes[2];
+                const vB = nB >= 0 ? nodeV[nB] : 0;
+                const vC = nC >= 0 ? nodeV[nC] : 0;
+                const vE = nE >= 0 ? nodeV[nE] : 0;
+                const vBE = vB - vE;
+                const vCE = vC - vE;
+
+                let iB = 0;
+                if (vBE > 0.65) {
+                  const gBE = 1 / 100.0;
+                  stampG(nB, nE, gBE);
+                  stampI(nE, nB, gBE * 0.65);
+                  iB = Math.max(0, (vBE - 0.65) * gBE);
+                } else {
+                  stampG(nB, nE, 1e-8);
+                }
+
+                if (iB > 1e-7 && vCE > 0.2) {
+                  const beta = 80;
+                  const iTarget = beta * iB;
+                  const rSat = 5.0;
+                  const iMaxSat = Math.max(0, (vCE - 0.2) / rSat);
+                  const iC = Math.min(iTarget, iMaxSat);
+                  stampG(nC, nE, 1 / 500.0);
+                  stampI(nC, nE, iC);
+                } else {
+                  stampG(nC, nE, 1e-8);
+                }
+                break;
+              }
+            }
+          }
+
+          const gIdx = topo.groundNode;
+          for (let j = 0; j < N; j++) {
+            A[gIdx][j] = 0;
+            A[j][gIdx] = 0;
+          }
+          A[gIdx][gIdx] = 1.0;
+          rhs[gIdx] = 0.0;
+
+          nodeV = solveLinearSystem(A, rhs, N);
+        }
+
+        for (const el of elements) {
+          const { r, c, comp, nodes } = el;
+          const v0 = nodes[0] >= 0 ? nodeV[nodes[0]] : 0;
+          const v1 = nodes[1] >= 0 ? nodeV[nodes[1]] : 0;
+          const vDiff = v0 - v1;
+          comp.voltage = vDiff;
+
+          switch (comp.type) {
+            case 'battery':
+              comp.current = (6.0 - vDiff) / 1.0;
+              break;
+            case 'resistor_330':
+              comp.current = vDiff / 330.0;
+              break;
+            case 'resistor_1k':
+              comp.current = vDiff / 1000.0;
+              break;
+            case 'potentiometer': {
+              const vA = nodes[0] >= 0 ? nodeV[nodes[0]] : 0;
+              const vB = nodes[1] >= 0 ? nodeV[nodes[1]] : 0;
+              const vW = nodes[2] >= 0 ? nodeV[nodes[2]] : 0;
+              const w = Math.max(0.02, Math.min(0.98, comp.wiper));
+              const rAW = Math.max(15, w * 5000);
+              const rWB = Math.max(15, (1 - w) * 5000);
+              const iAW = (vA - vW) / rAW;
+              const iWB = (vW - vB) / rWB;
+              comp.current = Math.abs(iAW) >= Math.abs(iWB) ? iAW : iWB;
+              comp.voltage = Math.abs(vA - vW) >= Math.abs(vW - vB) ? (vA - vW) : (vW - vB);
+              break;
+            }
+            case 'switch_toggle':
+              comp.current = comp.closed ? vDiff * 20.0 : 0;
+              break;
+            case 'switch_push':
+              comp.current = comp.pressed ? vDiff * 20.0 : 0;
+              break;
+            case 'capacitor': {
+              const gc = EFF_CAPACITANCE / dt;
+              comp.current = gc * (vDiff - comp.vCap);
+              comp.vCap = vDiff;
+              break;
+            }
+            case 'inductor': {
+              const L = 0.5;
+              const Rw = 2.0;
+              const gL = dt / (L + Rw * dt);
+              const iEq = (L / (L + Rw * dt)) * comp.iInd;
+              comp.iInd = gL * vDiff + iEq;
+              comp.current = comp.iInd;
+              break;
+            }
+            case 'led_red': {
+              if (!comp.burned && vDiff > 2.0) {
+                comp.current = (vDiff - 2.0) / 20.0;
+                if (comp.current > 0.040) {
+                  comp.burned = true;
+                  comp.current = 0;
+                  audio.playBurnoutPop();
+                  spawnSmokeBurst(r, c);
+                }
+              } else {
+                comp.current = 0;
+              }
+              break;
+            }
+            case 'motor': {
+              const Rm = 12.0;
+              const ke = 0.015;
+              const kt = 0.015;
+              const J = 0.000018;
+              const friction = 0.00006;
+              comp.current = (vDiff - ke * comp.omega) / Rm;
+              const dOmega = ((kt * comp.current - friction * comp.omega) / J) * dt;
+              comp.omega += dOmega;
+              comp.rotorAngle += comp.omega * dt;
+              break;
+            }
+            case 'speaker': {
+              comp.current = vDiff / 32.0;
+              const deltaI = Math.abs(comp.current - lastSpeakerI);
+              if (deltaI > maxSpeakerImpulse) maxSpeakerImpulse = deltaI;
+              if (deltaI > 0.002) {
+                comp.soundRipple = Math.min(1, comp.soundRipple + deltaI * 18);
+              }
+              lastSpeakerI = comp.current;
+              break;
+            }
+            case 'transistor_npn': {
+              const vB = nodes[0] >= 0 ? nodeV[nodes[0]] : 0;
+              const vC = nodes[1] >= 0 ? nodeV[nodes[1]] : 0;
+              const vE = nodes[2] >= 0 ? nodeV[nodes[2]] : 0;
+              const iB = (vB - vE) > 0.65 ? (vB - vE - 0.65) / 100.0 : 0;
+              comp.baseCurrent = iB;
+              if (iB > 1e-7 && (vC - vE) > 0.2) {
+                comp.current = Math.min(80 * iB, Math.max(0, (vC - vE - 0.2) / 5.0));
+              } else {
+                comp.current = 0;
+              }
+              break;
+            }
+          }
+        }
+      }
+
+      latestNodeVoltages = nodeV;
+
+      let totalBatteryCurrent = 0;
+      let supplyVoltage = 0;
+      let maxMotorRPM = 0;
+      let speakerCurrent = 0;
+
+      for (const el of elements) {
+        const { comp } = el;
+        if (comp.type === 'battery') {
+          totalBatteryCurrent += Math.max(0, comp.current);
+          supplyVoltage = Math.max(supplyVoltage, Math.abs(comp.voltage));
+        }
+        if (comp.type === 'motor') {
+          const rpm = Math.abs((comp.omega * 60) / (2 * Math.PI));
+          if (rpm > maxMotorRPM) maxMotorRPM = rpm;
+        }
+        if (comp.type === 'speaker') {
+          speakerCurrent = comp.current;
+          comp.soundRipple = Math.max(0, comp.soundRipple - frameDt * 2.5);
+        }
+      }
+
+      return {
+        speakerImpulse: maxSpeakerImpulse,
+        speakerCurrent,
+        maxMotorRPM,
+        totalBatteryCurrent,
+        supplyVoltage
+      };
+    }
+
+    // ----------------------------------------------------------------------------
+    // 5. LIVE CIRCUIT DIAGNOSTIC NARRATOR
+    // ----------------------------------------------------------------------------
+    function analyzeCircuitNarration(isPlaying) {
+      let batteries = [], leds = [], switches = [], buttons = [], caps = [], inductors = [], motors = [], speakers = [], pots = [];
+      let totalParts = 0;
+
+      for (let r = 0; r < GRID_ROWS; r++) {
+        for (let c = 0; c < GRID_COLS; c++) {
+          const comp = grid[r][c];
+          if (!comp) continue;
+          totalParts++;
+          const item = { r, c, comp };
+          if (comp.type === 'battery') batteries.push(item);
+          else if (comp.type === 'led_red') leds.push(item);
+          else if (comp.type === 'switch_toggle') switches.push(item);
+          else if (comp.type === 'switch_push') buttons.push(item);
+          else if (comp.type === 'capacitor') caps.push(item);
+          else if (comp.type === 'inductor') inductors.push(item);
+          else if (comp.type === 'motor') motors.push(item);
+          else if (comp.type === 'speaker') speakers.push(item);
+          else if (comp.type === 'potentiometer') pots.push(item);
+        }
+      }
+
+      if (totalParts === 0) {
+        if (appMode === 'challenge') {
+          const ch = CHALLENGES[currentChallengeIdx];
+          return {
+            badge: `CHALLENGE ${ch ? ch.id : 1}`,
+            badgeClass: 'bg-amber-950/90 text-amber-300 border-amber-500/60',
+            text: ch
+              ? `Empty 5×4 snap-peg board ready for "${ch.title}". Tap or drag parts from the depot onto the grid, or press "Show Me" to watch it auto-assemble!`
+              : 'Empty 5×4 snap-peg board ready. Select parts from the left depot to begin.'
+          };
+        }
+        return {
+          badge: 'SANDBOX READY',
+          badgeClass: 'bg-sky-950/90 text-sky-300 border-sky-500/60',
+          text: 'Empty 5×4 snap-peg board ready. Place a 6V DC Battery and components from the Parts Depot, then press Play / Run!'
+        };
+      }
+
+      if (batteries.length === 0) {
+        return {
+          badge: 'NO POWER',
+          badgeClass: 'bg-slate-800 text-slate-300 border-slate-600',
+          text: `${totalParts} part${totalParts === 1 ? '' : 's'} placed. Add a 6V DC Battery Pack to supply power to your circuit.`
+        };
+      }
+
+      if (!isPlaying) {
+        return {
+          badge: 'EDIT MODE',
+          badgeClass: 'bg-sky-950/90 text-sky-300 border-sky-500/60',
+          text: `${totalParts} part${totalParts === 1 ? '' : 's'} snapped on board. Click placed blocks to rotate, toggle border seams for jumpers, or press Play / Run.`
+        };
+      }
+
+      // Check for burned LED overcurrent
+      const burnedLed = leds.find(l => l.comp.burned);
+      if (burnedLed) {
+        return {
+          badge: 'OVERCURRENT!',
+          badgeClass: 'bg-rose-950 text-rose-300 border-rose-500',
+          text: `Overcurrent blowout at R${burnedLed.r + 1}C${burnedLed.c + 1}! Current exceeded 40 mA—insert a 330Ω Resistor in series and press Stop / Edit to reset.`
+        };
+      }
+
+      // Check for open circuit when battery draws virtually zero current
+      const bat = batteries[0];
+      const batMa = bat.comp.current * 1000;
+      const capStoredV = caps.reduce((m, c) => Math.max(m, Math.abs(c.comp.vCap)), 0);
+
+      if (batMa < 0.25 && capStoredV < 0.4) {
+        const openSw = switches.find(s => !s.comp.closed);
+        const openBtn = buttons.find(b => !b.comp.pressed);
+        if (openSw) {
+          return {
+            badge: 'SWITCH OPEN',
+            badgeClass: 'bg-amber-950 text-amber-300 border-amber-500/60',
+            text: `Circuit is open at Toggle Switch (R${openSw.r + 1}C${openSw.c + 1}). Click the switch on the grid to close the loop!`
+          };
+        }
+        if (openBtn) {
+          return {
+            badge: 'BUTTON READY',
+            badgeClass: 'bg-indigo-950 text-indigo-300 border-indigo-500/60',
+            text: `Circuit waiting at Pushbutton (R${openBtn.r + 1}C${openBtn.c + 1}). Press & hold or click the pushbutton to pulse current!`
+          };
+        }
+        // Trace where current stops from battery (+)
+        const pins = getRotatedPins('battery', bat.comp.rot);
+        const posPin = pins.find(p => p.polarity === 'pos');
+        const dirName = posPin ? EDGE_NAMES[posPin.edge] : 'output';
+        return {
+          badge: 'OPEN CIRCUIT',
+          badgeClass: 'bg-amber-950 text-amber-300 border-amber-500/60',
+          text: `Open loop: current cannot return to Battery (-) at R${bat.r + 1}C${bat.c + 1}. Check that pins face each other from the ${dirName} terminal.`
+        };
+      }
+
+      // Capacitor discharging into LED while switch is open
+      if (caps.length > 0 && batMa < 0.3 && capStoredV >= 0.4) {
+        const litLed = leds.find(l => l.comp.current > 0.001);
+        if (litLed) {
+          return {
+            badge: 'RC DISCHARGE',
+            badgeClass: 'bg-yellow-950 text-yellow-300 border-yellow-500/60',
+            text: `Capacitor discharging (${capStoredV.toFixed(2)}V stored), keeping Red LED glowing at ${(litLed.comp.current * 1000).toFixed(1)} mA!`
+          };
+        }
+      }
+
+      // Active LED telemetry
+      const activeLed = leds.find(l => l.comp.current > 0.0005);
+      if (activeLed) {
+        const ma = activeLed.comp.current * 1000;
+        const potInfo = pots.length > 0 ? ` (Pot wiper at ${Math.round(pots[0].comp.wiper * 100)}%)` : '';
+        return {
+          badge: 'LED ACTIVE',
+          badgeClass: 'bg-emerald-950 text-emerald-300 border-emerald-500/60',
+          text: `Closed circuit! Red LED at R${activeLed.r + 1}C${activeLed.c + 1} is glowing at ${ma.toFixed(1)} mA (${activeLed.comp.voltage.toFixed(2)}V drop)${potInfo}.`
+        };
+      }
+
+      // Active Motor telemetry
+      const activeMotor = motors.find(m => Math.abs(m.comp.current) > 0.005);
+      if (activeMotor) {
+        const rpm = Math.round(Math.abs((activeMotor.comp.omega * 60) / (2 * Math.PI)));
+        return {
+          badge: 'MOTOR SPINNING',
+          badgeClass: 'bg-emerald-950 text-emerald-300 border-emerald-500/60',
+          text: `DC Motor at R${activeMotor.r + 1}C${activeMotor.c + 1} spinning at ${rpm} RPM drawing ${(Math.abs(activeMotor.comp.current) * 1000).toFixed(1)} mA.`
+        };
+      }
+
+      // Active Inductor / Speaker telemetry
+      if (inductors.length > 0 || speakers.length > 0) {
+        const iIndMa = inductors.length > 0 ? (Math.abs(inductors[0].comp.iInd) * 1000).toFixed(1) : '0.0';
+        const iSpkMa = speakers.length > 0 ? (Math.abs(speakers[0].comp.current) * 1000).toFixed(1) : '0.0';
+        return {
+          badge: 'LIVE CIRCUIT',
+          badgeClass: 'bg-cyan-950 text-cyan-300 border-cyan-500/60',
+          text: `Live loop active: Inductor current ${iIndMa} mA, Speaker current ${iSpkMa} mA. Release pushbutton to trigger inductive kick!`
+        };
+      }
+
+      return {
+        badge: 'LIVE CIRCUIT',
+        badgeClass: 'bg-emerald-950 text-emerald-300 border-emerald-500/60',
+        text: `Closed circuit drawing ${batMa.toFixed(1)} mA from 6V supply.`
+      };
+    }
+
+    // ----------------------------------------------------------------------------
+    // 6. FIVE PROGRESSIVE CHALLENGES & VERIFIED "SHOW ME" BLUEPRINTS
+    // ----------------------------------------------------------------------------
+    let challengeRuntime = {
+      rcCharged: false,
+      inductorEnergized: false,
+      inductiveKickSeen: false
+    };
+
+    function resetChallengeRuntime() {
+      challengeRuntime = {
+        rcCharged: false,
+        inductorEnergized: false,
+        inductiveKickSeen: false
+      };
+    }
+
+    const CHALLENGES = [
+      {
+        id: 1,
+        title: 'Challenge 1 — First Light',
+        targetText: 'Target: 5–25 mA Red LED',
+        desc: 'Build a closed loop with the 6V DC Battery and 330Ω Resistor so the Red LED glows safely between 5 mA and 25 mA.',
+        checkSolved() {
+          for (let r = 0; r < GRID_ROWS; r++) {
+            for (let c = 0; c < GRID_COLS; c++) {
+              const comp = grid[r][c];
+              if (comp && comp.type === 'led_red' && !comp.burned) {
+                const ma = comp.current * 1000;
+                if (ma >= 5.0 && ma <= 25.0) {
+                  return `Red LED glowing safely at ${ma.toFixed(1)} mA!`;
+                }
+              }
+            }
+          }
+          return null;
+        },
+        // Verified 2x3 closed loop (Rows 1-3, Cols 1-3):
+        // Bat(2,1) rot=1 (+Top, -Bot) -> Corner(1,1) rot=0 -> 330R(1,2) rot=0 -> Corner(1,3) rot=1
+        // -> LED(2,3) rot=1 (+Top, -Bot) -> Corner(3,3) rot=2 -> Wire(3,2) rot=0 -> Corner(3,1) rot=3
+        blueprint: [
+          { type: 'battery', r: 2, c: 1, rot: 1, note: 'Placing 6V DC Battery (+ Top, - Bottom) at R3C2...' },
+          { type: 'wire_corner', r: 1, c: 1, rot: 0, note: 'Snapping Corner Wire at R2C2 to route positive voltage right...' },
+          { type: 'resistor_330', r: 1, c: 2, rot: 0, note: 'Adding 330Ω Resistor at R2C3 to limit LED current to ~11.4 mA...' },
+          { type: 'wire_corner', r: 1, c: 3, rot: 1, note: 'Snapping Corner Wire at R2C4 to turn downward...' },
+          { type: 'led_red', r: 2, c: 3, rot: 1, note: 'Placing Red LED at R3C4 with Anode (+) facing Top...' },
+          { type: 'wire_corner', r: 3, c: 3, rot: 2, note: 'Snapping Corner Wire at R4C4 for the negative return path...' },
+          { type: 'wire_straight', r: 3, c: 2, rot: 0, note: 'Bridging R4C3 with a Straight Wire...' },
+          { type: 'wire_corner', r: 3, c: 1, rot: 3, note: 'Completing the return loop into Battery (-) at R4C2!' }
+        ],
+        postPlayActions: []
+      },
+      {
+        id: 2,
+        title: 'Challenge 2 — Switched Motor Control',
+        targetText: 'Target: Switch + Motor > 15 mA',
+        desc: 'Wire the DC Motor in series with a Toggle Switch and 6V Battery, then flip the switch closed to spin the fan (> 15 mA).',
+        checkSolved() {
+          let hasClosedSwitch = false;
+          let activeMotor = null;
+          for (let r = 0; r < GRID_ROWS; r++) {
+            for (let c = 0; c < GRID_COLS; c++) {
+              const comp = grid[r][c];
+              if (!comp) continue;
+              if (comp.type === 'switch_toggle' && comp.closed) hasClosedSwitch = true;
+              if (comp.type === 'motor' && Math.abs(comp.current) * 1000 > 15.0) activeMotor = comp;
+            }
+          }
+          if (hasClosedSwitch && activeMotor) {
+            const rpm = Math.round(Math.abs((activeMotor.omega * 60) / (2 * Math.PI)));
+            return `Toggle switch closed! DC Motor running at ${(Math.abs(activeMotor.current) * 1000).toFixed(0)} mA (${rpm} RPM).`;
+          }
+          return null;
+        },
+        blueprint: [
+          { type: 'battery', r: 2, c: 1, rot: 1, note: 'Placing 6V DC Battery at R3C2...' },
+          { type: 'wire_corner', r: 1, c: 1, rot: 0, note: 'Routing positive rail via Corner Wire at R2C2...' },
+          { type: 'switch_toggle', r: 1, c: 2, rot: 0, note: 'Installing Toggle Switch at R2C3 to control motor power...' },
+          { type: 'wire_corner', r: 1, c: 3, rot: 1, note: 'Turning downward at R2C4...' },
+          { type: 'motor', r: 2, c: 3, rot: 1, note: 'Snapping DC Motor at R3C4...' },
+          { type: 'wire_corner', r: 3, c: 3, rot: 2, note: 'Routing ground return at R4C4...' },
+          { type: 'wire_straight', r: 3, c: 2, rot: 0, note: 'Adding Straight Wire at R4C3...' },
+          { type: 'wire_corner', r: 3, c: 1, rot: 3, note: 'Closing ground loop back to Battery (-) at R4C2...' }
+        ],
+        postPlayActions: [
+          { delayMs: 650, action: () => {
+            const sw = grid[1][2];
+            if (sw) {
+              sw.closed = true;
+              audio.playSwitchClick(true);
+            }
+          }, note: 'Flipping Toggle Switch CLOSED to energize the DC Motor!' }
+        ]
+      },
+      {
+        id: 3,
+        title: 'Challenge 3 — Precision Dimmer',
+        targetText: 'Target: Pot + LED 8–16 mA',
+        desc: 'Use the 3-terminal 5kΩ Potentiometer (End A & Wiper W) to tune Red LED current precisely into the 8–16 mA window.',
+        checkSolved() {
+          let hasPot = false;
+          let targetLed = null;
+          for (let r = 0; r < GRID_ROWS; r++) {
+            for (let c = 0; c < GRID_COLS; c++) {
+              const comp = grid[r][c];
+              if (!comp) continue;
+              if (comp.type === 'potentiometer') hasPot = true;
+              if (comp.type === 'led_red' && !comp.burned) {
+                const ma = comp.current * 1000;
+                if (ma >= 8.0 && ma <= 16.0) targetLed = comp;
+              }
+            }
+          }
+          if (hasPot && targetLed) {
+            return `Precision brightness achieved! Red LED tuned to ${(targetLed.current * 1000).toFixed(1)} mA.`;
+          }
+          return null;
+        },
+        // Verified 3-terminal potentiometer rheostat path:
+        // Bat(2,1) rot=1 -> Corner(1,1) rot=0 -> Pot(1,2) rot=0 (End A=Left, Wiper=Bottom)
+        // -> Corner(2,2) rot=3 (Top & Right) -> LED(2,3) rot=0 (Left+ & Right-) -> Corner(2,4) rot=1
+        // -> Corner(3,4) rot=2 -> Straight(3,3) rot=0 -> Straight(3,2) rot=0 -> Corner(3,1) rot=3
+        blueprint: [
+          { type: 'battery', r: 2, c: 1, rot: 1, note: 'Placing 6V DC Battery at R3C2...' },
+          { type: 'wire_corner', r: 1, c: 1, rot: 0, note: 'Snapping Corner Wire at R2C2...' },
+          { type: 'potentiometer', r: 1, c: 2, rot: 0, wiper: 0.5, note: 'Placing 5kΩ Potentiometer at R2C3 (End A Left, Wiper Bottom)...' },
+          { type: 'wire_corner', r: 2, c: 2, rot: 3, note: 'Connecting Potentiometer Wiper (Bottom) rightward at R3C3...' },
+          { type: 'led_red', r: 2, c: 3, rot: 0, note: 'Placing Red LED at R3C4 (Anode Left, Cathode Right)...' },
+          { type: 'wire_corner', r: 2, c: 4, rot: 1, note: 'Turning downward at R3C5...' },
+          { type: 'wire_corner', r: 3, c: 4, rot: 2, note: 'Routing return wire at R4C5...' },
+          { type: 'wire_straight', r: 3, c: 3, rot: 0, note: 'Adding Straight Wire at R4C4...' },
+          { type: 'wire_straight', r: 3, c: 2, rot: 0, note: 'Adding Straight Wire at R4C3...' },
+          { type: 'wire_corner', r: 3, c: 1, rot: 3, note: 'Completing loop back to Battery (-) at R4C2!' }
+        ],
+        postPlayActions: [
+          { delayMs: 600, action: () => {
+            const pot = grid[1][2];
+            if (pot) {
+              pot.wiper = 0.22;
+              audio.playSnap(600);
+            }
+          }, note: 'Sliding Potentiometer wiper toward End A (reducing resistance)...' },
+          { delayMs: 550, action: () => {
+            const pot = grid[1][2];
+            if (pot) {
+              pot.wiper = 0.065;
+              audio.playSnap(720);
+            }
+          }, note: 'Fine-tuning Potentiometer wiper to 6.5% (~325Ω) for ~11.5 mA LED current!' }
+        ]
+      },
+      {
+        id: 4,
+        title: 'Challenge 4 — RC Fade-Out Memory',
+        targetText: 'Target: Charge Cap, Open Switch, LED > 2 mA',
+        desc: 'Close the Toggle Switch to charge the 1000µF Capacitor, then flip the switch OPEN so the capacitor keeps the Red LED glowing (> 2 mA).',
+        checkSolved() {
+          let sw = null, cap = null, led = null;
+          for (let r = 0; r < GRID_ROWS; r++) {
+            for (let c = 0; c < GRID_COLS; c++) {
+              const comp = grid[r][c];
+              if (!comp) continue;
+              if (comp.type === 'switch_toggle') sw = comp;
+              if (comp.type === 'capacitor') cap = comp;
+              if (comp.type === 'led_red' && !comp.burned) led = comp;
+            }
+          }
+          if (!sw || !cap || !led) return null;
+          if (sw.closed && Math.abs(cap.vCap) > 4.2) {
+            challengeRuntime.rcCharged = true;
+          }
+          if (challengeRuntime.rcCharged && !sw.closed && led.current * 1000 > 2.0) {
+            return `RC memory verified! Capacitor (${Math.abs(cap.vCap).toFixed(2)}V) is powering Red LED at ${(led.current * 1000).toFixed(1)} mA with switch OPEN!`;
+          }
+          return null;
+        },
+        // Verified parallel RC tank with T-Junctions:
+        // Bat(2,0) rot=1 -> Corner(1,0) rot=0 -> ToggleSW(1,1) rot=0 -> Tee(1,2) rot=0
+        // Cap(2,2) rot=1 between Tee(1,2) Bottom and Tee(3,2) Top
+        // 330R(1,3) rot=0 -> Corner(1,4) rot=1 -> LED(2,4) rot=1 -> Corner(3,4) rot=2
+        // Ground bus: Straight(3,3) rot=0 -> Tee(3,2) rot=2 -> Straight(3,1) rot=0 -> Corner(3,0) rot=3
+        blueprint: [
+          { type: 'battery', r: 2, c: 0, rot: 1, note: 'Placing 6V DC Battery at R3C1...' },
+          { type: 'wire_corner', r: 1, c: 0, rot: 0, note: 'Routing positive feed via Corner Wire at R2C1...' },
+          { type: 'switch_toggle', r: 1, c: 1, rot: 0, note: 'Placing Toggle Switch at R2C2 to isolate battery after charging...' },
+          { type: 'wire_tee', r: 1, c: 2, rot: 0, note: 'Adding 3-Way T-Junction at R2C3 to split into Capacitor & LED branches...' },
+          { type: 'capacitor', r: 2, c: 2, rot: 1, note: 'Snapping 1000µF Capacitor (+ Top, - Bottom) at R3C3...' },
+          { type: 'resistor_330', r: 1, c: 3, rot: 0, note: 'Adding 330Ω Resistor at R2C4 for controlled LED discharge...' },
+          { type: 'wire_corner', r: 1, c: 4, rot: 1, note: 'Turning downward at R2C5...' },
+          { type: 'led_red', r: 2, c: 4, rot: 1, note: 'Placing Red LED (+ Top, - Bottom) at R3C5...' },
+          { type: 'wire_corner', r: 3, c: 4, rot: 2, note: 'Routing ground return at R4C5...' },
+          { type: 'wire_straight', r: 3, c: 3, rot: 0, note: 'Adding Straight Wire at R4C4...' },
+          { type: 'wire_tee', r: 3, c: 2, rot: 2, note: 'Adding inverted T-Junction at R4C3 for Capacitor negative return...' },
+          { type: 'wire_straight', r: 3, c: 1, rot: 0, note: 'Adding Straight Wire at R4C2...' },
+          { type: 'wire_corner', r: 3, c: 0, rot: 3, note: 'Completing ground bus into Battery (-) at R4C1!' }
+        ],
+        postPlayActions: [
+          { delayMs: 500, action: () => {
+            const sw = grid[1][1];
+            if (sw) {
+              sw.closed = true;
+              audio.playSwitchClick(true);
+            }
+          }, note: 'Closing Toggle Switch to charge the 1000µF Capacitor to 6V...' },
+          { delayMs: 1300, action: () => {
+            const sw = grid[1][1];
+            if (sw) {
+              sw.closed = false;
+              audio.playSwitchClick(false);
+            }
+          }, note: 'Opening Toggle Switch! Watch the stored capacitor charge keep the Red LED glowing!' }
+        ]
+      },
+      {
+        id: 5,
+        title: 'Challenge 5 — Inductive Speaker Kick',
+        targetText: 'Target: Pulse Inductor + Speaker',
+        desc: 'Wire the Momentary Pushbutton in series with a parallel 500mH Inductor & Speaker, then press and release the button for an inductive kick!',
+        checkSolved() {
+          let btn = null, ind = null, spk = null;
+          for (let r = 0; r < GRID_ROWS; r++) {
+            for (let c = 0; c < GRID_COLS; c++) {
+              const comp = grid[r][c];
+              if (!comp) continue;
+              if (comp.type === 'switch_push') btn = comp;
+              if (comp.type === 'inductor') ind = comp;
+              if (comp.type === 'speaker') spk = comp;
+            }
+          }
+          if (!btn || !ind || !spk) return null;
+          if (btn.pressed && Math.abs(ind.iInd) > 0.12) {
+            challengeRuntime.inductorEnergized = true;
+          }
+          if (challengeRuntime.inductorEnergized && !btn.pressed && (Math.abs(spk.current) * 1000 > 15.0 || spk.soundRipple > 0.15)) {
+            challengeRuntime.inductiveKickSeen = true;
+          }
+          if (challengeRuntime.inductiveKickSeen) {
+            return 'Inductive kick triggered! Collapsing magnetic field drove a transient pulse into the Speaker!';
+          }
+          return null;
+        },
+        blueprint: [
+          { type: 'battery', r: 2, c: 0, rot: 1, note: 'Placing 6V DC Battery at R3C1...' },
+          { type: 'wire_corner', r: 1, c: 0, rot: 0, note: 'Snapping Corner Wire at R2C1...' },
+          { type: 'switch_push', r: 1, c: 1, rot: 0, note: 'Placing Momentary Pushbutton at R2C2...' },
+          { type: 'wire_tee', r: 1, c: 2, rot: 0, note: 'Placing T-Junction at R2C3 to parallel Inductor & Speaker...' },
+          { type: 'inductor', r: 2, c: 2, rot: 1, note: 'Snapping 500mH Inductor Coil at R3C3...' },
+          { type: 'wire_corner', r: 1, c: 3, rot: 1, note: 'Routing parallel branch to Speaker at R2C4...' },
+          { type: 'speaker', r: 2, c: 3, rot: 1, note: 'Snapping 32Ω Speaker at R3C4...' },
+          { type: 'wire_corner', r: 3, c: 3, rot: 2, note: 'Routing Speaker return at R4C4...' },
+          { type: 'wire_tee', r: 3, c: 2, rot: 2, note: 'Joining Inductor & Speaker returns via T-Junction at R4C3...' },
+          { type: 'wire_straight', r: 3, c: 1, rot: 0, note: 'Adding Straight Wire at R4C2...' },
+          { type: 'wire_corner', r: 3, c: 0, rot: 3, note: 'Completing loop back to Battery (-) at R4C1!' }
+        ],
+        postPlayActions: [
+          { delayMs: 500, action: () => {
+            const btn = grid[1][1];
+            if (btn) {
+              btn.pressed = true;
+              audio.playSwitchClick(true);
+            }
+          }, note: 'Holding Pushbutton CLOSED to energize the 500mH Inductor magnetic field...' },
+          { delayMs: 1100, action: () => {
+            const btn = grid[1][1];
+            if (btn) {
+              btn.pressed = false;
+              audio.playSwitchClick(false);
+            }
+          }, note: 'Releasing Pushbutton! Inductor magnetic field collapses into the Speaker!' }
+        ]
+      }
+    ];
+
+    // ----------------------------------------------------------------------------
+    // 7. APPLICATION STATE & NON-BLOCKING DISMISSABLE VICTORY CARD
+    // ----------------------------------------------------------------------------
+    let appMode = 'challenge'; // Default: Challenges Mode
+    let currentChallengeIdx = 0;
+    let completedChallenges = new Set();
+    let victoryDismissedForCurrentRun = false;
+
+    let isPlaying = false;
+    let selectedPartType = 'battery';
+    let placementRot = 0;
+    let activeTool = 'place'; // 'place' | 'erase'
+    let isProbeMode = false;
+
+    let hoveredCell = null; // { r, c }
+    let hoveredBorder = null; // { isHorizontal, r, c }
+    let activePotPopupCell = null; // { r, c } currently open in #potPopup
+    let activePushBtn = null; // { r, c }
+    let demoAbortController = null;
+
+    function formatOhms(ohms) {
+      if (ohms >= 1000) {
+        return `${(ohms / 1000).toFixed(2)} kΩ`;
+      }
+      return `${Math.round(ohms)} Ω`;
+    }
+
+    function updatePotPopupReadout() {
+      const popup = document.getElementById('potPopup');
+      if (!popup || !activePotPopupCell) return;
+      const { r, c } = activePotPopupCell;
+      const comp = grid[r] && grid[r][c];
+      if (!comp || comp.type !== 'potentiometer') {
+        closePotPopup();
+        return;
+      }
+
+      const w = Math.max(0.01, Math.min(0.99, comp.wiper ?? 0.5));
+      const pct = Math.round(w * 100);
+      const rAW = Math.max(15, w * 5000);
+      const rWB = Math.max(15, (1 - w) * 5000);
+
+      document.getElementById('potPopupTitle').textContent = `5kΩ Potentiometer (R${r + 1}, C${c + 1})`;
+      const slider = document.getElementById('potPopupSlider');
+      if (slider && document.activeElement !== slider) {
+        slider.value = String(pct);
+      }
+      document.getElementById('potPopupPercent').textContent = `${pct}%`;
+      document.getElementById('potPopupRAW').textContent = formatOhms(rAW);
+      document.getElementById('potPopupRWB').textContent = formatOhms(rWB);
+    }
+
+    function openPotPopup(r, c) {
+      const comp = grid[r] && grid[r][c];
+      if (!comp || comp.type !== 'potentiometer') return;
+      activePotPopupCell = { r, c };
+      const popup = document.getElementById('potPopup');
+      if (!popup || !boardStage || !canvas) return;
+
+      const pct = Math.round(Math.max(1, Math.min(99, (comp.wiper ?? 0.5) * 100)));
+      const slider = document.getElementById('potPopupSlider');
+      if (slider) slider.value = String(pct);
+      updatePotPopupReadout();
+
+      popup.classList.remove('hidden');
+
+      // Position anchored near the potentiometer cell, clamped inside #boardStage
+      const stageRect = boardStage.getBoundingClientRect();
+      const canvasRect = canvas.getBoundingClientRect();
+      const cellRect = getCellRect(r, c);
+
+      const cellCenterX = (canvasRect.left - stageRect.left) + cellRect.cx;
+      const cellTopY = (canvasRect.top - stageRect.top) + cellRect.y;
+      const cellBottomY = cellTopY + cellRect.h;
+
+      const popW = popup.offsetWidth || 300;
+      const popH = popup.offsetHeight || 175;
+
+      let left = cellCenterX - popW / 2;
+      left = Math.max(10, Math.min(stageRect.width - popW - 10, left));
+
+      let top = cellTopY - popH - 10;
+      if (top < 10) {
+        top = Math.min(stageRect.height - popH - 10, cellBottomY + 10);
+      }
+      top = Math.max(10, top);
+
+      popup.style.left = `${Math.round(left)}px`;
+      popup.style.top = `${Math.round(top)}px`;
+    }
+
+    function closePotPopup() {
+      activePotPopupCell = null;
+      const popup = document.getElementById('potPopup');
+      if (popup) popup.classList.add('hidden');
+    }
+
+    function dismissVictoryBanner() {
+      const banner = document.getElementById('victoryBanner');
+      if (banner && !banner.classList.contains('hidden')) {
+        banner.classList.add('hidden');
+        victoryDismissedForCurrentRun = true;
+      }
+    }
+
+    function showVictoryBanner(messageText) {
+      const banner = document.getElementById('victoryBanner');
+      const vText = document.getElementById('victoryText');
+      if (!banner || !vText) return;
+      vText.textContent = messageText;
+      banner.classList.remove('hidden');
+    }
+
+    // ----------------------------------------------------------------------------
+    // 8. RESPONSIVE 5x4 SNAP-PEG CANVAS RENDERING ENGINE
+    // ----------------------------------------------------------------------------
+    const canvas = document.getElementById('circuitCanvas');
+    const ctx = canvas.getContext('2d');
+    const boardStage = document.getElementById('boardStage');
+
+    let boardMetrics = {
+      width: 640,
+      height: 512,
+      padX: 38,
+      padY: 34,
+      cellSize: 112,
+      gridX: 38,
+      gridY: 34,
+      gridW: 560,
+      gridH: 448
+    };
+
+    function resizeCanvas() {
+      if (!boardStage || !canvas) return;
+      const wrapper = document.getElementById('canvasWrapper') || boardStage;
+      const rect = wrapper.getBoundingClientRect();
+
+      // Use the full available width of the assembly pane to size the 5 columns edge-to-edge
+      const availW = Math.max(320, Math.floor(rect.width || boardStage.clientWidth || window.innerWidth * 0.74));
+
+      const labelMarginX = 24;
+      const labelMarginY = 22;
+
+      // Square cell size driven strictly by full width of the assembly area
+      const cellSize = Math.max(56, Math.floor((availW - labelMarginX * 2) / GRID_COLS));
+
+      const gridW = cellSize * GRID_COLS;
+      const gridH = cellSize * GRID_ROWS;
+      const totalW = gridW + labelMarginX * 2;
+      const totalH = gridH + labelMarginY * 2;
+
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.round(totalW * dpr);
+      canvas.height = Math.round(totalH * dpr);
+      canvas.style.width = `${totalW}px`;
+      canvas.style.height = `${totalH}px`;
+
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      boardMetrics = {
+        width: totalW,
+        height: totalH,
+        padX: labelMarginX,
+        padY: labelMarginY,
+        cellSize,
+        gridX: labelMarginX,
+        gridY: labelMarginY,
+        gridW,
+        gridH
+      };
+    }
+
+    function getCellRect(r, c) {
+      const { gridX, gridY, cellSize } = boardMetrics;
+      return {
+        x: gridX + c * cellSize,
+        y: gridY + r * cellSize,
+        w: cellSize,
+        h: cellSize,
+        cx: gridX + (c + 0.5) * cellSize,
+        cy: gridY + (r + 0.5) * cellSize
+      };
+    }
+
+    function getPinCoordinates(r, c, edge) {
+      const rect = getCellRect(r, c);
+      const inset = rect.w * 0.12;
+      switch (edge) {
+        case 0: return { x: rect.cx, y: rect.y + inset };          // Top
+        case 1: return { x: rect.x + rect.w - inset, y: rect.cy }; // Right
+        case 2: return { x: rect.cx, y: rect.y + rect.h - inset }; // Bottom
+        case 3: return { x: rect.x + inset, y: rect.cy };          // Left
+        default: return { x: rect.cx, y: rect.cy };
+      }
+    }
+
+    function spawnSmokeBurst(r, c) {
+      const { cx, cy } = getCellRect(r, c);
+      for (let i = 0; i < 18; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 15 + Math.random() * 45;
+        particles.push({
+          kind: 'smoke',
+          x: cx + (Math.random() - 0.5) * 14,
+          y: cy + (Math.random() - 0.5) * 14,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed - 22,
+          life: 1.0,
+          size: 5 + Math.random() * 9
+        });
+      }
+    }
+
+    function updateAndDrawParticles(dt) {
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.life -= dt * 0.85;
+        if (p.life <= 0) {
+          particles.splice(i, 1);
+          continue;
+        }
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, p.life * 0.75);
+        ctx.fillStyle = '#94a3b8';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size * (1.4 - p.life * 0.4), 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    function drawRoundRectOn(c, x, y, w, h, r) {
+      const radius = Math.max(0, Math.min(r, w / 2, h / 2));
+      c.beginPath();
+      c.moveTo(x + radius, y);
+      c.arcTo(x + w, y, x + w, y + h, radius);
+      c.arcTo(x + w, y + h, x, y + h, radius);
+      c.arcTo(x, y + h, x, y, radius);
+      c.arcTo(x, y, x + w, y, radius);
+      c.closePath();
+    }
+
+    function drawRoundRect(x, y, w, h, r) {
+      drawRoundRectOn(ctx, x, y, w, h, r);
+    }
+
+    function getRectPinCoords(rect, edge) {
+      const insetX = rect.w * 0.13;
+      const insetY = rect.h * 0.13;
+      switch (edge) {
+        case 0: return { x: rect.cx, y: rect.y + insetY };          // Top (N)
+        case 1: return { x: rect.x + rect.w - insetX, y: rect.cy }; // Right (E)
+        case 2: return { x: rect.cx, y: rect.y + rect.h - insetY }; // Bottom (S)
+        case 3: return { x: rect.x + insetX, y: rect.cy };          // Left (W)
+        default: return { x: rect.cx, y: rect.cy };
+      }
+    }
+
+    function drawSnapPegOn(c, x, y, radius, isConnected = false, polarity = null) {
+      c.save();
+      // Outer metallic snap ring
+      c.beginPath();
+      c.arc(x, y, radius, 0, Math.PI * 2);
+      c.fillStyle = isConnected ? '#fbbf24' : '#cbd5e1';
+      c.fill();
+      c.lineWidth = Math.max(1.1, radius * 0.24);
+      c.strokeStyle = isConnected ? '#b45309' : '#475569';
+      c.stroke();
+
+      // Inner metallic / color-coded stud cap
+      c.beginPath();
+      c.arc(x, y, radius * 0.54, 0, Math.PI * 2);
+      c.fillStyle = polarity === 'pos'
+        ? '#ef4444'
+        : polarity === 'neg'
+          ? '#3b82f6'
+          : (isConnected ? '#fef08a' : '#94a3b8');
+      c.fill();
+      c.restore();
+    }
+
+    /**
+     * Shared high-DPI Snap-Circuit module renderer used by both the 5x4 assembly
+     * grid and every miniature <canvas> thumbnail in the left Parts Depot.
+     */
+    function drawPartModule(c, partType, rot, state, rect, options = {}) {
+      const { isGhost = false, isDepotPreview = false } = options;
+      const { x, y, w, h, cx, cy } = rect;
+      const minDim = Math.min(w, h);
+      const padX = w * (isDepotPreview ? 0.05 : 0.095);
+      const padY = h * (isDepotPreview ? 0.05 : 0.095);
+      const bx = x + padX;
+      const by = y + padY;
+      const bw = w - padX * 2;
+      const bh = h - padY * 2;
+      const def = PART_MAP[partType];
+      if (!def) return;
+
+      const compState = state || {
+        closed: false,
+        pressed: false,
+        wiper: 0.5,
+        vCap: 0,
+        iInd: 0,
+        omega: 0,
+        rotorAngle: 0.35,
+        burned: false,
+        current: 0,
+        soundRipple: 0
+      };
+
+      c.save();
+      if (isGhost) {
+        c.globalAlpha = 0.42;
+      }
+
+      const pins = getRotatedPins(partType, rot);
+
+      // 1. Molded Snap-Circuit Housing vs Blue Snap-Bridge Conductor Strips
+      if (!isWireType(partType)) {
+        drawRoundRectOn(c, bx, by, bw, bh, minDim * 0.16);
+        const grad = c.createLinearGradient(bx, by, bx, by + bh);
+        grad.addColorStop(0, '#1e293b');
+        grad.addColorStop(1, '#0f172a');
+        c.fillStyle = grad;
+        c.fill();
+
+        c.lineWidth = isDepotPreview ? 1.6 : (isGhost ? 2 : 2.2);
+        if (isGhost) c.setLineDash([5, 4]);
+        c.strokeStyle = isGhost ? '#38bdf8' : def.color;
+        c.stroke();
+        c.setLineDash([]);
+
+        // Internal bus traces from center to active terminal studs
+        c.lineCap = 'round';
+        c.lineWidth = Math.max(2.6, minDim * 0.068);
+        c.strokeStyle = '#64748b';
+        pins.forEach(pin => {
+          const pt = getRectPinCoords(rect, pin.edge);
+          c.beginPath();
+          c.moveTo(cx, cy);
+          c.lineTo(pt.x, pt.y);
+          c.stroke();
+        });
+      } else {
+        // Authentic glossy blue Snap-Circuit plastic wire strips
+        c.lineCap = 'round';
+        c.lineWidth = Math.max(6, minDim * 0.17);
+        c.strokeStyle = '#0369a1';
+        pins.forEach(pin => {
+          const pt = getRectPinCoords(rect, pin.edge);
+          c.beginPath();
+          c.moveTo(cx, cy);
+          c.lineTo(pt.x, pt.y);
+          c.stroke();
+        });
+
+        c.lineWidth = Math.max(3.5, minDim * 0.105);
+        c.strokeStyle = '#38bdf8';
+        pins.forEach(pin => {
+          const pt = getRectPinCoords(rect, pin.edge);
+          c.beginPath();
+          c.moveTo(cx, cy);
+          c.lineTo(pt.x, pt.y);
+          c.stroke();
+        });
+
+        // Raised central hub
+        c.beginPath();
+        c.arc(cx, cy, Math.max(4, minDim * 0.115), 0, Math.PI * 2);
+        c.fillStyle = '#0284c7';
+        c.fill();
+        c.lineWidth = 1.2;
+        c.strokeStyle = '#7dd3fc';
+        c.stroke();
+      }
+
+      // 2. Detailed Electronic Component Artwork
+      const bodyR = minDim * 0.25;
+      switch (partType) {
+        case 'battery': {
+          // Orientation-aware 6V battery body: Port A (+) is local Left, Port B (−) is local Right
+          const packW = bodyR * 2.38;
+          const packH = bodyR * 1.68;
+          c.save();
+          c.translate(cx, cy);
+          c.rotate(rot * (Math.PI / 2));
+
+          // Base housing
+          drawRoundRectOn(c, -packW / 2, -packH / 2, packW, packH, 5);
+          c.fillStyle = '#0f172a';
+          c.fill();
+
+          // Positive (+) Port A half (local Left): warm copper/crimson cap
+          drawRoundRectOn(c, -packW / 2 + 1, -packH / 2 + 1, packW * 0.52, packH - 2, 4);
+          const posGrad = c.createLinearGradient(-packW / 2, -packH / 2, 0, packH / 2);
+          posGrad.addColorStop(0, '#ef4444');
+          posGrad.addColorStop(1, '#b91c1c');
+          c.fillStyle = posGrad;
+          c.fill();
+
+          // Negative (−) Port B half (local Right): dark slate cell band
+          drawRoundRectOn(c, 0, -packH / 2 + 1, packW * 0.5 - 1, packH - 2, 4);
+          const negGrad = c.createLinearGradient(0, -packH / 2, packW / 2, packH / 2);
+          negGrad.addColorStop(0, '#1e293b');
+          negGrad.addColorStop(1, '#090d16');
+          c.fillStyle = negGrad;
+          c.fill();
+
+          // Twin cell horizontal seam & outer border
+          c.strokeStyle = 'rgba(255,255,255,0.22)';
+          c.lineWidth = 1;
+          c.beginPath();
+          c.moveTo(-packW * 0.44, 0);
+          c.lineTo(packW * 0.44, 0);
+          c.stroke();
+
+          drawRoundRectOn(c, -packW / 2, -packH / 2, packW, packH, 5);
+          c.strokeStyle = '#fca5a5';
+          c.lineWidth = 1.5;
+          c.stroke();
+          c.restore();
+
+          // Upright centered 6V DC badge so it never overlaps the + and − terminal badges
+          const lblW = isDepotPreview ? 24 : Math.max(30, minDim * 0.32);
+          const lblH = isDepotPreview ? 13 : Math.max(15, minDim * 0.17);
+          drawRoundRectOn(c, cx - lblW / 2, cy - lblH / 2, lblW, lblH, 4);
+          c.fillStyle = 'rgba(15, 23, 42, 0.92)';
+          c.fill();
+          c.strokeStyle = 'rgba(252, 165, 165, 0.7)';
+          c.lineWidth = 1;
+          c.stroke();
+
+          c.fillStyle = '#ffffff';
+          c.font = `800 ${isDepotPreview ? 9 : Math.max(9, Math.round(minDim * 0.115))}px Inter, sans-serif`;
+          c.textAlign = 'center';
+          c.textBaseline = 'middle';
+          c.fillText(isDepotPreview ? '6V' : '6V DC', cx, cy + 0.5);
+          break;
+        }
+        case 'resistor_330':
+        case 'resistor_1k': {
+          // Ceramic tan axial resistor body with authentic EIA 4-band color codes
+          const resW = bodyR * 2.35;
+          const resH = bodyR * 1.08;
+          drawRoundRectOn(c, cx - resW / 2, cy - resH / 2, resW, resH, resH * 0.42);
+          c.fillStyle = '#f3d5a5';
+          c.fill();
+          c.strokeStyle = '#b45309';
+          c.lineWidth = 1.3;
+          c.stroke();
+
+          // Authentic 4-band color stripes:
+          // 330Ω = Orange, Orange, Brown, Gold
+          // 1kΩ  = Brown, Black, Red, Gold
+          const bands = partType === 'resistor_330'
+            ? ['#f97316', '#f97316', '#78350f', '#eab308']
+            : ['#78350f', '#0f172a', '#dc2626', '#eab308'];
+
+          const bandW = resW * 0.11;
+          const offsets = [-0.31, -0.11, 0.09, 0.30];
+          bands.forEach((col, idx) => {
+            c.fillStyle = col;
+            c.fillRect(cx + resW * offsets[idx] - bandW / 2, cy - resH * 0.46, bandW, resH * 0.92);
+          });
+          break;
+        }
+        case 'led_red': {
+          const ma = (!isDepotPreview && isPlaying) ? Math.max(0, compState.current * 1000) : 0;
+          const brightness = compState.burned ? 0 : (isDepotPreview ? 0.32 : Math.min(1, ma / 15.0));
+
+          if (brightness > 0.02) {
+            const glow = c.createRadialGradient(cx, cy, 2, cx, cy, minDim * 0.46);
+            glow.addColorStop(0, `rgba(255, 80, 100, ${0.85 * brightness})`);
+            glow.addColorStop(0.55, `rgba(244, 63, 94, ${0.42 * brightness})`);
+            glow.addColorStop(1, 'rgba(244, 63, 94, 0)');
+            c.fillStyle = glow;
+            c.beginPath();
+            c.arc(cx, cy, minDim * 0.46, 0, Math.PI * 2);
+            c.fill();
+          }
+
+          // Outer LED rim with flat cathode edge on right
+          c.beginPath();
+          c.arc(cx, cy, bodyR * 0.98, 0, Math.PI * 2);
+          c.fillStyle = compState.burned
+            ? '#334155'
+            : (isDepotPreview
+              ? '#e11d48'
+              : (brightness > 0.05
+                ? `rgb(${180 + Math.round(75 * brightness)}, ${25 + Math.round(60 * brightness)}, ${45 + Math.round(60 * brightness)})`
+                : '#9f1239'));
+          c.fill();
+          c.lineWidth = 1.8;
+          c.strokeStyle = compState.burned ? '#64748b' : '#fda4af';
+          c.stroke();
+
+          // Specular dome highlight
+          if (!compState.burned) {
+            c.beginPath();
+            c.arc(cx - bodyR * 0.28, cy - bodyR * 0.28, bodyR * 0.26, 0, Math.PI * 2);
+            c.fillStyle = 'rgba(255, 255, 255, 0.45)';
+            c.fill();
+          } else {
+            c.strokeStyle = '#ef4444';
+            c.lineWidth = 2.4;
+            c.beginPath();
+            c.moveTo(cx - 7, cy - 7);
+            c.lineTo(cx + 7, cy + 7);
+            c.moveTo(cx + 7, cy - 7);
+            c.lineTo(cx - 7, cy + 7);
+            c.stroke();
+          }
+          break;
+        }
+        case 'switch_toggle': {
+          const swW = bodyR * 2.1;
+          const swH = bodyR * 1.45;
+          drawRoundRectOn(c, cx - swW / 2, cy - swH / 2, swW, swH, 5);
+          c.fillStyle = compState.closed ? '#0d9488' : '#334155';
+          c.fill();
+          c.strokeStyle = compState.closed ? '#5eead4' : '#94a3b8';
+          c.lineWidth = 1.5;
+          c.stroke();
+
+          // Pivot contacts & toggle lever
+          c.fillStyle = '#cbd5e1';
+          c.beginPath();
+          c.arc(cx - swW * 0.26, cy, 2.5, 0, Math.PI * 2);
+          c.arc(cx + swW * 0.26, cy, 2.5, 0, Math.PI * 2);
+          c.fill();
+
+          c.strokeStyle = '#f8fafc';
+          c.lineWidth = Math.max(2.4, minDim * 0.045);
+          c.lineCap = 'round';
+          c.beginPath();
+          c.moveTo(cx - swW * 0.26, cy);
+          if (compState.closed) {
+            c.lineTo(cx + swW * 0.26, cy);
+          } else {
+            c.lineTo(cx + swW * 0.22, cy - swH * 0.42);
+          }
+          c.stroke();
+          break;
+        }
+        case 'switch_push': {
+          c.beginPath();
+          c.arc(cx, cy, bodyR * 0.98, 0, Math.PI * 2);
+          c.fillStyle = compState.pressed ? '#4f46e5' : '#312e81';
+          c.fill();
+          c.strokeStyle = '#a5b4fc';
+          c.lineWidth = 1.8;
+          c.stroke();
+
+          // Red/amber tactile plunger cap
+          c.beginPath();
+          c.arc(cx, cy, bodyR * (compState.pressed ? 0.54 : 0.66), 0, Math.PI * 2);
+          c.fillStyle = compState.pressed ? '#38bdf8' : '#f43f5e';
+          c.fill();
+          c.strokeStyle = '#fecdd3';
+          c.lineWidth = 1.2;
+          c.stroke();
+          break;
+        }
+        case 'potentiometer': {
+          const trackW = bw * 0.72;
+          const trackH = Math.max(6, minDim * 0.12);
+          const tx = cx - trackW / 2;
+          const ty = cy - trackH / 2 - (isDepotPreview ? 0 : h * 0.09);
+
+          drawRoundRectOn(c, tx, ty, trackW, trackH, trackH / 2);
+          c.fillStyle = '#3b0764';
+          c.fill();
+          c.strokeStyle = '#c084fc';
+          c.lineWidth = 1.4;
+          c.stroke();
+
+          const wVal = compState.wiper ?? 0.5;
+          const thumbX = tx + wVal * trackW;
+          const thumbY = ty + trackH / 2;
+          c.beginPath();
+          c.arc(thumbX, thumbY, trackH * 0.82, 0, Math.PI * 2);
+          c.fillStyle = '#e879f9';
+          c.fill();
+          c.strokeStyle = '#ffffff';
+          c.lineWidth = 1.5;
+          c.stroke();
+
+          // On the 5x4 grid, draw an interactive "[Tune Ω · XX%]" pill badge
+          if (!isDepotPreview && !isGhost) {
+            const pillW = bw * 0.76;
+            const pillH = Math.max(13, h * 0.17);
+            const px = cx - pillW / 2;
+            const py = cy + h * 0.04;
+            drawRoundRectOn(c, px, py, pillW, pillH, 5);
+            c.fillStyle = 'rgba(88, 28, 135, 0.92)';
+            c.fill();
+            c.strokeStyle = '#d8b4fe';
+            c.lineWidth = 1.1;
+            c.stroke();
+
+            c.fillStyle = '#f5d0fe';
+            c.font = `700 ${Math.max(8, Math.round(minDim * 0.095))}px JetBrains Mono, monospace`;
+            c.textAlign = 'center';
+            c.textBaseline = 'middle';
+            c.fillText(`Tune ${Math.round(wVal * 100)}%`, cx, py + pillH / 2);
+          }
+          break;
+        }
+        case 'capacitor': {
+          const chargeRatio = Math.min(1, Math.abs(compState.vCap || 0) / 6.0);
+          const capW = bodyR * 2.22;
+          const capH = bodyR * 1.66;
+
+          // Orientation-aware polarized electrolytic body: Port A (+) local Left, Port B (−) local Right
+          c.save();
+          c.translate(cx, cy);
+          c.rotate(rot * (Math.PI / 2));
+
+          drawRoundRectOn(c, -capW / 2, -capH / 2, capW, capH, 5);
+          c.fillStyle = '#422006';
+          c.fill();
+
+          // Warm red/amber anode tint on Port A (+) end (local Left)
+          drawRoundRectOn(c, -capW / 2 + 1, -capH / 2 + 1, capW * 0.34, capH - 2, 4);
+          c.fillStyle = 'rgba(239, 68, 68, 0.38)';
+          c.fill();
+
+          // Wide high-contrast metallic silver cathode stripe on Port B (−) end (local Right)
+          const stripeW = capW * 0.30;
+          const stripeX = capW / 2 - stripeW - 1;
+          c.fillStyle = '#cbd5e1';
+          c.fillRect(stripeX, -capH / 2 + 1, stripeW, capH - 2);
+
+          // Dark minus markings along the silver cathode stripe
+          c.strokeStyle = '#0f172a';
+          c.lineWidth = Math.max(1.5, minDim * 0.026);
+          c.lineCap = 'round';
+          [-0.28, 0, 0.28].forEach(offsetY => {
+            const my = offsetY * capH;
+            c.beginPath();
+            c.moveTo(stripeX + stripeW * 0.25, my);
+            c.lineTo(stripeX + stripeW * 0.75, my);
+            c.stroke();
+          });
+
+          // Live charge fill indicator
+          if (chargeRatio > 0.02) {
+            const fillW = (capW - 4) * chargeRatio;
+            c.fillStyle = 'rgba(250, 204, 21, 0.45)';
+            c.fillRect(-capW / 2 + 2, -capH / 2 + 2, fillW, capH - 4);
+          }
+
+          drawRoundRectOn(c, -capW / 2, -capH / 2, capW, capH, 5);
+          c.strokeStyle = '#facc15';
+          c.lineWidth = 1.5;
+          c.stroke();
+          c.restore();
+
+          // Upright centered 1000µF pill
+          const cLblW = isDepotPreview ? 34 : Math.max(40, minDim * 0.42);
+          const cLblH = isDepotPreview ? 12 : Math.max(14, minDim * 0.16);
+          drawRoundRectOn(c, cx - cLblW / 2, cy - cLblH / 2, cLblW, cLblH, 4);
+          c.fillStyle = 'rgba(15, 23, 42, 0.9)';
+          c.fill();
+          c.strokeStyle = 'rgba(250, 204, 21, 0.65)';
+          c.lineWidth = 1;
+          c.stroke();
+
+          c.fillStyle = '#fef08a';
+          c.font = `700 ${isDepotPreview ? 8 : Math.max(8, Math.round(minDim * 0.095))}px JetBrains Mono, monospace`;
+          c.textAlign = 'center';
+          c.textBaseline = 'middle';
+          c.fillText('1000µF', cx, cy + 0.5);
+          break;
+        }
+        case 'inductor': {
+          // Ferrite core bar + 4 glossy copper windings
+          const coilW = bodyR * 2.1;
+          c.fillStyle = '#475569';
+          c.fillRect(cx - coilW / 2, cy - bodyR * 0.24, coilW, bodyR * 0.48);
+
+          c.strokeStyle = '#fb923c';
+          c.lineWidth = Math.max(2.2, minDim * 0.042);
+          const loops = 4;
+          const startX = cx - coilW * 0.44;
+          const stepX = (coilW * 0.88) / loops;
+          for (let i = 0; i < loops; i++) {
+            c.beginPath();
+            c.arc(startX + (i + 0.5) * stepX, cy, stepX * 0.54, Math.PI, 0);
+            c.stroke();
+          }
+          break;
+        }
+        case 'motor': {
+          c.beginPath();
+          c.arc(cx, cy, bodyR * 1.0, 0, Math.PI * 2);
+          c.fillStyle = '#334155';
+          c.fill();
+          c.strokeStyle = '#cbd5e1';
+          c.lineWidth = 1.6;
+          c.stroke();
+
+          // 3-blade rotor propeller
+          c.save();
+          c.translate(cx, cy);
+          c.rotate(compState.rotorAngle ?? 0.35);
+          c.fillStyle = '#38bdf8';
+          for (let b = 0; b < 3; b++) {
+            c.rotate((Math.PI * 2) / 3);
+            drawRoundRectOn(c, -2.2, -bodyR * 0.84, 4.4, bodyR * 0.84, 2.2);
+            c.fill();
+          }
+          c.beginPath();
+          c.arc(0, 0, Math.max(2.8, bodyR * 0.22), 0, Math.PI * 2);
+          c.fillStyle = '#f8fafc';
+          c.fill();
+          c.restore();
+          break;
+        }
+        case 'speaker': {
+          c.beginPath();
+          c.arc(cx, cy, bodyR * 1.0, 0, Math.PI * 2);
+          c.fillStyle = '#500724';
+          c.fill();
+          c.strokeStyle = '#f472b6';
+          c.lineWidth = 1.6;
+          c.stroke();
+
+          // Concentric acoustic cone ring
+          c.beginPath();
+          c.arc(cx, cy, bodyR * 0.72, 0, Math.PI * 2);
+          c.strokeStyle = 'rgba(244, 114, 182, 0.45)';
+          c.lineWidth = 1.1;
+          c.stroke();
+
+          // Center dust cap
+          c.beginPath();
+          c.arc(cx, cy, bodyR * (0.42 + (compState.soundRipple || 0) * 0.24), 0, Math.PI * 2);
+          c.fillStyle = '#ec4899';
+          c.fill();
+          break;
+        }
+        case 'transistor_npn': {
+          c.beginPath();
+          c.arc(cx, cy, bodyR * 0.98, 0, Math.PI * 2);
+          c.fillStyle = '#064e3b';
+          c.fill();
+          c.strokeStyle = '#34d399';
+          c.lineWidth = 1.6;
+          c.stroke();
+
+          // Authentic NPN BJT schematic symbol rotated to match B/C/E pins
+          c.save();
+          c.translate(cx, cy);
+          c.rotate(rot * (Math.PI / 2));
+          const rSym = bodyR * 0.56;
+          c.strokeStyle = '#a7f3d0';
+          c.fillStyle = '#a7f3d0';
+          c.lineWidth = 1.6;
+          c.lineCap = 'round';
+
+          // Base lead & vertical bar
+          c.beginPath();
+          c.moveTo(-rSym * 0.95, 0);
+          c.lineTo(-rSym * 0.28, 0);
+          c.moveTo(-rSym * 0.28, -rSym * 0.65);
+          c.lineTo(-rSym * 0.28, rSym * 0.65);
+          // Collector lead (top) & Emitter lead (bottom)
+          c.moveTo(-rSym * 0.28, -rSym * 0.32);
+          c.lineTo(rSym * 0.55, -rSym * 0.85);
+          c.moveTo(-rSym * 0.28, rSym * 0.32);
+          c.lineTo(rSym * 0.55, rSym * 0.85);
+          c.stroke();
+
+          // Outward NPN emitter arrow
+          c.beginPath();
+          c.moveTo(rSym * 0.55, rSym * 0.85);
+          c.lineTo(rSym * 0.18, rSym * 0.82);
+          c.lineTo(rSym * 0.38, rSym * 0.48);
+          c.closePath();
+          c.fill();
+          c.restore();
+          break;
+        }
+      }
+
+      // 3. Draw Metallic Snap Studs & Polarity / Terminal Badges at each active pin
+      const pegR = Math.max(3.4, minDim * (isDepotPreview ? 0.068 : 0.056));
+      const isHiContrastPolarized = partType === 'battery' || partType === 'capacitor';
+
+      pins.forEach(pin => {
+        const pt = getRectPinCoords(rect, pin.edge);
+        drawSnapPegOn(c, pt.x, pt.y, pegR, !isGhost, pin.polarity || null);
+
+        if (pin.label && !isGhost) {
+          if (isHiContrastPolarized && (pin.polarity === 'pos' || pin.polarity === 'neg')) {
+            // Dedicated oversized upright circular + and − badges inset cleanly inside the block
+            const insetDistX = w * (isDepotPreview ? 0.25 : 0.255);
+            const insetDistY = h * (isDepotPreview ? 0.25 : 0.255);
+            const bxBadge = pin.edge === 1 ? (x + w - insetDistX) : pin.edge === 3 ? (x + insetDistX) : cx;
+            const byBadge = pin.edge === 2 ? (y + h - insetDistY) : pin.edge === 0 ? (y + insetDistY) : cy;
+            const badgeR = isDepotPreview
+              ? Math.max(6.8, minDim * 0.135)
+              : Math.max(9.5, minDim * 0.108);
+
+            c.save();
+            c.beginPath();
+            c.arc(bxBadge, byBadge, badgeR, 0, Math.PI * 2);
+            if (pin.polarity === 'pos') {
+              c.fillStyle = '#dc2626';
+              c.strokeStyle = '#ffffff';
+            } else {
+              c.fillStyle = '#0f172a';
+              c.strokeStyle = '#38bdf8';
+            }
+            c.fill();
+            c.lineWidth = isDepotPreview ? 1.7 : 2.0;
+            c.stroke();
+
+            // Crisp upright vector + or − symbol
+            const symArm = badgeR * 0.52;
+            c.strokeStyle = '#ffffff';
+            c.lineWidth = isDepotPreview ? 2.2 : 2.8;
+            c.lineCap = 'round';
+            c.beginPath();
+            c.moveTo(bxBadge - symArm, byBadge);
+            c.lineTo(bxBadge + symArm, byBadge);
+            if (pin.polarity === 'pos') {
+              c.moveTo(bxBadge, byBadge - symArm);
+              c.lineTo(bxBadge, byBadge + symArm);
+            }
+            c.stroke();
+            c.restore();
+          } else {
+            c.fillStyle = pin.polarity === 'pos'
+              ? '#fca5a5'
+              : pin.polarity === 'neg'
+                ? '#93c5fd'
+                : '#e2e8f0';
+            c.font = `800 ${Math.max(8, Math.round(minDim * (isDepotPreview ? 0.125 : 0.105)))}px JetBrains Mono, monospace`;
+            c.textAlign = 'center';
+            c.textBaseline = 'middle';
+            const ox = pin.edge === 1 ? -w * 0.13 : pin.edge === 3 ? w * 0.13 : 0;
+            const oy = pin.edge === 2 ? -h * 0.14 : pin.edge === 0 ? h * 0.14 : 0;
+            c.fillText(pin.label, pt.x + ox, pt.y + oy);
+          }
+        }
+      });
+
+      // 4. Compact Bottom Label on the 5x4 Assembly Grid (Depot cards show title in HTML header)
+      if (!isWireType(partType) && !isGhost && !isDepotPreview) {
+        c.fillStyle = '#cbd5e1';
+        c.font = `700 ${Math.max(8.5, Math.round(minDim * 0.095))}px Inter, sans-serif`;
+        c.textAlign = 'center';
+        c.textBaseline = 'bottom';
+        c.fillText(def.short, cx, by + bh - 3);
+      }
+
+      c.restore();
+    }
+
+    function drawComponentVisual(comp, rect, isGhost = false) {
+      drawPartModule(ctx, comp.type, comp.rot, comp, rect, { isGhost, isDepotPreview: false });
+    }
+
+    function drawCurrentFlowDots(timeSec) {
+      if (!isPlaying) return;
+      for (let r = 0; r < GRID_ROWS; r++) {
+        for (let c = 0; c < GRID_COLS; c++) {
+          const comp = grid[r][c];
+          if (!comp) continue;
+          const absI = Math.abs(comp.current);
+          if (absI < 0.0008) continue;
+
+          const rect = getCellRect(r, c);
+          const pins = getRotatedPins(comp.type, comp.rot);
+          if (pins.length < 2) continue;
+
+          const speed = Math.min(3.5, 0.4 + absI * 35);
+          const phase = (timeSec * speed) % 1;
+          const pA = getPinCoordinates(r, c, pins[0].edge);
+          const pB = getPinCoordinates(r, c, pins[1].edge);
+
+          // For battery, conventional current flows from (-) pB internally to (+) pA
+          const from = comp.type === 'battery' ? pB : (comp.current >= 0 ? pA : pB);
+          const to = comp.type === 'battery' ? pA : (comp.current >= 0 ? pB : pA);
+
+          const dx = from.x + (to.x - from.x) * phase;
+          const dy = from.y + (to.y - from.y) * phase;
+
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(dx, dy, Math.max(3, rect.w * 0.036), 0, Math.PI * 2);
+          ctx.fillStyle = '#38bdf8';
+          ctx.shadowColor = '#38bdf8';
+          ctx.shadowBlur = 8;
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+    }
+
+    function drawBoard(timeSec, dt) {
+      const { width, height, gridX, gridY, gridW, gridH, cellSize } = boardMetrics;
+      ctx.clearRect(0, 0, width, height);
+
+      // 1. Baseplate Chassis
+      drawRoundRect(2, 2, width - 4, height - 4, 18);
+      const bgGrad = ctx.createLinearGradient(0, 0, 0, height);
+      bgGrad.addColorStop(0, '#1e293b');
+      bgGrad.addColorStop(1, '#0f172a');
+      ctx.fillStyle = bgGrad;
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // 2. Column (C1–C5) & Row (R1–R4) Coordinate Labels
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '700 11px JetBrains Mono, monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      for (let c = 0; c < GRID_COLS; c++) {
+        ctx.fillText(`C${c + 1}`, gridX + (c + 0.5) * cellSize, gridY * 0.5);
+      }
+      for (let r = 0; r < GRID_ROWS; r++) {
+        ctx.fillText(`R${r + 1}`, gridX * 0.5, gridY + (r + 0.5) * cellSize);
+      }
+
+      // 3. Draw All 20 Snap-Peg Cells (Always rendered, even when grid is completely empty!)
+      for (let r = 0; r < GRID_ROWS; r++) {
+        for (let c = 0; c < GRID_COLS; c++) {
+          const rect = getCellRect(r, c);
+          const pad = 4;
+          drawRoundRect(rect.x + pad, rect.y + pad, rect.w - pad * 2, rect.h - pad * 2, 12);
+
+          const isHovered = hoveredCell && hoveredCell.r === r && hoveredCell.c === c;
+          ctx.fillStyle = isHovered ? 'rgba(56, 189, 248, 0.12)' : 'rgba(15, 23, 42, 0.72)';
+          ctx.fill();
+          ctx.strokeStyle = isHovered ? 'rgba(56, 189, 248, 0.55)' : 'rgba(71, 85, 105, 0.45)';
+          ctx.lineWidth = 1.2;
+          ctx.stroke();
+
+          // Draw 4 corner baseplate snap studs per cell for authentic Snap Circuits look
+          const studOffset = rect.w * 0.16;
+          const studR = Math.max(2.6, rect.w * 0.028);
+          const corners = [
+            [rect.x + studOffset, rect.y + studOffset],
+            [rect.x + rect.w - studOffset, rect.y + studOffset],
+            [rect.x + studOffset, rect.y + rect.h - studOffset],
+            [rect.x + rect.w - studOffset, rect.y + rect.h - studOffset]
+          ];
+          corners.forEach(([sx, sy]) => {
+            ctx.beginPath();
+            ctx.arc(sx, sy, studR, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(148, 163, 184, 0.28)';
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(203, 213, 225, 0.25)';
+            ctx.lineWidth = 0.8;
+            ctx.stroke();
+          });
+
+          // Subtle center peg
+          ctx.beginPath();
+          ctx.arc(rect.cx, rect.cy, studR * 0.85, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(100, 116, 139, 0.22)';
+          ctx.fill();
+        }
+      }
+
+      // 4. Ghost Blueprint Guide Overlay ("Try It Myself" mode)
+      if (ghostPlan) {
+        ghostPlan.forEach(item => {
+          if (!grid[item.r][item.c]) {
+            const rect = getCellRect(item.r, item.c);
+            drawComponentVisual(createComponentInstance(item.type, item.rot), rect, true);
+          }
+        });
+      }
+
+      // 5. Placed Components
+      for (let r = 0; r < GRID_ROWS; r++) {
+        for (let c = 0; c < GRID_COLS; c++) {
+          const comp = grid[r][c];
+          if (comp) {
+            drawComponentVisual(comp, getCellRect(r, c), false);
+          }
+        }
+      }
+
+      // 5b. Subtle Hover Placement Preview on Empty Cells in Edit Mode
+      if (!isPlaying && !isProbeMode && activeTool === 'place' && selectedPartType && hoveredCell) {
+        const { r, c } = hoveredCell;
+        if (!grid[r][c]) {
+          const ghostMatch = ghostPlan ? ghostPlan.find(g => g.r === r && g.c === c && g.type === selectedPartType) : null;
+          const rotToPreview = ghostMatch ? ghostMatch.rot : placementRot;
+          drawComponentVisual(createComponentInstance(selectedPartType, rotToPreview), getCellRect(r, c), true);
+        }
+      }
+
+      // 6. Horizontal & Vertical Snap-Bridge Bars across Connected Borders
+      for (let r = 0; r < GRID_ROWS; r++) {
+        for (let c = 0; c < GRID_COLS - 1; c++) {
+          const seamX = gridX + (c + 1) * cellSize;
+          const seamY = gridY + (r + 0.5) * cellSize;
+          const connected = isBorderConnected(true, r, c);
+          const isHoverSeam = hoveredBorder && hoveredBorder.isHorizontal && hoveredBorder.r === r && hoveredBorder.c === c;
+
+          if (connected) {
+            const pLeft = getPinCoordinates(r, c, 1);
+            const pRight = getPinCoordinates(r, c + 1, 3);
+            ctx.save();
+            ctx.strokeStyle = '#fbbf24';
+            ctx.lineWidth = Math.max(5, cellSize * 0.075);
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(pLeft.x, pLeft.y);
+            ctx.lineTo(pRight.x, pRight.y);
+            ctx.stroke();
+            ctx.restore();
+          } else if (isHoverSeam) {
+            ctx.save();
+            ctx.fillStyle = 'rgba(251, 191, 36, 0.35)';
+            ctx.beginPath();
+            ctx.arc(seamX, seamY, 7, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+          }
+        }
+      }
+
+      // Vertical borders (between (r, c) and (r+1, c))
+      for (let r = 0; r < GRID_ROWS - 1; r++) {
+        for (let c = 0; c < GRID_COLS; c++) {
+          const seamX = gridX + (c + 0.5) * cellSize;
+          const seamY = gridY + (r + 1) * cellSize;
+          const connected = isBorderConnected(false, r, c);
+          const isHoverSeam = hoveredBorder && !hoveredBorder.isHorizontal && hoveredBorder.r === r && hoveredBorder.c === c;
+
+          if (connected) {
+            const pTop = getPinCoordinates(r, c, 2);
+            const pBot = getPinCoordinates(r + 1, c, 0);
+            ctx.save();
+            ctx.strokeStyle = '#fbbf24';
+            ctx.lineWidth = Math.max(5, cellSize * 0.075);
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(pTop.x, pTop.y);
+            ctx.lineTo(pBot.x, pBot.y);
+            ctx.stroke();
+            ctx.restore();
+          } else if (isHoverSeam) {
+            ctx.save();
+            ctx.fillStyle = 'rgba(251, 191, 36, 0.35)';
+            ctx.beginPath();
+            ctx.arc(seamX, seamY, 7, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+          }
+        }
+      }
+
+      // 7. Animated Current Flow Dots
+      drawCurrentFlowDots(timeSec);
+
+      // 8. Flying Auto-Assembly Animation during "Show Me"
+      for (let i = flyingParts.length - 1; i >= 0; i--) {
+        const fp = flyingParts[i];
+        fp.progress = Math.min(1, fp.progress + dt * 3.2);
+        const ease = 1 - Math.pow(1 - fp.progress, 3);
+        const curX = fp.startX + (fp.targetRect.x - fp.startX) * ease;
+        const curY = fp.startY + (fp.targetRect.y - fp.startY) * ease;
+        drawComponentVisual(fp.comp, {
+          ...fp.targetRect,
+          x: curX,
+          y: curY,
+          cx: curX + fp.targetRect.w / 2,
+          cy: curY + fp.targetRect.h / 2
+        }, false);
+        if (fp.progress >= 1) {
+          flyingParts.splice(i, 1);
+        }
+      }
+
+      // 9. Smoke Particles
+      updateAndDrawParticles(dt);
+    }
+
+    // ----------------------------------------------------------------------------
+    // 9. HIT TESTING & INTERACTIVE BOARD CONTROLS
+    // ----------------------------------------------------------------------------
+    function getCanvasPos(e) {
+      const rect = canvas.getBoundingClientRect();
+      const clientX = e.touches && e.touches.length > 0 ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches && e.touches.length > 0 ? e.touches[0].clientY : e.clientY;
+      return {
+        x: clientX - rect.left,
+        y: clientY - rect.top
+      };
+    }
+
+    function hitTestBoard(pos) {
+      const { gridX, gridY, gridW, gridH, cellSize } = boardMetrics;
+      if (pos.x < gridX || pos.x > gridX + gridW || pos.y < gridY || pos.y > gridY + gridH) {
+        return { kind: 'outside' };
+      }
+
+      const colFloat = (pos.x - gridX) / cellSize;
+      const rowFloat = (pos.y - gridY) / cellSize;
+      const c = Math.max(0, Math.min(GRID_COLS - 1, Math.floor(colFloat)));
+      const r = Math.max(0, Math.min(GRID_ROWS - 1, Math.floor(rowFloat)));
+
+      // Check proximity to an internal border seam (within 14% of cellSize)
+      const fracX = colFloat - c;
+      const fracY = rowFloat - r;
+      const seamThresh = 0.14;
+
+      if (fracX > 1 - seamThresh && c < GRID_COLS - 1 && Math.abs(fracY - 0.5) < 0.25) {
+        return { kind: 'border', isHorizontal: true, r, c };
+      }
+      if (fracX < seamThresh && c > 0 && Math.abs(fracY - 0.5) < 0.25) {
+        return { kind: 'border', isHorizontal: true, r, c: c - 1 };
+      }
+      if (fracY > 1 - seamThresh && r < GRID_ROWS - 1 && Math.abs(fracX - 0.5) < 0.25) {
+        return { kind: 'border', isHorizontal: false, r, c };
+      }
+      if (fracY < seamThresh && r > 0 && Math.abs(fracX - 0.5) < 0.25) {
+        return { kind: 'border', isHorizontal: false, r: r - 1, c };
+      }
+
+      return { kind: 'cell', r, c };
+    }
+
+    function updateProbeCard(cell) {
+      const probeBox = document.getElementById('probeReadout');
+      const probeCoord = document.getElementById('probeCoord');
+      const probeContent = document.getElementById('probeContent');
+      if (!isProbeMode) {
+        probeBox.classList.add('hidden');
+        return;
+      }
+      probeBox.classList.remove('hidden');
+
+      if (!cell) {
+        probeCoord.textContent = 'Cell --';
+        probeContent.innerHTML = 'Hover or tap any snap cell';
+        return;
+      }
+
+      const { r, c } = cell;
+      probeCoord.textContent = `R${r + 1} C${c + 1}`;
+      const comp = grid[r][c];
+      if (!comp) {
+        probeContent.innerHTML = '<span class="text-slate-400">Empty snap-peg slot</span>';
+        return;
+      }
+
+      const def = PART_MAP[comp.type];
+      const pins = getRotatedPins(comp.type, comp.rot);
+      let pinVoltagesHtml = '';
+      if (latestTopology && latestNodeVoltages.length > 0) {
+        pinVoltagesHtml = pins.map(p => {
+          const n = latestTopology.getNode(r, c, p.edge);
+          const v = (n >= 0 && n < latestNodeVoltages.length) ? latestNodeVoltages[n] : 0;
+          const tag = p.label || EDGE_NAMES[p.edge][0];
+          return `<div>Pin ${tag} (${EDGE_NAMES[p.edge]}): <span class="text-amber-300">${v.toFixed(2)} V</span></div>`;
+        }).join('');
+      }
+
+      const ma = (comp.current * 1000).toFixed(2);
+      probeContent.innerHTML = `
+        <div class="text-white font-bold">${def.name}</div>
+        <div>Branch Current: <span class="text-cyan-300">${ma} mA</span></div>
+        ${pinVoltagesHtml}
+      `;
+    }
+
+    function isClickOnPotTuneBadge(r, c, pos) {
+      const rect = getCellRect(r, c);
+      const bw = rect.w * 0.81;
+      const pillW = bw * 0.78;
+      const pillH = Math.max(16, rect.h * 0.22);
+      const px = rect.cx - pillW / 2;
+      const py = rect.cy + rect.h * 0.02;
+      return pos.x >= px && pos.x <= px + pillW && pos.y >= py && pos.y <= py + pillH;
+    }
+
+    canvas.addEventListener('pointermove', e => {
+      const pos = getCanvasPos(e);
+      const hit = hitTestBoard(pos);
+      if (hit.kind === 'cell') {
+        hoveredCell = { r: hit.r, c: hit.c };
+        hoveredBorder = null;
+        if (isProbeMode) updateProbeCard(hoveredCell);
+      } else if (hit.kind === 'border') {
+        hoveredBorder = { isHorizontal: hit.isHorizontal, r: hit.r, c: hit.c };
+        hoveredCell = null;
+      } else {
+        hoveredCell = null;
+        hoveredBorder = null;
+      }
+    });
+
+    canvas.addEventListener('pointerdown', e => {
+      if (e.button === 2) return; // Handled by contextmenu
+      audio.init();
+      const pos = getCanvasPos(e);
+      const hit = hitTestBoard(pos);
+
+      if (hit.kind === 'border') {
+        const { isHorizontal, r, c } = hit;
+        if (!hasFacingPorts(isHorizontal, r, c)) {
+          showBoardToast('Rotate adjacent parts so their metallic snap pins face this border seam to bridge them.');
+          return;
+        }
+        const cur = isBorderConnected(isHorizontal, r, c);
+        if (isHorizontal) {
+          hBorders[r][c] = !cur;
+        } else {
+          vBorders[r][c] = !cur;
+        }
+        audio.playSnap(cur ? 360 : 620);
+        showBoardToast(cur ? 'Snap-Bridge disconnected.' : 'Snap-Bridge connected!', cur ? 'amber' : 'emerald');
+        return;
+      }
+
+      if (hit.kind !== 'cell') return;
+      const { r, c } = hit;
+      const existing = grid[r][c];
+
+      if (isProbeMode) {
+        updateProbeCard({ r, c });
+        return;
+      }
+
+      if (activeTool === 'erase') {
+        if (existing) {
+          if (activePotPopupCell && activePotPopupCell.r === r && activePotPopupCell.c === c) {
+            closePotPopup();
+          }
+          grid[r][c] = null;
+          audio.playSnap(310);
+        }
+        return;
+      }
+
+      if (existing) {
+        // In Play mode, clicking a potentiometer opens the expanded wiper popup; switches actuate
+        if (isPlaying) {
+          if (existing.type === 'potentiometer') {
+            openPotPopup(r, c);
+            audio.playSnap(580);
+            return;
+          }
+          if (existing.type === 'switch_toggle') {
+            existing.closed = !existing.closed;
+            audio.playSwitchClick(existing.closed);
+            return;
+          }
+          if (existing.type === 'switch_push') {
+            existing.pressed = true;
+            activePushBtn = { r, c };
+            audio.playSwitchClick(true);
+            return;
+          }
+          return;
+        }
+
+        // In Edit mode: clicking the [Tune %] badge on a potentiometer opens the expanded popup,
+        // while clicking anywhere else on a placed piece rotates it 90° clockwise
+        if (existing.type === 'potentiometer' && isClickOnPotTuneBadge(r, c, pos)) {
+          openPotPopup(r, c);
+          audio.playSnap(580);
+          return;
+        }
+
+        existing.rot = (existing.rot + 1) % 4;
+        // Clear any manual disconnect overrides around this cell so new facing pins auto-snap
+        if (c > 0) hBorders[r][c - 1] = null;
+        if (c < GRID_COLS - 1) hBorders[r][c] = null;
+        if (r > 0) vBorders[r - 1][c] = null;
+        if (r < GRID_ROWS - 1) vBorders[r][c] = null;
+        audio.playSnap(560);
+        return;
+      }
+
+      // Empty cell: place selected component
+      if (!isPlaying && selectedPartType) {
+        const ghostMatch = ghostPlan ? ghostPlan.find(g => g.r === r && g.c === c && g.type === selectedPartType) : null;
+        const rotToUse = ghostMatch ? ghostMatch.rot : placementRot;
+        grid[r][c] = createComponentInstance(selectedPartType, rotToUse);
+        if (c > 0) hBorders[r][c - 1] = null;
+        if (c < GRID_COLS - 1) hBorders[r][c] = null;
+        if (r > 0) vBorders[r - 1][c] = null;
+        if (r < GRID_ROWS - 1) vBorders[r][c] = null;
+        audio.playSnap(520);
+      }
+    });
+
+    window.addEventListener('pointerup', () => {
+      if (activePushBtn) {
+        const comp = grid[activePushBtn.r][activePushBtn.c];
+        if (comp && comp.type === 'switch_push') {
+          comp.pressed = false;
+          audio.playSwitchClick(false);
+        }
+        activePushBtn = null;
+      }
+    });
+
+    canvas.addEventListener('contextmenu', e => {
+      e.preventDefault();
+      const pos = getCanvasPos(e);
+      const hit = hitTestBoard(pos);
+      if (hit.kind === 'cell' && grid[hit.r][hit.c]) {
+        if (activePotPopupCell && activePotPopupCell.r === hit.r && activePotPopupCell.c === hit.c) {
+          closePotPopup();
+        }
+        grid[hit.r][hit.c] = null;
+        audio.playSnap(310);
+      }
+    });
+
+    // Drag-and-drop from Parts Depot onto 5x4 canvas
+    canvas.addEventListener('dragover', e => {
+      e.preventDefault();
+      const pos = getCanvasPos(e);
+      const hit = hitTestBoard(pos);
+      hoveredCell = hit.kind === 'cell' ? { r: hit.r, c: hit.c } : null;
+    });
+
+    canvas.addEventListener('drop', e => {
+      e.preventDefault();
+      const partType = e.dataTransfer.getData('text/plain') || selectedPartType;
+      const pos = getCanvasPos(e);
+      const hit = hitTestBoard(pos);
+      if (hit.kind === 'cell' && PART_MAP[partType]) {
+        const { r, c } = hit;
+        const ghostMatch = ghostPlan ? ghostPlan.find(g => g.r === r && g.c === c && g.type === partType) : null;
+        const rotToUse = ghostMatch ? ghostMatch.rot : placementRot;
+        grid[r][c] = createComponentInstance(partType, rotToUse);
+        if (c > 0) hBorders[r][c - 1] = null;
+        if (c < GRID_COLS - 1) hBorders[r][c] = null;
+        if (r > 0) vBorders[r - 1][c] = null;
+        if (r < GRID_ROWS - 1) vBorders[r][c] = null;
+        audio.playSnap(540);
+      }
+    });
+
+    // ----------------------------------------------------------------------------
+    // 10. PARTS DEPOT UI & SIMULATION TRANSPORT CONTROLS
+    // ----------------------------------------------------------------------------
+    function renderPartsDepot() {
+      const container = document.getElementById('partsDepotList');
+      if (!container) return;
+      container.innerHTML = '';
+
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const thumbW = 84;
+      const thumbH = 56;
+
+      PART_CATALOG.forEach(part => {
+        const isSelected = activeTool === 'place' && selectedPartType === part.type;
+        const previewRot = isSelected ? placementRot : 0;
+
+        const card = document.createElement('button');
+        card.type = 'button';
+        card.draggable = true;
+        card.title = part.desc;
+        card.className = `tactile-btn text-left p-2 rounded-xl border flex flex-col justify-between gap-1.5 transition-all ${
+          isSelected
+            ? 'bg-slate-800 border-amber-400 shadow-lg shadow-amber-500/15 ring-1 ring-amber-400/60'
+            : 'bg-slate-900/90 hover:bg-slate-800/90 border-slate-700/80'
+        }`;
+
+        // Top row: part title + active rotation badge
+        const topRow = document.createElement('div');
+        topRow.className = 'flex items-center justify-between gap-1 w-full';
+        topRow.innerHTML = `
+          <span class="text-[11px] font-bold text-slate-100 leading-tight truncate">${part.short}</span>
+          ${isSelected && placementRot > 0
+            ? `<span class="font-mono-tech text-[9px] px-1 rounded bg-sky-500/20 text-sky-300 border border-sky-400/40 shrink-0">${placementRot * 90}°</span>`
+            : ''}
+        `;
+
+        // Center retina-scaled miniature <canvas> displaying actual component graphic
+        const thumbWrap = document.createElement('div');
+        thumbWrap.className = 'w-full h-[54px] rounded-lg bg-slate-950/90 border border-slate-800/90 flex items-center justify-center overflow-hidden';
+
+        const thumbCanvas = document.createElement('canvas');
+        thumbCanvas.width = Math.round(thumbW * dpr);
+        thumbCanvas.height = Math.round(thumbH * dpr);
+        thumbCanvas.style.width = `${thumbW}px`;
+        thumbCanvas.style.height = `${thumbH}px`;
+        thumbCanvas.className = 'block pointer-events-none';
+
+        const tCtx = thumbCanvas.getContext('2d');
+        tCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        drawPartModule(
+          tCtx,
+          part.type,
+          previewRot,
+          null,
+          { x: 0, y: 0, w: thumbW, h: thumbH, cx: thumbW / 2, cy: thumbH / 2 },
+          { isGhost: false, isDepotPreview: true }
+        );
+        thumbWrap.appendChild(thumbCanvas);
+
+        // Bottom spec line
+        const specRow = document.createElement('div');
+        specRow.className = 'text-[10px] font-mono-tech text-slate-400 truncate w-full';
+        specRow.textContent = part.spec;
+
+        card.appendChild(topRow);
+        card.appendChild(thumbWrap);
+        card.appendChild(specRow);
+
+        card.addEventListener('click', () => {
+          audio.init();
+          activeTool = 'place';
+          selectedPartType = part.type;
+          isProbeMode = false;
+          updateToolButtons();
+          renderPartsDepot();
+          audio.playSnap(480);
+        });
+
+        card.addEventListener('dragstart', e => {
+          audio.init();
+          activeTool = 'place';
+          selectedPartType = part.type;
+          e.dataTransfer.setData('text/plain', part.type);
+          renderPartsDepot();
+        });
+
+        container.appendChild(card);
+      });
+    }
+
+    function updateToolButtons() {
+      const btnRot = document.getElementById('btnRotateTool');
+      const rotLabel = document.getElementById('rotIndicatorLabel');
+      const btnErase = document.getElementById('btnEraseTool');
+      const btnProbe = document.getElementById('btnProbeToggle');
+
+      if (rotLabel) rotLabel.textContent = `${placementRot * 90}°`;
+      if (btnRot) {
+        btnRot.className = `tactile-btn px-2.5 py-1.5 rounded-lg text-xs font-bold bg-slate-800 hover:bg-slate-700 text-sky-300 border border-slate-600/80 flex items-center gap-1`;
+      }
+      if (btnErase) {
+        btnErase.className = activeTool === 'erase'
+          ? 'tactile-btn px-2.5 py-1.5 rounded-lg text-xs font-bold bg-rose-600 text-white border border-rose-400 shadow'
+          : 'tactile-btn px-2.5 py-1.5 rounded-lg text-xs font-bold bg-slate-800 hover:bg-slate-700 text-rose-300 border border-slate-600/80';
+      }
+      if (btnProbe) {
+        btnProbe.className = isProbeMode
+          ? 'tactile-btn px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold bg-amber-500 text-slate-950 border border-amber-300 shadow flex items-center gap-1.5'
+          : 'tactile-btn px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600/80 flex items-center gap-1.5';
+      }
+      updateProbeCard(hoveredCell);
+    }
+
+    function setSimulationPlaying(playState) {
+      isPlaying = playState;
+      const btnPlay = document.getElementById('btnPlay');
+      const btnPlayIcon = document.getElementById('btnPlayIcon');
+      const btnPlayLabel = document.getElementById('btnPlayLabel');
+      const btnStop = document.getElementById('btnStop');
+      const statusPill = document.getElementById('simStatusPill');
+
+      if (isPlaying) {
+        audio.init();
+        // Reset transient physics (capacitors 0V, inductors 0A, motor 0 RPM, burned LEDs restored)
+        // so clicking Play at any time cleanly starts/replays the circuit from t = 0.0s
+        resetTransientStates();
+        resetChallengeRuntime();
+        victoryDismissedForCurrentRun = false;
+
+        btnPlay.className = 'tactile-btn play-active-glow px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold bg-emerald-600/85 hover:bg-emerald-500 text-white shadow flex items-center gap-1.5 border border-emerald-400/60';
+        if (btnPlayIcon) btnPlayIcon.textContent = '↻';
+        if (btnPlayLabel) btnPlayLabel.textContent = 'Replay Circuit';
+
+        btnStop.className = 'tactile-btn px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-600/25 border border-rose-400 flex items-center gap-1.5';
+        if (statusPill) {
+          statusPill.textContent = '● SIM RUNNING';
+          statusPill.className = 'px-2.5 py-1 rounded-lg text-[10px] sm:text-[11px] font-mono-tech font-bold bg-emerald-950/90 text-emerald-300 border border-emerald-500/50';
+        }
+      } else {
+        audio.silenceContinuous();
+        resetTransientStates();
+
+        btnPlay.className = 'tactile-btn px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-lg shadow-emerald-500/20 flex items-center gap-1.5 border border-emerald-300';
+        if (btnPlayIcon) btnPlayIcon.textContent = '▶';
+        if (btnPlayLabel) btnPlayLabel.textContent = 'Play Circuit';
+
+        btnStop.className = 'tactile-btn px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600 flex items-center gap-1.5';
+        if (statusPill) {
+          statusPill.textContent = 'EDIT MODE';
+          statusPill.className = 'px-2.5 py-1 rounded-lg text-[10px] sm:text-[11px] font-mono-tech font-bold bg-slate-800/90 text-sky-300 border border-slate-700';
+        }
+      }
+    }
+
+    function clearBoardData() {
+      if (demoAbortController) {
+        demoAbortController.aborted = true;
+        demoAbortController = null;
+      }
+      const showMeLabel = document.getElementById('btnShowMeLabel');
+      if (showMeLabel) showMeLabel.textContent = 'Show Me';
+      closePotPopup();
+      setSimulationPlaying(false);
+      dismissVictoryBanner();
+      resetChallengeRuntime();
+      grid = Array.from({ length: GRID_ROWS }, () => Array(GRID_COLS).fill(null));
+      hBorders = Array.from({ length: GRID_ROWS }, () => Array(GRID_COLS - 1).fill(null));
+      vBorders = Array.from({ length: GRID_ROWS - 1 }, () => Array(GRID_COLS).fill(null));
+      latestNodeVoltages = new Float64Array(0);
+      latestTopology = null;
+      flyingParts = [];
+      particles = [];
+    }
+
+    // ----------------------------------------------------------------------------
+    // 11. CHALLENGE MODE & CHOREOGRAPHED "SHOW ME" AUTO-ASSEMBLY
+    // ----------------------------------------------------------------------------
+    function updateChallengeUI() {
+      const badge = document.getElementById('challengeBadge');
+      if (badge) badge.textContent = `${completedChallenges.size}/${CHALLENGES.length}`;
+
+      const btnChallenge = document.getElementById('btnModeChallenge');
+      const btnFreeform = document.getElementById('btnModeFreeform');
+      const challengePanel = document.getElementById('challengePanel');
+
+      if (appMode === 'challenge') {
+        btnChallenge.className = 'tactile-btn px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold bg-amber-500 text-slate-950 shadow flex items-center gap-1.5';
+        btnFreeform.className = 'tactile-btn px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold text-slate-300 hover:text-white';
+        challengePanel.classList.remove('hidden');
+      } else {
+        btnFreeform.className = 'tactile-btn px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold bg-sky-500 text-slate-950 shadow';
+        btnChallenge.className = 'tactile-btn px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold text-slate-300 hover:text-white flex items-center gap-1.5';
+        challengePanel.classList.add('hidden');
+        dismissVictoryBanner();
+        return;
+      }
+
+      const ch = CHALLENGES[currentChallengeIdx];
+      document.getElementById('challengeTitle').textContent = ch.title;
+      document.getElementById('challengeDesc').textContent = ch.desc;
+      document.getElementById('challengeTargetBadge').textContent = ch.targetText;
+
+      const isSolved = completedChallenges.has(ch.id);
+      const statusPill = document.getElementById('challengeStatusPill');
+      const btnBarNext = document.getElementById('btnBarNextChallenge');
+
+      if (isSolved) {
+        statusPill.textContent = '✓ Challenge Solved!';
+        statusPill.className = 'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/50';
+        btnBarNext.classList.remove('hidden');
+      } else {
+        statusPill.textContent = 'In Progress';
+        statusPill.className = 'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/40';
+        btnBarNext.classList.add('hidden');
+      }
+
+      const tabsEl = document.getElementById('challengeTabs');
+      tabsEl.innerHTML = '';
+      CHALLENGES.forEach((item, idx) => {
+        const active = idx === currentChallengeIdx;
+        const done = completedChallenges.has(item.id);
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.textContent = done ? `✓ ${item.id}` : `${item.id}`;
+        btn.className = `tactile-btn w-6 h-6 rounded-lg text-xs font-extrabold border ${
+          active
+            ? 'bg-amber-400 text-slate-950 border-amber-200 shadow'
+            : done
+              ? 'bg-emerald-950/90 text-emerald-300 border-emerald-500/60'
+              : 'bg-slate-800 text-slate-300 border-slate-600 hover:bg-slate-700'
+        }`;
+        btn.addEventListener('click', () => {
+          selectChallenge(idx);
+        });
+        tabsEl.appendChild(btn);
+      });
+    }
+
+    function selectChallenge(idx) {
+      currentChallengeIdx = ((idx % CHALLENGES.length) + CHALLENGES.length) % CHALLENGES.length;
+      ghostPlan = null;
+      document.getElementById('btnTryMyself').classList.add('hidden');
+      clearBoardData();
+      updateChallengeUI();
+    }
+
+    function sleepMs(ms, abortObj) {
+      return new Promise(resolve => {
+        const timer = setTimeout(resolve, ms);
+        if (abortObj) {
+          const check = setInterval(() => {
+            if (abortObj.aborted) {
+              clearTimeout(timer);
+              clearInterval(check);
+              resolve();
+            }
+          }, 40);
+        }
+      });
+    }
+
+    async function runShowMeDemo() {
+      audio.init();
+      clearBoardData();
+      ghostPlan = null;
+      document.getElementById('btnTryMyself').classList.add('hidden');
+
+      const ch = CHALLENGES[currentChallengeIdx];
+      const abortObj = { aborted: false };
+      demoAbortController = abortObj;
+
+      const showMeLabel = document.getElementById('btnShowMeLabel');
+      showMeLabel.textContent = 'Assembling...';
+
+      const narratorBadge = document.getElementById('narratorBadge');
+      const narratorText = document.getElementById('narratorText');
+
+      for (const step of ch.blueprint) {
+        if (abortObj.aborted) return;
+        narratorBadge.textContent = 'SHOW ME';
+        narratorBadge.className = 'px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider bg-amber-500 text-slate-950 shrink-0';
+        narratorText.textContent = step.note;
+
+        const targetRect = getCellRect(step.r, step.c);
+        const inst = createComponentInstance(step.type, step.rot, step.wiper !== undefined ? { wiper: step.wiper } : {});
+        flyingParts.push({
+          comp: inst,
+          startX: 12,
+          startY: boardMetrics.height * 0.4,
+          targetRect,
+          progress: 0
+        });
+
+        await sleepMs(310, abortObj);
+        if (abortObj.aborted) return;
+
+        grid[step.r][step.c] = inst;
+        audio.playSnap(520);
+        await sleepMs(180, abortObj);
+      }
+
+      if (abortObj.aborted) return;
+      narratorText.textContent = 'Assembly complete! Pressing Play / Run to energize the circuit...';
+      await sleepMs(350, abortObj);
+      if (abortObj.aborted) return;
+
+      setSimulationPlaying(true);
+
+      for (const act of ch.postPlayActions) {
+        await sleepMs(act.delayMs, abortObj);
+        if (abortObj.aborted) return;
+        narratorBadge.textContent = 'SHOW ME';
+        narratorText.textContent = act.note;
+        act.action();
+      }
+
+      showMeLabel.textContent = 'Show Me';
+      document.getElementById('btnTryMyself').classList.remove('hidden');
+      demoAbortController = null;
+    }
+
+    // ----------------------------------------------------------------------------
+    // 12. EVENT LISTENERS & MAIN ANIMATION LOOP
+    // ----------------------------------------------------------------------------
+    document.getElementById('btnModeChallenge').addEventListener('click', () => {
+      appMode = 'challenge';
+      updateChallengeUI();
+      resizeCanvas();
+    });
+
+    document.getElementById('btnModeFreeform').addEventListener('click', () => {
+      appMode = 'freeform';
+      ghostPlan = null;
+      document.getElementById('btnTryMyself').classList.add('hidden');
+      updateChallengeUI();
+      resizeCanvas();
+    });
+
+    document.getElementById('btnPlay').addEventListener('click', () => {
+      if (demoAbortController) {
+        demoAbortController.aborted = true;
+        demoAbortController = null;
+        flyingParts = [];
+        document.getElementById('btnShowMeLabel').textContent = 'Show Me';
+      }
+      setSimulationPlaying(true);
+    });
+
+    document.getElementById('btnStop').addEventListener('click', () => {
+      if (demoAbortController) {
+        demoAbortController.aborted = true;
+        demoAbortController = null;
+        flyingParts = [];
+        document.getElementById('btnShowMeLabel').textContent = 'Show Me';
+      }
+      setSimulationPlaying(false);
+    });
+
+    document.getElementById('btnClearBoard').addEventListener('click', () => {
+      ghostPlan = null;
+      document.getElementById('btnTryMyself').classList.add('hidden');
+      clearBoardData();
+      audio.playSnap(320);
+    });
+
+    document.getElementById('btnRotateTool').addEventListener('click', () => {
+      placementRot = (placementRot + 1) % 4;
+      updateToolButtons();
+      renderPartsDepot();
+      audio.playSnap(600);
+    });
+
+    document.getElementById('btnEraseTool').addEventListener('click', () => {
+      activeTool = activeTool === 'erase' ? 'place' : 'erase';
+      isProbeMode = false;
+      updateToolButtons();
+      renderPartsDepot();
+      audio.playSnap(420);
+    });
+
+    document.getElementById('btnProbeToggle').addEventListener('click', () => {
+      isProbeMode = !isProbeMode;
+      if (isProbeMode) activeTool = 'place';
+      updateToolButtons();
+      renderPartsDepot();
+      audio.playSnap(660);
+    });
+
+    document.getElementById('btnAudioToggle').addEventListener('click', () => {
+      audio.setMuted(!audio.muted);
+      document.getElementById('iconAudioOn').classList.toggle('hidden', audio.muted);
+      document.getElementById('iconAudioOff').classList.toggle('hidden', !audio.muted);
+    });
+
+    document.getElementById('btnShowMe').addEventListener('click', () => {
+      runShowMeDemo();
+    });
+
+    document.getElementById('btnTryMyself').addEventListener('click', () => {
+      const ch = CHALLENGES[currentChallengeIdx];
+      clearBoardData();
+      ghostPlan = ch.blueprint.map(b => ({ type: b.type, r: b.r, c: b.c, rot: b.rot }));
+      document.getElementById('btnTryMyself').classList.add('hidden');
+      showBoardToast('Ghost Blueprint active! Place the matching parts onto the dashed outlines.', 'emerald');
+      audio.playSnap(640);
+    });
+
+    // Dismissable Challenge Complete handlers (× button, Inspect button, Escape, outside click)
+    document.getElementById('btnDismissVictoryX').addEventListener('click', e => {
+      e.stopPropagation();
+      dismissVictoryBanner();
+    });
+
+    document.getElementById('btnDismissVictoryInspect').addEventListener('click', e => {
+      e.stopPropagation();
+      dismissVictoryBanner();
+    });
+
+    document.getElementById('btnNextChallenge').addEventListener('click', e => {
+      e.stopPropagation();
+      selectChallenge(currentChallengeIdx + 1);
+    });
+
+    document.getElementById('btnBarNextChallenge').addEventListener('click', () => {
+      selectChallenge(currentChallengeIdx + 1);
+    });
+
+    // Expanded Potentiometer Popup controls
+    document.getElementById('btnClosePotPopup').addEventListener('click', e => {
+      e.stopPropagation();
+      closePotPopup();
+    });
+
+    document.getElementById('potPopupSlider').addEventListener('input', e => {
+      if (!activePotPopupCell) return;
+      const { r, c } = activePotPopupCell;
+      const comp = grid[r] && grid[r][c];
+      if (!comp || comp.type !== 'potentiometer') return;
+      const val = Math.max(1, Math.min(99, Number(e.target.value) || 50));
+      comp.wiper = val / 100;
+      updatePotPopupReadout();
+    });
+
+    document.querySelectorAll('.pot-preset-btn').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        if (!activePotPopupCell) return;
+        const { r, c } = activePotPopupCell;
+        const comp = grid[r] && grid[r][c];
+        if (!comp || comp.type !== 'potentiometer') return;
+        const preset = parseFloat(btn.getAttribute('data-pot-preset'));
+        if (!isNaN(preset)) {
+          comp.wiper = preset;
+          const slider = document.getElementById('potPopupSlider');
+          if (slider) slider.value = String(Math.round(preset * 100));
+          updatePotPopupReadout();
+          audio.playSnap(620);
+        }
+      });
+    });
+
+    document.addEventListener('pointerdown', e => {
+      const banner = document.getElementById('victoryBanner');
+      if (banner && !banner.classList.contains('hidden')) {
+        if (!banner.contains(e.target)) {
+          dismissVictoryBanner();
+        }
+      }
+      const potPopup = document.getElementById('potPopup');
+      if (potPopup && !potPopup.classList.contains('hidden')) {
+        if (!potPopup.contains(e.target) && e.target !== canvas) {
+          closePotPopup();
+        }
+      }
+    });
+
+    window.addEventListener('keydown', e => {
+      if (e.key === 'Escape') {
+        dismissVictoryBanner();
+        closePotPopup();
+        if (activeTool === 'erase' || isProbeMode) {
+          activeTool = 'place';
+          isProbeMode = false;
+          updateToolButtons();
+          renderPartsDepot();
+        }
+      } else if (e.key === 'r' || e.key === 'R') {
+        if (!isPlaying && hoveredCell && grid[hoveredCell.r][hoveredCell.c]) {
+          const comp = grid[hoveredCell.r][hoveredCell.c];
+          comp.rot = (comp.rot + 1) % 4;
+          audio.playSnap(560);
+        } else {
+          placementRot = (placementRot + 1) % 4;
+          updateToolButtons();
+          renderPartsDepot();
+          audio.playSnap(600);
+        }
+      }
+    });
+
+    // ResizeObserver + window resize so the 5x4 grid always sizes cleanly
+    if (typeof ResizeObserver !== 'undefined' && boardStage) {
+      const ro = new ResizeObserver(() => resizeCanvas());
+      ro.observe(boardStage);
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    let lastFrameTime = performance.now();
+    let narratorTimer = 0;
+
+    function mainLoop(now) {
+      const rawDt = (now - lastFrameTime) / 1000;
+      lastFrameTime = now;
+      const dt = Math.min(0.05, Math.max(0.001, rawDt));
+
+      let simMetrics = {
+        speakerImpulse: 0,
+        speakerCurrent: 0,
+        maxMotorRPM: 0,
+        totalBatteryCurrent: 0,
+        supplyVoltage: 0
+      };
+
+      if (isPlaying) {
+        simMetrics = stepCircuitPhysics(dt);
+        audio.updateSimulationAudio(
+          true,
+          simMetrics.speakerCurrent,
+          simMetrics.speakerImpulse,
+          simMetrics.maxMotorRPM
+        );
+
+        // Evaluate active Challenge win condition
+        if (appMode === 'challenge') {
+          const ch = CHALLENGES[currentChallengeIdx];
+          const winMsg = ch.checkSolved();
+          if (winMsg) {
+            const firstTimeSolved = !completedChallenges.has(ch.id);
+            if (firstTimeSolved) {
+              completedChallenges.add(ch.id);
+              updateChallengeUI();
+              audio.playVictory();
+            }
+            if (!victoryDismissedForCurrentRun) {
+              const banner = document.getElementById('victoryBanner');
+              if (banner && banner.classList.contains('hidden')) {
+                showVictoryBanner(winMsg);
+              }
+            }
+          }
+        }
+      }
+
+      // Update live telemetry & narrator every ~120ms when not running Show Me text
+      narratorTimer += dt;
+      if (narratorTimer >= 0.12) {
+        narratorTimer = 0;
+        document.getElementById('statVoltage').textContent = `${simMetrics.supplyVoltage.toFixed(2)}V`;
+        document.getElementById('statCurrent').textContent = `${(simMetrics.totalBatteryCurrent * 1000).toFixed(1)} mA`;
+
+        if (!demoAbortController) {
+          const diag = analyzeCircuitNarration(isPlaying);
+          const badgeEl = document.getElementById('narratorBadge');
+          const textEl = document.getElementById('narratorText');
+          badgeEl.textContent = diag.badge;
+          badgeEl.className = `px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider border shrink-0 mt-0.5 sm:mt-0 ${diag.badgeClass}`;
+          textEl.textContent = diag.text;
+        }
+
+        if (isProbeMode && hoveredCell) {
+          updateProbeCard(hoveredCell);
+        }
+        if (activePotPopupCell) {
+          updatePotPopupReadout();
+        }
+      }
+
+      drawBoard(now / 1000, dt);
+      requestAnimationFrame(mainLoop);
+    }
+
+    // Initialize empty 4x5 grid, render Depot & Challenge Bar, size canvas, and start render loop
+    function bootSnapLab() {
+      clearBoardData();
+      renderPartsDepot();
+      updateToolButtons();
+      updateChallengeUI();
+      resizeCanvas();
+      requestAnimationFrame(mainLoop);
+    }
+
+    if (document.readyState === 'loading') {
+      window.addEventListener('DOMContentLoaded', bootSnapLab);
+    } else {
+      bootSnapLab();
+    }
+  </script>
+</body>
+</html>
