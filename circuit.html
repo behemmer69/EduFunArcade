@@ -4,6 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>SnapLab: Circuit Sandbox &amp; Challenge Studio</title>
+  <!--
+    =============================================================================
+    SnapLab: Circuit Sandbox & Challenge Studio (snaplab_circuit_sandbox_challenge_studio.html, circuit.html))
+    Copyright (c) 2026 Barry Hemmerdinger. All Rights Reserved.
+    Snap togetehr circuit lab
+-->
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -542,6 +548,19 @@
           { edge: 1, label: '-', polarity: 'neg' }
         ],
         desc: 'Polarized diode (Anode + Left, Cathode - Right at 0°). Blows > 40mA!'
+      },
+      {
+        type: 'led_green',
+        name: 'Green LED',
+        short: 'Green LED',
+        spec: 'Vf 2.2V / 40mA max',
+        color: '#10b981',
+        accent: '#a7f3d0',
+        basePins: [
+          { edge: 3, label: '+', polarity: 'pos' },
+          { edge: 1, label: '-', polarity: 'neg' }
+        ],
+        desc: 'Polarized green diode (Anode + Left, Cathode - Right at 0°). Forward voltage ~2.2V. Blows > 40mA!'
       },
       {
         type: 'switch_toggle',
@@ -1214,12 +1233,13 @@
                 stampI(n0, n1, iEq);
                 break;
               }
-              case 'led_red': {
+              case 'led_red':
+              case 'led_green': {
                 if (comp.burned) {
                   stampG(n0, n1, 1e-8);
                 } else {
                   const vDiff = (n0 >= 0 ? nodeV[n0] : 0) - (n1 >= 0 ? nodeV[n1] : 0);
-                  const Vf = 2.0;
+                  const Vf = comp.type === 'led_green' ? 2.2 : 2.0;
                   if (vDiff > Vf) {
                     const gd = 1 / 20.0;
                     stampG(n0, n1, gd);
@@ -1338,9 +1358,11 @@
               comp.current = comp.iInd;
               break;
             }
-            case 'led_red': {
-              if (!comp.burned && vDiff > 2.0) {
-                comp.current = (vDiff - 2.0) / 20.0;
+            case 'led_red':
+            case 'led_green': {
+              const Vf = comp.type === 'led_green' ? 2.2 : 2.0;
+              if (!comp.burned && vDiff > Vf) {
+                comp.current = (vDiff - Vf) / 20.0;
                 if (comp.current > 0.040) {
                   comp.burned = true;
                   comp.current = 0;
@@ -1437,7 +1459,7 @@
           totalParts++;
           const item = { r, c, comp };
           if (comp.type === 'battery') batteries.push(item);
-          else if (comp.type === 'led_red') leds.push(item);
+          else if (comp.type === 'led_red' || comp.type === 'led_green') leds.push(item);
           else if (comp.type === 'switch_toggle') switches.push(item);
           else if (comp.type === 'switch_push') buttons.push(item);
           else if (comp.type === 'capacitor') caps.push(item);
@@ -1529,10 +1551,11 @@
       if (caps.length > 0 && batMa < 0.3 && capStoredV >= 0.4) {
         const litLed = leds.find(l => l.comp.current > 0.001);
         if (litLed) {
+          const ledName = litLed.comp.type === 'led_green' ? 'Green LED' : 'Red LED';
           return {
             badge: 'RC DISCHARGE',
             badgeClass: 'bg-yellow-950 text-yellow-300 border-yellow-500/60',
-            text: `Capacitor discharging (${capStoredV.toFixed(2)}V stored), keeping Red LED glowing at ${(litLed.comp.current * 1000).toFixed(1)} mA!`
+            text: `Capacitor discharging (${capStoredV.toFixed(2)}V stored), keeping ${ledName} glowing at ${(litLed.comp.current * 1000).toFixed(1)} mA!`
           };
         }
       }
@@ -1542,10 +1565,11 @@
       if (activeLed) {
         const ma = activeLed.comp.current * 1000;
         const potInfo = pots.length > 0 ? ` (Pot wiper at ${Math.round(pots[0].comp.wiper * 100)}%)` : '';
+        const ledName = activeLed.comp.type === 'led_green' ? 'Green LED' : 'Red LED';
         return {
           badge: 'LED ACTIVE',
           badgeClass: 'bg-emerald-950 text-emerald-300 border-emerald-500/60',
-          text: `Closed circuit! Red LED at R${activeLed.r + 1}C${activeLed.c + 1} is glowing at ${ma.toFixed(1)} mA (${activeLed.comp.voltage.toFixed(2)}V drop)${potInfo}.`
+          text: `Closed circuit! ${ledName} at R${activeLed.r + 1}C${activeLed.c + 1} is glowing at ${ma.toFixed(1)} mA (${activeLed.comp.voltage.toFixed(2)}V drop)${potInfo}.`
         };
       }
 
@@ -1605,10 +1629,11 @@
           for (let r = 0; r < GRID_ROWS; r++) {
             for (let c = 0; c < GRID_COLS; c++) {
               const comp = grid[r][c];
-              if (comp && comp.type === 'led_red' && !comp.burned) {
+              if (comp && (comp.type === 'led_red' || comp.type === 'led_green') && !comp.burned) {
                 const ma = comp.current * 1000;
                 if (ma >= 5.0 && ma <= 25.0) {
-                  return `Red LED glowing safely at ${ma.toFixed(1)} mA!`;
+                  const name = comp.type === 'led_green' ? 'Green LED' : 'Red LED';
+                  return `${name} glowing safely at ${ma.toFixed(1)} mA!`;
                 }
               }
             }
@@ -1685,14 +1710,15 @@
               const comp = grid[r][c];
               if (!comp) continue;
               if (comp.type === 'potentiometer') hasPot = true;
-              if (comp.type === 'led_red' && !comp.burned) {
+              if ((comp.type === 'led_red' || comp.type === 'led_green') && !comp.burned) {
                 const ma = comp.current * 1000;
                 if (ma >= 8.0 && ma <= 16.0) targetLed = comp;
               }
             }
           }
           if (hasPot && targetLed) {
-            return `Precision brightness achieved! Red LED tuned to ${(targetLed.current * 1000).toFixed(1)} mA.`;
+            const name = targetLed.type === 'led_green' ? 'Green LED' : 'Red LED';
+            return `Precision brightness achieved! ${name} tuned to ${(targetLed.current * 1000).toFixed(1)} mA.`;
           }
           return null;
         },
@@ -1742,7 +1768,7 @@
               if (!comp) continue;
               if (comp.type === 'switch_toggle') sw = comp;
               if (comp.type === 'capacitor') cap = comp;
-              if (comp.type === 'led_red' && !comp.burned) led = comp;
+              if ((comp.type === 'led_red' || comp.type === 'led_green') && !comp.burned) led = comp;
             }
           }
           if (!sw || !cap || !led) return null;
@@ -1750,7 +1776,8 @@
             challengeRuntime.rcCharged = true;
           }
           if (challengeRuntime.rcCharged && !sw.closed && led.current * 1000 > 2.0) {
-            return `RC memory verified! Capacitor (${Math.abs(cap.vCap).toFixed(2)}V) is powering Red LED at ${(led.current * 1000).toFixed(1)} mA with switch OPEN!`;
+            const name = led.type === 'led_green' ? 'Green LED' : 'Red LED';
+            return `RC memory verified! Capacitor (${Math.abs(cap.vCap).toFixed(2)}V) is powering ${name} at ${(led.current * 1000).toFixed(1)} mA with switch OPEN!`;
           }
           return null;
         },
@@ -2320,15 +2347,23 @@
           });
           break;
         }
-        case 'led_red': {
+        case 'led_red':
+        case 'led_green': {
+          const isGreen = partType === 'led_green';
           const ma = (!isDepotPreview && isPlaying) ? Math.max(0, compState.current * 1000) : 0;
           const brightness = compState.burned ? 0 : (isDepotPreview ? 0.32 : Math.min(1, ma / 15.0));
 
           if (brightness > 0.02) {
             const glow = c.createRadialGradient(cx, cy, 2, cx, cy, minDim * 0.46);
-            glow.addColorStop(0, `rgba(255, 80, 100, ${0.85 * brightness})`);
-            glow.addColorStop(0.55, `rgba(244, 63, 94, ${0.42 * brightness})`);
-            glow.addColorStop(1, 'rgba(244, 63, 94, 0)');
+            if (isGreen) {
+              glow.addColorStop(0, `rgba(52, 211, 153, ${0.88 * brightness})`);
+              glow.addColorStop(0.55, `rgba(16, 185, 129, ${0.44 * brightness})`);
+              glow.addColorStop(1, 'rgba(16, 185, 129, 0)');
+            } else {
+              glow.addColorStop(0, `rgba(255, 80, 100, ${0.85 * brightness})`);
+              glow.addColorStop(0.55, `rgba(244, 63, 94, ${0.42 * brightness})`);
+              glow.addColorStop(1, 'rgba(244, 63, 94, 0)');
+            }
             c.fillStyle = glow;
             c.beginPath();
             c.arc(cx, cy, minDim * 0.46, 0, Math.PI * 2);
@@ -2338,16 +2373,24 @@
           // Outer LED rim with flat cathode edge on right
           c.beginPath();
           c.arc(cx, cy, bodyR * 0.98, 0, Math.PI * 2);
-          c.fillStyle = compState.burned
-            ? '#334155'
-            : (isDepotPreview
+          if (compState.burned) {
+            c.fillStyle = '#334155';
+          } else if (isGreen) {
+            c.fillStyle = isDepotPreview
+              ? '#059669'
+              : (brightness > 0.05
+                ? `rgb(${20 + Math.round(50 * brightness)}, ${170 + Math.round(85 * brightness)}, ${60 + Math.round(60 * brightness)})`
+                : '#065f46');
+          } else {
+            c.fillStyle = isDepotPreview
               ? '#e11d48'
               : (brightness > 0.05
                 ? `rgb(${180 + Math.round(75 * brightness)}, ${25 + Math.round(60 * brightness)}, ${45 + Math.round(60 * brightness)})`
-                : '#9f1239'));
+                : '#9f1239');
+          }
           c.fill();
           c.lineWidth = 1.8;
-          c.strokeStyle = compState.burned ? '#64748b' : '#fda4af';
+          c.strokeStyle = compState.burned ? '#64748b' : (isGreen ? '#6ee7b7' : '#fda4af');
           c.stroke();
 
           // Specular dome highlight
@@ -2845,6 +2888,7 @@
       }
 
       // 5b. Subtle Hover Placement Preview on Empty Cells in Edit Mode
+      /*
       if (!isPlaying && !isProbeMode && activeTool === 'place' && selectedPartType && hoveredCell) {
         const { r, c } = hoveredCell;
         if (!grid[r][c]) {
@@ -2853,7 +2897,7 @@
           drawComponentVisual(createComponentInstance(selectedPartType, rotToPreview), getCellRect(r, c), true);
         }
       }
-
+*/
       // 6. Horizontal & Vertical Snap-Bridge Bars across Connected Borders
       for (let r = 0; r < GRID_ROWS; r++) {
         for (let c = 0; c < GRID_COLS - 1; c++) {
@@ -3800,5 +3844,19 @@
       bootSnapLab();
     }
   </script>
+  <!-- ================= FORMAL COPYRIGHT FOOTER ================= -->
+  <footer class="mt-13 bg-[#080d1a] border-t border-[#263859] py-2 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-1 sm:gap-4 font-mono text-xs text-slate-400">
+      <div class="flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-[#38bdf8]"></span>
+        <span class="text-slate-200 font-bold">Snaplab Circuit Studio</span>
+        <span>•</span>
+        <span>STEM Educational Simulation/span>
+      </div>
+      <div class="text-center sm:text-right">
+        Copyright &copy; 2026 <strong class="text-white">Barry Hemmerdinger</strong>. All Rights Reserved.
+      </div>
+    </div>
+  </footer>
 </body>
 </html>
