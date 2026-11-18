@@ -139,7 +139,7 @@
         <div class="hidden md:flex items-center gap-2 bg-[#0f172a] border border-[#263859] rounded-lg px-3 py-1.5">
           <span class="w-2 h-2 rounded-full bg-[#10b981] animate-ping"></span>
           <span class="text-slate-400">ACTIVE LABS:</span>
-          <span class="text-white font-bold">10 MODULES</span>
+          <span class="text-white font-bold">11 MODULES</span>
         </div>
 
         <button id="btnSoundToggle" onclick="toggleUiAudio()" class="p-2 rounded-lg bg-[#131d33] hover:bg-[#1e293b] border border-[#263859] text-slate-300 hover:text-[#38bdf8] transition" title="Toggle Telemetry UI Audio">
@@ -169,7 +169,7 @@
           Interactive STEM Labs &amp; 3D Physics Arcade
         </h1>
         <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
-          Explore real-time signal processing, Fourier acoustics, semiconductor thermal runaway, RF channel link budgets, conductive heat transfer, human metabolic thermodynamics, and 3D rigid-body kinematics.
+          Explore real-time signal processing, Fourier acoustics, semiconductor thermal runaway, RF channel link budgets, conductive heat transfer, human metabolic thermodynamics, 3D rigid-body kinematics, stochastic transit probabilities, and MNA circuit simulation.
         </p>
       </div>
 
@@ -177,7 +177,7 @@
       <div class="mt-5 pt-4 border-t border-[#263859]/80 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
         <div class="flex items-center gap-2 font-mono text-xs text-slate-400">
           <span class="w-2 h-2 rounded-full bg-[#10b981] animate-pulse"></span>
-          <span>10 INTERACTIVE SIMULATION MODULES</span>
+          <span>11 INTERACTIVE SIMULATION MODULES</span>
         </div>
 
         <!-- Search Box -->
@@ -739,6 +739,109 @@
             <span class="px-2 py-0.5 rounded bg-[#0b1120] text-emerald-300 border border-emerald-500/30">Survival Analysis</span>
           </div>
           <a href="stochastic.html" onclick="playClickTone(520)" class="w-full py-2.5 rounded-xl bg-[#1e293b] hover:bg-[#38bdf8] text-[#38bdf8] hover:text-[#050914] border border-[#38bdf8]/40 font-mono font-extrabold text-xs uppercase tracking-wider transition flex items-center justify-center gap-2">
+            <span>LAUNCH SIMULATION</span>
+            <span>►</span>
+          </a>
+        </div>
+      </article>
+
+      <!-- ===================================================================
+           11. SNAPLAB: CIRCUIT SANDBOX & CHALLENGE STUDIO (circuit.html)
+           =================================================================== -->
+      <article class="hub-card rounded-2xl p-4 flex flex-col justify-between" data-category="signal" data-keywords="snaplab circuit sandbox snap circuits challenge studio mna solver ohm kirchhoff nodal analysis battery resistor led capacitor inductor motor switch potentiometer electronics">
+        <div>
+          <!-- Card Header -->
+          <div class="flex items-center justify-between gap-2 mb-3 font-mono text-[11px]">
+            <span class="px-2 py-0.5 rounded bg-[#1e293b] text-emerald-400 border border-emerald-500/40 font-bold">MOD 11 • ELECTRONICS</span>
+            <span class="text-slate-400">circuit.html</span>
+          </div>
+
+          <!-- Bespoke SVG Telemetry Emblem: 5x4 Snap-Circuit Grid, Golden Bridges, Resistor, Battery & Glowing LED -->
+          <div class="emblem-viewport h-36 rounded-xl border border-[#263859] mb-3.5 flex items-center justify-center relative overflow-hidden p-3">
+            <svg viewBox="0 0 260 100" class="w-full h-full">
+              <defs>
+                <radialGradient id="circuitLedGlow" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stop-color="#34d399" stop-opacity="0.9"/>
+                  <stop offset="55%" stop-color="#10b981" stop-opacity="0.35"/>
+                  <stop offset="100%" stop-color="#10b981" stop-opacity="0"/>
+                </radialGradient>
+                <linearGradient id="snapBatGrad" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stop-color="#ef4444"/>
+                  <stop offset="42%" stop-color="#b91c1c"/>
+                  <stop offset="43%" stop-color="#1e293b"/>
+                  <stop offset="100%" stop-color="#0f172a"/>
+                </linearGradient>
+              </defs>
+
+              <!-- Snap-Circuits Baseplate Grid Background -->
+              <rect x="8" y="8" width="244" height="84" rx="8" fill="#131d33" stroke="#263859" stroke-width="1.2"/>
+              
+              <!-- Snap Stud Grid Points (Metallic Base Studs) -->
+              <g fill="#475569" stroke="#64748b" stroke-width="0.8">
+                <circle cx="28" cy="28" r="3.2"/><circle cx="88" cy="28" r="3.2"/><circle cx="148" cy="28" r="3.2"/><circle cx="208" cy="28" r="3.2"/>
+                <circle cx="28" cy="72" r="3.2"/><circle cx="88" cy="72" r="3.2"/><circle cx="148" cy="72" r="3.2"/><circle cx="208" cy="72" r="3.2"/>
+              </g>
+
+              <!-- Golden Snap-Bridge Conductor Tracks -->
+              <line x1="28" y1="28" x2="208" y2="28" stroke="#f59e0b" stroke-width="4.5" stroke-linecap="round"/>
+              <line x1="28" y1="72" x2="208" y2="72" stroke="#f59e0b" stroke-width="4.5" stroke-linecap="round"/>
+              <line x1="28" y1="28" x2="28" y2="72" stroke="#f59e0b" stroke-width="4.5" stroke-linecap="round"/>
+
+              <!-- Component 1: 6V DC Battery Pack (Top Left Track) -->
+              <g transform="translate(36, 16)">
+                <rect x="0" y="0" width="46" height="24" rx="4" fill="url(#snapBatGrad)" stroke="#f59e0b" stroke-width="1.4"/>
+                <text x="7" y="15" fill="#ffffff" font-family="monospace" font-size="8" font-weight="900">+</text>
+                <text x="36" y="15" fill="#94a3b8" font-family="monospace" font-size="8" font-weight="900">−</text>
+                <text x="23" y="15" fill="#f8fafc" font-family="monospace" font-size="7" font-weight="bold" text-anchor="middle">6V DC</text>
+              </g>
+
+              <!-- Component 2: 330Ω Resistor with color bands (Top Right Track) -->
+              <g transform="translate(108, 17)">
+                <rect x="0" y="0" width="42" height="22" rx="4" fill="#334155" stroke="#f59e0b" stroke-width="1.4"/>
+                <rect x="10" y="3" width="22" height="16" rx="3" fill="#d97706" stroke="#b45309" stroke-width="1"/>
+                <rect x="14" y="3" width="2.5" height="16" fill="#ea580c"/>
+                <rect x="18" y="3" width="2.5" height="16" fill="#ea580c"/>
+                <rect x="22" y="3" width="2.5" height="16" fill="#78350f"/>
+                <rect x="26" y="3" width="2.5" height="16" fill="#facc15"/>
+              </g>
+
+              <!-- Component 3: Glowing Green LED (Vertical Right Branch) -->
+              <g transform="translate(196, 32)">
+                <line x1="12" y1="-4" x2="12" y2="40" stroke="#f59e0b" stroke-width="4.5" stroke-linecap="round"/>
+                <rect x="0" y="4" width="24" height="28" rx="4" fill="#0f172a" stroke="#10b981" stroke-width="1.4"/>
+                <circle cx="12" cy="18" r="14" fill="url(#circuitLedGlow)"/>
+                <circle cx="12" cy="18" r="7.5" fill="#10b981" stroke="#a7f3d0" stroke-width="1.2"/>
+                <circle cx="10" cy="15" r="2.2" fill="#ffffff" opacity="0.6"/>
+              </g>
+
+              <!-- Component 4: Toggle Switch / Pushbutton (Bottom Track) -->
+              <g transform="translate(94, 60)">
+                <rect x="0" y="0" width="48" height="24" rx="4" fill="#1e293b" stroke="#14b8a6" stroke-width="1.4"/>
+                <circle cx="12" cy="12" r="3.2" fill="#cbd5e1"/>
+                <circle cx="36" cy="12" r="3.2" fill="#cbd5e1"/>
+                <line x1="12" y1="12" x2="36" y2="12" stroke="#38bdf8" stroke-width="3" stroke-linecap="round"/>
+                <text x="24" y="21" fill="#2dd4bf" font-family="monospace" font-size="5.5" font-weight="bold" text-anchor="middle">CLOSED</text>
+              </g>
+            </svg>
+            <span class="absolute bottom-2 right-2.5 font-mono text-[10px] px-2 py-0.5 rounded bg-[#050914]/90 text-emerald-400 border border-emerald-400/30">
+              MNA Matrix • V = I · R
+            </span>
+          </div>
+
+          <!-- Title & Description -->
+          <h2 class="text-base font-extrabold text-white mb-1.5">SnapLab: Circuit Sandbox &amp; Studio</h2>
+          <p class="text-xs text-slate-300 leading-relaxed mb-3">
+            Build and simulate electronic circuits on a 5×4 snap-peg baseplate using Modified Nodal Analysis (MNA). Wire DC batteries, resistors, potentiometers, dual-color LEDs, capacitors, inductors, and motors under real-time transient physics!
+          </p>
+        </div>
+
+        <div class="pt-3 border-t border-[#1e293b] space-y-3">
+          <div class="flex flex-wrap gap-1.5 font-mono text-[10px]">
+            <span class="px-2 py-0.5 rounded bg-[#0b1120] text-emerald-300 border border-emerald-500/30">MNA Circuit Solver</span>
+            <span class="px-2 py-0.5 rounded bg-[#0b1120] text-sky-300 border border-sky-500/30">5×4 Snap Board</span>
+            <span class="px-2 py-0.5 rounded bg-[#0b1120] text-amber-300 border border-amber-500/30">Transient Physics</span>
+          </div>
+          <a href="circuit.html" onclick="playClickTone(600)" class="w-full py-2.5 rounded-xl bg-[#1e293b] hover:bg-[#38bdf8] text-[#38bdf8] hover:text-[#050914] border border-[#38bdf8]/40 font-mono font-extrabold text-xs uppercase tracking-wider transition flex items-center justify-center gap-2">
             <span>LAUNCH SIMULATION</span>
             <span>►</span>
           </a>
